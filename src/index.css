@@ -5,6 +5,14 @@
     size: landscape;
     margin: 10mm;
   }
+  
+  /* 强制中文字体栈，解决 PDF 不显示中文问题 */
+  * {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "Segoe UI", Roboto, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body * {
     visibility: hidden !important;
   }

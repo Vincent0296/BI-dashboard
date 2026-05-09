@@ -59,7 +59,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title 
         y={y + height / 2 + 4} 
         fill={color} 
         textAnchor={anchor} 
-        className="text-[10px] font-bold font-mono"
+        className="text-[10px] font-bold"
       >
         {displayVal}
       </text>
