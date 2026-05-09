@@ -4,7 +4,7 @@ import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const Dashboard: React.FC = () => {
@@ -18,6 +18,7 @@ export const Dashboard: React.FC = () => {
   const [isSlicerVisible, setIsSlicerVisible] = useState(true);
   const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const uniqueOptions = useMemo(() => {
     const months = [...new Set(sourceData.map(d => d.month))].sort().reverse();
@@ -220,16 +221,77 @@ export const Dashboard: React.FC = () => {
   const exportToExcel = () => {
     if (chartData.length === 0) return;
     
+    // 1. 准备主数据 (指标数据)
     const exportData = chartData.map(item => ({
-      '项目/指标': item.category,
+      '指标名称': item.category,
       [getMetricLabel(selectedMetric)]: item.value,
       '数据类型': item.isPercent ? '百分比' : '数值'
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    // 2. 准备筛选条件汇总
+    const filterSummary = [
+      { '维度': '数据月份', '已选范围': selectedMonth },
+      { '维度': '计算口径', '已选范围': getMetricLabel(selectedMetric) },
+      { '维度': '产权口径', '已选范围': filters.ownerships.length === sourceData.map(d => d.ownership).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.ownerships.join(', ') },
+      { '维度': '管理口径', '已选范围': filters.managements.length === sourceData.map(d => d.management).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.managements.join(', ') },
+      { '维度': '业务业态', '已选范围': filters.propertyTypes.length === sourceData.map(d => d.propertyType).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.propertyTypes.join(', ') },
+      { '维度': '项目名称', '已选范围': filters.projectNames.length === sourceData.map(d => d.projectName).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.projectNames.join(', ') }
+    ];
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Export");
-    XLSX.writeFile(wb, `Financial_Export_${selectedMonth}_${getMetricLabel(selectedMetric)}.xlsx`);
+    
+    // 添加第一个工作表：指标数据
+    const wsData = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, wsData, "分析结果");
+    
+    // 添加第二个工作表：筛选条件说明
+    const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
+    XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
+
+    XLSX.writeFile(wb, `BI_Export_${selectedMonth}_${getMetricLabel(selectedMetric)}.xlsx`);
+  };
+
+  const exportChartToImage = () => {
+    if (!chartRef.current) return;
+    
+    const svgElement = chartRef.current.querySelector('svg');
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    // 增加分辨率以保证图片清晰
+    const svgWidth = svgElement.clientWidth || 1200;
+    const svgHeight = svgElement.clientHeight || 600;
+    const scale = 2; // 2倍清晰度
+    
+    canvas.width = svgWidth * scale;
+    canvas.height = svgHeight * scale;
+    if (ctx) ctx.scale(scale, scale);
+
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      if (ctx) {
+        // 绘制白色背景
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+        
+        const pngUrl = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pngUrl;
+        downloadLink.download = `Chart_${selectedMonth}_${getMetricLabel(selectedMetric)}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
 
   return (
@@ -461,19 +523,28 @@ export const Dashboard: React.FC = () => {
               onChange={setSelectedMetric} 
             />
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" ref={chartRef}>
               <div className="flex items-center justify-between mb-6">
                 <div className="w-1 h-8 bg-blue-600 rounded-full mr-4"></div>
                 <div className="flex-1">
                   <h3 className="text-lg font-black text-slate-800">{`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`}</h3>
                 </div>
-                <button 
-                  onClick={exportToExcel}
-                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
-                >
-                  <Download className="w-4 h-4" />
-                  导出报表
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={exportChartToImage}
+                    className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-100"
+                  >
+                    <Camera className="w-4 h-4" />
+                    保存图片
+                  </button>
+                  <button 
+                    onClick={exportToExcel}
+                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    导出报表
+                  </button>
+                </div>
               </div>
               <PerformanceChart 
                 data={chartData} 
