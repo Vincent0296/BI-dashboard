@@ -304,7 +304,7 @@ export const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-20">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-5 h-5 text-blue-600" />
                 <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">维度切片器</h3>
