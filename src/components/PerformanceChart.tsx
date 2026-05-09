@@ -81,12 +81,12 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title 
         )}
       </div>
 
-      <div className="w-full overflow-y-auto pr-2" style={{ height: Math.max(600, data.length * 40) }}>
+      <div className="w-full pr-2 print:h-auto" style={{ height: Math.max(600, data.length * 40) }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"
             data={data}
-            margin={{ top: 20, right: 120, left: 180, bottom: 20 }}
+            margin={{ top: 20, right: 150, left: 220, bottom: 20 }}
             barSize={20}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -103,8 +103,8 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title 
               dataKey="category"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
-              width={170}
+              tick={{ fill: '#000000', fontSize: 11, fontWeight: 700 }}
+              width={210}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} />
             <Bar dataKey="value" radius={[0, 4, 4, 0]}>

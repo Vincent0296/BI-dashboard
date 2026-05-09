@@ -558,7 +558,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <PerformanceChart 
                 data={chartData} 
-                title="" // Title is now handled by the header above
+                title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`}
               />
             </div>
 
