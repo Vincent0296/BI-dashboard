@@ -4,7 +4,7 @@ import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const Dashboard: React.FC = () => {
@@ -215,6 +215,21 @@ export const Dashboard: React.FC = () => {
       MTD: '当月发生额', PreMonth: '上月发生额', MoMDiff: '环比增减额', MoMPercent: '环比增减率'
     };
     return labels[key];
+  };
+
+  const exportToExcel = () => {
+    if (chartData.length === 0) return;
+    
+    const exportData = chartData.map(item => ({
+      '项目/指标': item.category,
+      [getMetricLabel(selectedMetric)]: item.value,
+      '数据类型': item.isPercent ? '百分比' : '数值'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Export");
+    XLSX.writeFile(wb, `Financial_Export_${selectedMonth}_${getMetricLabel(selectedMetric)}.xlsx`);
   };
 
   return (
@@ -447,9 +462,22 @@ export const Dashboard: React.FC = () => {
             />
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-1 h-8 bg-blue-600 rounded-full mr-4"></div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-slate-800">{`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`}</h3>
+                </div>
+                <button 
+                  onClick={exportToExcel}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  导出报表
+                </button>
+              </div>
               <PerformanceChart 
                 data={chartData} 
-                title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`} 
+                title="" // Title is now handled by the header above
               />
             </div>
 
