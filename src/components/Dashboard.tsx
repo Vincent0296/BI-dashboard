@@ -219,19 +219,27 @@ export const Dashboard: React.FC = () => {
   };
 
   const exportToExcel = () => {
-    if (chartData.length === 0) return;
+    if (categories.length === 0) return;
     
-    // 1. 准备主数据 (指标数据)
-    const exportData = chartData.map(item => ({
-      '指标名称': item.category,
-      [getMetricLabel(selectedMetric)]: item.value,
-      '数据类型': item.isPercent ? '百分比' : '数值'
-    }));
+    // 1. 准备汇总数据 (包含所有指标)
+    const metricKeys: MetricKey[] = ['YTD', 'LY', 'YoYDiff', 'YoYRate', 'CurrentMonth', 'LastMonth', 'MoMDiff', 'MoMRate'];
+    const metricNames = ['本年累计', '去年同期', '同比增减额', '同比增减率', '当月发生额', '上月发生额', '环比增减额', '环比增减率'];
+
+    const exportData = categories
+      .filter(cat => selectedIndicators.includes(cat))
+      .map(cat => {
+        const row: any = { '指标名称': cat };
+        metricKeys.forEach((key, index) => {
+          const value = calculateMetric(cat, key, sourceData, selectedMonth, filteredData);
+          const isRate = key.toLowerCase().includes('rate');
+          row[metricNames[index]] = isRate ? (value * 100).toFixed(2) + '%' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+        });
+        return row;
+      });
 
     // 2. 准备筛选条件汇总
     const filterSummary = [
       { '维度': '数据月份', '已选范围': selectedMonth },
-      { '维度': '计算口径', '已选范围': getMetricLabel(selectedMetric) },
       { '维度': '产权口径', '已选范围': filters.ownerships.length === sourceData.map(d => d.ownership).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.ownerships.join(', ') },
       { '维度': '管理口径', '已选范围': filters.managements.length === sourceData.map(d => d.management).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.managements.join(', ') },
       { '维度': '业务业态', '已选范围': filters.propertyTypes.length === sourceData.map(d => d.propertyType).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.propertyTypes.join(', ') },
@@ -257,40 +265,50 @@ export const Dashboard: React.FC = () => {
     const svgElement = chartRef.current.querySelector('svg');
     if (!svgElement) return;
 
-    const svgData = new XMLSerializer().serializeToString(svgElement);
+    // 1. 克隆并设置显式的宽高属性
+    const clonedSvg = svgElement.cloneNode(true) as SVGElement;
+    const width = svgElement.clientWidth || 1200;
+    const height = svgElement.clientHeight || 600;
+    
+    clonedSvg.setAttribute('width', width.toString());
+    clonedSvg.setAttribute('height', height.toString());
+    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+    // 2. 序列化
+    const svgData = new XMLSerializer().serializeToString(clonedSvg);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
-    // 增加分辨率以保证图片清晰
-    const svgWidth = svgElement.clientWidth || 1200;
-    const svgHeight = svgElement.clientHeight || 600;
-    const scale = 2; // 2倍清晰度
+    const scale = 2; // 高清倍数
+    canvas.width = width * scale;
+    canvas.height = height * scale;
     
-    canvas.width = svgWidth * scale;
-    canvas.height = svgHeight * scale;
-    if (ctx) ctx.scale(scale, scale);
-
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
       if (ctx) {
-        // 绘制白色背景
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        const pngUrl = canvas.toDataURL('image/png');
+        const pngUrl = canvas.toDataURL('image/png', 1.0);
         const downloadLink = document.createElement('a');
         downloadLink.href = pngUrl;
-        downloadLink.download = `Chart_${selectedMonth}_${getMetricLabel(selectedMetric)}.png`;
+        downloadLink.download = `BI_Chart_${selectedMonth}_${getMetricLabel(selectedMetric)}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
       }
       URL.revokeObjectURL(url);
     };
+    
+    img.onerror = (err) => {
+      console.error('Image Load Error:', err);
+      URL.revokeObjectURL(url);
+    };
+
     img.src = url;
   };
 
