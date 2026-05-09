@@ -234,7 +234,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
             <FileSpreadsheet className="w-5 h-5 text-white" />
@@ -321,7 +321,7 @@ export const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-20 overflow-hidden">
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-40">
               <div 
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsSlicerVisible(!isSlicerVisible)}
