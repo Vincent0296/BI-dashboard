@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Send, Download, Trash2, Edit2, Check, X, Filter, Upload, FileSpreadsheet } from 'lucide-react';
 import { AuthState, CommentItem, FilterState, DataRecord } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface CommentsSectionProps {
   authState: AuthState;
@@ -48,13 +49,15 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   const fetchComments = async () => {
     try {
-      const res = await fetch('/api/comments');
-      const data = await res.json();
-      // Sort newest first
-      data.sort((a: CommentItem, b: CommentItem) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setComments(data);
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .order('date', { ascending: false });
+        
+      if (error) throw error;
+      setComments(data || []);
     } catch (e) {
-      console.error('Failed to load comments');
+      console.error('Failed to load comments:', e);
     }
   };
 
@@ -73,6 +76,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     const info = projectInfoMap.get(newProject) || { propertyType: '全部', management: '全部' };
 
     const commentData = {
+      id: Date.now().toString() + Math.floor(Math.random() * 1000).toString(),
       project: newProject.trim(),
       dimension: newDimension,
       text: newText.trim(),
@@ -85,16 +89,14 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     };
 
     try {
-      const res = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commentData)
-      });
-      if (res.ok) {
+      const { error } = await supabase.from('comments').insert([commentData]);
+      if (!error) {
         setNewProject('');
         setNewText('');
         setNewDimension('同比');
         fetchComments();
+      } else {
+        throw error;
       }
     } catch (e) {
       alert('提交失败');
@@ -104,10 +106,9 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   const handleUpdate = async (id: string) => {
     try {
       const info = projectInfoMap.get(editProject) || { propertyType: '未知', management: '未知' };
-      const res = await fetch(`/api/comments/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { error } = await supabase
+        .from('comments')
+        .update({
           project: editProject.trim(),
           dimension: editDimension,
           text: editText.trim(),
@@ -115,10 +116,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
           propertyType: info.propertyType,
           management: info.management
         })
-      });
-      if (res.ok) {
+        .eq('id', id);
+
+      if (!error) {
         setEditingId(null);
         fetchComments();
+      } else {
+        throw error;
       }
     } catch (e) {
       alert('更新失败');
@@ -128,8 +132,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   const handleDelete = async (id: string) => {
     if (!confirm('确定要删除这条评论吗？')) return;
     try {
-      const res = await fetch(`/api/comments/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchComments();
+      const { error } = await supabase.from('comments').delete().eq('id', id);
+      if (!error) fetchComments();
     } catch (e) {
       alert('删除失败');
     }
@@ -291,13 +295,9 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
           };
         });
 
-        const res = await fetch('/api/comments/bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newComments)
-        });
+        const res = await supabase.from('comments').insert(newComments);
 
-        if (res.ok) {
+        if (!res.error) {
           alert(`成功导入 ${newComments.length} 条评论`);
           fetchComments();
         } else {

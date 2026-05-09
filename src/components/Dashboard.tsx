@@ -12,6 +12,7 @@ import { AdminPanel } from './AdminPanel';
 import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
 import { AuthState, User, FilterPreset } from '../types';
+import { supabase } from '../lib/supabase';
 
 export const Dashboard: React.FC = () => {
   // --- States ---
@@ -108,9 +109,13 @@ export const Dashboard: React.FC = () => {
 
   const fetchPresets = async (userId: string) => {
     try {
-      const res = await fetch(`/api/presets/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
+      const { data, error } = await supabase
+        .from('presets')
+        .select('*')
+        .eq('userId', userId)
+        .order('timestamp', { ascending: false });
+        
+      if (!error && data) {
         setPresets(data);
       }
     } catch (err) {
@@ -131,20 +136,19 @@ export const Dashboard: React.FC = () => {
     }
 
     try {
-      const res = await fetch('/api/presets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: authState.user?.id,
-          name: newPresetName,
-          filters: filters,
-          selectedIndicators: selectedIndicators
-        })
-      });
+      const newPreset = {
+        id: Date.now().toString(),
+        userId: authState.user?.id,
+        name: newPresetName,
+        filters: filters,
+        selectedIndicators: selectedIndicators,
+        timestamp: new Date().toISOString()
+      };
+      
+      const { error } = await supabase.from('presets').insert([newPreset]);
 
-      if (res.ok) {
-        const newPreset = await res.json();
-        setPresets([...presets, newPreset]);
+      if (!error) {
+        setPresets([newPreset, ...presets]);
         setNewPresetName('');
         setIsSavingPreset(false);
       }
@@ -158,8 +162,8 @@ export const Dashboard: React.FC = () => {
     if (!confirm('确定要删除这个筛选方案吗？')) return;
 
     try {
-      const res = await fetch(`/api/presets/${id}`, { method: 'DELETE' });
-      if (res.ok) {
+      const { error } = await supabase.from('presets').delete().eq('id', id);
+      if (!error) {
         setPresets(presets.filter(p => p.id !== id));
       }
     } catch (err) {
@@ -179,18 +183,17 @@ export const Dashboard: React.FC = () => {
     if (!confirm(`确定要将当前筛选和指标设置覆盖到方案 "${preset.name}" 吗？`)) return;
 
     try {
-      const res = await fetch(`/api/presets/${preset.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { error } = await supabase
+        .from('presets')
+        .update({
           filters: filters,
-          selectedIndicators: selectedIndicators
+          selectedIndicators: selectedIndicators,
+          timestamp: new Date().toISOString()
         })
-      });
+        .eq('id', preset.id);
 
-      if (res.ok) {
-        const updated = await res.json();
-        setPresets(presets.map(p => p.id === updated.id ? updated : p));
+      if (!error) {
+        setPresets(presets.map(p => p.id === preset.id ? { ...p, filters, selectedIndicators } as FilterPreset : p));
         alert('方案已成功更新');
       }
     } catch (err) {

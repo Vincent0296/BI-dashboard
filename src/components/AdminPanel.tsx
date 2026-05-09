@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Users, MessageSquare, ArrowLeft, RefreshCw, Clock, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AdminData {
   users: User[];
@@ -18,19 +19,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/stats', {
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      
-      const result = await res.json();
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .order('lastLoginTime', { ascending: false });
+
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('feedback')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (usersError || feedbackError) throw new Error('Failed to fetch admin data');
+
       setData({
-        users: Array.isArray(result.users) ? result.users : [],
-        feedback: Array.isArray(result.feedback) ? result.feedback : []
+        users: usersData || [],
+        feedback: feedbackData || []
       });
     } catch (err: any) {
       console.error('Admin Panel Fetch Error:', err);

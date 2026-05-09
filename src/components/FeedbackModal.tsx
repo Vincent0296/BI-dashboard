@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, MessageSquareText, CheckCircle2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -19,12 +20,13 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
     setIsSending(true);
     try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text, timestamp: new Date().toISOString() })
-      });
-      if (!res.ok) throw new Error('提交失败');
+      const { error } = await supabase.from('feedback').insert([{
+        id: Date.now().toString(),
+        userId: 'anonymous', // Or pass userId as prop if needed
+        content: text,
+        timestamp: new Date().toISOString()
+      }]);
+      if (error) throw new Error('提交失败');
       
       setIsSending(false);
       setIsSubmitted(true);

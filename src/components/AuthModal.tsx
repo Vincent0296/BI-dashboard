@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck, User, Lock, ArrowRight, KeyRound, CheckCircle2 } from 'lucide-react';
 import { User as UserType } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -27,14 +28,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || '登录失败');
-      onLoginSuccess(data);
+      const { data, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .or(`username.eq.${username},nickname.eq.${username}`)
+        .eq('password', password)
+        .single();
+
+      if (dbError || !data) throw new Error('用户名或密码错误');
+
+      // Update last login
+      await supabase.from('users').update({
+        lastLoginTime: new Date().toISOString()
+      }).eq('id', data.id);
+
+      const { password: _, ...userWithoutPassword } = data;
+      onLoginSuccess(userWithoutPassword);
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -48,14 +57,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || '注册失败');
-      onLoginSuccess(data);
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .single();
+
+      if (existingUser) throw new Error('用户名已存在');
+
+      const newUser = {
+        id: Date.now().toString(),
+        username,
+        password,
+        nickname: username,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        lastLoginTime: new Date().toISOString()
+      };
+
+      const { error: insertError } = await supabase.from('users').insert([newUser]);
+      if (insertError) throw new Error('注册失败');
+
+      const { password: _, ...userWithoutPassword } = newUser;
+      onLoginSuccess(userWithoutPassword);
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -69,13 +92,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, newPassword: password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || '重置失败');
+      const { data: existingUser, error: findError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', username)
+        .single();
+
+      if (findError || !existingUser) throw new Error('找不到该用户');
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ password })
+        .eq('id', existingUser.id);
+
+      if (updateError) throw new Error('重置失败');
+
       setSuccess('密码已成功重置，请使用新密码登录');
       setTimeout(() => {
         setMode('login');
