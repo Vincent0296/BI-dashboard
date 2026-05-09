@@ -256,16 +256,6 @@ export const Dashboard: React.FC = () => {
     const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
     XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
 
-    const wb = XLSX.utils.book_new();
-    
-    // 添加第一个工作表：指标数据
-    const wsData = XLSX.utils.json_to_sheet(exportData);
-    XLSX.utils.book_append_sheet(wb, wsData, "分析结果");
-    
-    // 添加第二个工作表：筛选条件说明
-    const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
-    XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
-
     XLSX.writeFile(wb, `BI_Export_${selectedMonth}_All_Metrics.xlsx`);
   };
 
