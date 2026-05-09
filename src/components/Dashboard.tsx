@@ -533,11 +533,11 @@ export const Dashboard: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" ref={chartRef}>
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" id="printable-chart" ref={chartRef}>
               <div className="flex items-center justify-between mb-6">
                 <div className="w-1 h-8 bg-blue-600 rounded-full mr-4"></div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-black text-slate-800">{`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`}</h3>
+                  <h3 className="text-lg font-black text-slate-800">柱状图</h3>
                 </div>
                 <div className="flex gap-2 print:hidden">
                   <button 
