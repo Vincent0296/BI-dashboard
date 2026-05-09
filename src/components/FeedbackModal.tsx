@@ -13,13 +13,19 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
 
     setIsSending(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text, timestamp: new Date().toISOString() })
+      });
+      if (!res.ok) throw new Error('提交失败');
+      
       setIsSending(false);
       setIsSubmitted(true);
       setTimeout(() => {
@@ -27,7 +33,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         setIsSubmitted(false);
         setText('');
       }, 2000);
-    }, 1000);
+    } catch (err) {
+      alert('反馈提交失败，请重试');
+      setIsSending(false);
+    }
   };
 
   return (

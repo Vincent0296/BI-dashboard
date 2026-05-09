@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1778345621758",
+    "username": "admin",
+    "password": "clever",
+    "nickname": "admin",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+    "lastLoginIp": "::ffff:127.0.0.1",
+    "lastLoginTime": "2026-05-09T20:11:18.617Z"
+  },
+  {
+    "id": "1778345671048",
+    "username": "vincent",
+    "password": "clever",
+    "nickname": "vincent",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=vincent",
+    "lastLoginIp": "::ffff:127.0.0.1",
+    "lastLoginTime": "2026-05-09T20:10:58.753Z"
+  }
+]

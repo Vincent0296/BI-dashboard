@@ -1,76 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { X, MessageCircle, ShieldCheck, QrCode } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ShieldCheck, User, Lock, ArrowRight, KeyRound, CheckCircle2 } from 'lucide-react';
+import { User as UserType } from '../types';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: { id: string; nickname: string; avatar: string }) => void;
+  onLoginSuccess: (user: UserType) => void;
 }
 
+type AuthMode = 'login' | 'register' | 'reset';
+
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess }) => {
-  const [step, setStep] = useState<'scan' | 'confirm'>('scan');
+  const [mode, setMode] = useState<AuthMode>('login');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Form States
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSimulateLogin = () => {
-    setStep('confirm');
-    setTimeout(() => {
-      onLoginSuccess({
-        id: 'wx_user_123',
-        nickname: '微信用户',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || '登录失败');
+      onLoginSuccess(data);
       onClose();
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || '注册失败');
+      onLoginSuccess(data);
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, newPassword: password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || '重置失败');
+      setSuccess('密码已成功重置，请使用新密码登录');
+      setTimeout(() => {
+        setMode('login');
+        setSuccess('');
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
         <div className="p-8">
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-8">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">微信登录</h2>
-              <p className="text-slate-500 text-sm font-medium">请使用微信扫码以继续操作</p>
+              <h2 className="text-2xl font-black text-slate-900">
+                {mode === 'login' ? '账号登录' : mode === 'register' ? '创建账号' : '重置密码'}
+              </h2>
+              <p className="text-slate-500 text-sm font-medium">
+                {mode === 'login' ? '输入您的凭据以继续' : mode === 'register' ? '加入我们的数据分析平台' : '请输入您的用户名设置新密码'}
+              </p>
             </div>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
               <X className="w-6 h-6 text-slate-400" />
             </button>
           </div>
 
-          <div className="flex flex-col items-center py-8">
-            <div className="relative group cursor-pointer" onClick={handleSimulateLogin}>
-              <div className="absolute -inset-4 bg-emerald-500/10 rounded-[2rem] blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
-              <div className="relative bg-white p-4 rounded-3xl border-2 border-slate-100 shadow-sm">
-                {step === 'scan' ? (
-                  <div className="w-48 h-48 bg-slate-50 flex flex-col items-center justify-center gap-3">
-                    <QrCode className="w-24 h-24 text-slate-800" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">点击模拟扫码</span>
-                  </div>
-                ) : (
-                  <div className="w-48 h-48 flex flex-col items-center justify-center gap-4 text-emerald-600 animate-pulse">
-                    <ShieldCheck className="w-16 h-16" />
-                    <span className="text-sm font-black">正在安全登录...</span>
-                  </div>
-                )}
-              </div>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold flex items-center gap-2">
+              <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+              {error}
             </div>
+          )}
 
-            <div className="mt-8 flex items-center gap-2 text-slate-400">
-              <MessageCircle className="w-4 h-4 text-emerald-500" />
-              <p className="text-xs font-bold">微信官方安全登录服务</p>
+          {success && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-2xl text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              {success}
             </div>
-          </div>
+          )}
+
+          <form onSubmit={mode === 'login' ? handleLogin : mode === 'register' ? handleRegister : handleReset} className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="用户名或昵称"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all text-sm font-bold"
+                required
+              />
+            </div>
+            <div className="relative">
+              {mode === 'reset' ? <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" /> : <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />}
+              <input
+                type="password"
+                placeholder={mode === 'reset' ? "输入新密码" : "密码"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 transition-all text-sm font-bold"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-blue-100"
+            >
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (
+                <>
+                  {mode === 'login' ? '登录' : mode === 'register' ? '注册并登录' : '重置密码'}
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+            
+            <div className="flex flex-col items-center gap-3 pt-4">
+              <button 
+                type="button"
+                onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setSuccess(''); setError(''); }}
+                className="text-xs font-bold text-slate-400 hover:text-blue-500 transition-colors"
+              >
+                {mode === 'login' ? '还没有账号？立即注册' : '已有账号？返回登录'}
+              </button>
+              
+              {mode === 'login' && (
+                <button 
+                  type="button"
+                  onClick={() => setMode('reset')}
+                  className="text-xs font-bold text-slate-300 hover:text-red-400 transition-colors"
+                >
+                  忘记密码？
+                </button>
+              )}
+              
+              {mode === 'reset' && (
+                <button 
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-xs font-bold text-slate-400 hover:underline"
+                >
+                  返回登录
+                </button>
+              )}
+            </div>
+          </form>
         </div>
 
         <div className="bg-slate-50 p-6 border-t border-slate-100">
-          <p className="text-[10px] text-center text-slate-400 leading-relaxed font-medium uppercase tracking-tight">
-            登录即代表您同意我们的<br/>
-            <span className="text-blue-500 cursor-pointer">服务协议</span> 与 <span className="text-blue-500 cursor-pointer">隐私政策</span>
-          </p>
+          <div className="flex items-center gap-2 justify-center text-slate-400">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <p className="text-[10px] font-black uppercase tracking-widest">安全加密传输控制</p>
+          </div>
         </div>
       </div>
     </div>

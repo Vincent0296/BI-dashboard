@@ -5,9 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatNumber(val: number, isPercent: boolean = false): string {
+export function formatNumber(val: number, isPercent: boolean = false, isIntegerMode: boolean = false): string {
   if (isPercent) {
-    return `${(val * 100).toFixed(2)}%`;
+    return isIntegerMode ? `${Math.round(val * 100)}%` : `${(val * 100).toFixed(2)}%`;
   }
-  return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return isIntegerMode 
+    ? Math.round(val).toLocaleString() 
+    : val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

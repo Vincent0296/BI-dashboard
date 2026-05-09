@@ -27,11 +27,36 @@ export interface FilterState {
 
 export interface User {
   id: string;
+  username: string;
   nickname: string;
   avatar: string;
+  lastLoginIp?: string;
+  lastLoginTime?: string;
 }
 
 export interface AuthState {
   isLoggedIn: boolean;
   user: User | null;
+}
+
+export interface FilterPreset {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, string[]>;
+  selectedIndicators: string[];
+  timestamp: string;
+}
+
+export interface CommentItem {
+  id: string;
+  project: string;
+  dimension: string;
+  text: string;
+  period: string;
+  date: string;
+  management: string;
+  propertyType: string;
+  authorId: string;
+  authorName: string;
 }
