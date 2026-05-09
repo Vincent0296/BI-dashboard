@@ -205,7 +205,7 @@ export const Dashboard: React.FC = () => {
         }
         return true;
       });
-  }, [selectedMonth, selectedMetric, filteredData, categories]);
+  }, [selectedMonth, selectedMetric, filteredData, categories, selectedIndicators]);
 
   const getMetricLabel = (key: MetricKey) => {
     const labels: Record<string, string> = {
