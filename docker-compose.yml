@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  # The BI Dashboard App
+  bi-dashboard:
+    build: .
+    container_name: bi-performance-app
+    ports:
+      - "8080:80"
+    restart: always
