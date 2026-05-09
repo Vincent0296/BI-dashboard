@@ -47,16 +47,15 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title 
     const color = shouldColor ? (isNegative ? '#ef4444' : '#10b981') : '#64748b';
     const displayVal = formatNumber(value, isRate);
 
-    // Recharts layout: for horizontal bars, x is the starting point of the bar.
-    // If value is positive, bar goes from x to x+width.
-    // If value is negative, bar goes from x+width to x.
-    const labelX = isNegative ? x + width - 5 : x + width + 5;
-    const anchor = isNegative ? 'end' : 'start';
+    // For vertical bars: x is bar position, y is bar start, height is bar length
+    const labelX = x + width / 2;
+    const labelY = isNegative ? y + height + 15 : y - 10;
+    const anchor = 'middle';
 
     return (
       <text 
         x={labelX} 
-        y={y + height / 2 + 4} 
+        y={labelY} 
         fill={color} 
         textAnchor={anchor} 
         className="text-[10px] font-bold"
@@ -81,34 +80,36 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title 
         )}
       </div>
 
-      <div className="w-full pr-2 print:h-auto" style={{ height: Math.max(600, data.length * 40) }}>
+      <div className="w-full pr-2 print:h-auto" style={{ height: 600 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            layout="vertical"
+            layout="horizontal"
             data={data}
-            margin={{ top: 20, right: 150, left: 300, bottom: 20 }}
-            barSize={20}
+            margin={{ top: 40, right: 30, left: 60, bottom: 100 }}
+            barSize={40}
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
             <XAxis 
-              type="number"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#94a3b8', fontSize: 10 }}
-              tickFormatter={(val) => formatNumber(val, isRate)}
-              hide={isComparison}
-            />
-            <YAxis 
               type="category"
               dataKey="category"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#000000', fontSize: 12, fontWeight: 800 }}
-              width={280}
+              tick={{ fill: '#000000', fontSize: 11, fontWeight: 800 }}
               interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+            />
+            <YAxis 
+              type="number"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#000000', fontSize: 10, fontWeight: 700 }}
+              tickFormatter={(val) => formatNumber(val, isRate)}
+              hide={isComparison}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {data.map((entry, index) => {
                 const isNegative = entry.value < 0;
                 const shouldColor = isComparison && entry.value !== 0;
