@@ -4,7 +4,7 @@ import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const Dashboard: React.FC = () => {
@@ -15,6 +15,8 @@ export const Dashboard: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('YTD');
   const [isImporting, setIsImporting] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+  const [isSlicerVisible, setIsSlicerVisible] = useState(true);
+  const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uniqueOptions = useMemo(() => {
@@ -304,115 +306,139 @@ export const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-20">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">维度切片器</h3>
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-20 overflow-hidden">
+              <div 
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => setIsSlicerVisible(!isSlicerVisible)}
+              >
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">维度切片器</h3>
+                </div>
+                {isSlicerVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Slicer 
-                  label="产权口径" 
-                  options={[...new Set(sourceData.filter(d => 
-                    filters.managements.includes(d.management) &&
-                    filters.propertyTypes.includes(d.propertyType) &&
-                    filters.projectNames.includes(d.projectName)
-                  ).map(d => d.ownership))]} 
-                  selected={filters.ownerships} 
-                  onChange={(val) => setFilters({...filters, ownerships: val})} 
-                />
-                <Slicer 
-                  label="管理口径" 
-                  options={[...new Set(sourceData.filter(d => 
-                    filters.ownerships.includes(d.ownership) &&
-                    filters.propertyTypes.includes(d.propertyType) &&
-                    filters.projectNames.includes(d.projectName)
-                  ).map(d => d.management))]} 
-                  selected={filters.managements} 
-                  onChange={(val) => setFilters({...filters, managements: val})} 
-                />
-                <Slicer 
-                  label="业务业态" 
-                  options={[...new Set(sourceData.filter(d => 
-                    filters.ownerships.includes(d.ownership) &&
-                    filters.managements.includes(d.management) &&
-                    filters.projectNames.includes(d.projectName)
-                  ).map(d => d.propertyType))]} 
-                  selected={filters.propertyTypes} 
-                  onChange={(val) => setFilters({...filters, propertyTypes: val})} 
-                />
-                <Slicer 
-                  label="项目名称" 
-                  options={[...new Set(sourceData.filter(d => 
-                    filters.ownerships.includes(d.ownership) &&
-                    filters.managements.includes(d.management) &&
-                    filters.propertyTypes.includes(d.propertyType)
-                  ).map(d => d.projectName))]} 
-                  selected={filters.projectNames} 
-                  onChange={(val) => setFilters({...filters, projectNames: val})} 
-                  showSearch 
-                />
+              
+              {isSlicerVisible && (
+                <div className="p-4 pt-0 border-t border-slate-50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <Slicer 
+                      label="产权口径" 
+                      options={[...new Set(sourceData.filter(d => 
+                        filters.managements.includes(d.management) &&
+                        filters.propertyTypes.includes(d.propertyType) &&
+                        filters.projectNames.includes(d.projectName)
+                      ).map(d => d.ownership))]} 
+                      selected={filters.ownerships} 
+                      onChange={(val) => setFilters({...filters, ownerships: val})} 
+                    />
+                    <Slicer 
+                      label="管理口径" 
+                      options={[...new Set(sourceData.filter(d => 
+                        filters.ownerships.includes(d.ownership) &&
+                        filters.propertyTypes.includes(d.propertyType) &&
+                        filters.projectNames.includes(d.projectName)
+                      ).map(d => d.management))]} 
+                      selected={filters.managements} 
+                      onChange={(val) => setFilters({...filters, managements: val})} 
+                    />
+                    <Slicer 
+                      label="业务业态" 
+                      options={[...new Set(sourceData.filter(d => 
+                        filters.ownerships.includes(d.ownership) &&
+                        filters.managements.includes(d.management) &&
+                        filters.projectNames.includes(d.projectName)
+                      ).map(d => d.propertyType))]} 
+                      selected={filters.propertyTypes} 
+                      onChange={(val) => setFilters({...filters, propertyTypes: val})} 
+                    />
+                    <Slicer 
+                      label="项目名称" 
+                      options={[...new Set(sourceData.filter(d => 
+                        filters.ownerships.includes(d.ownership) &&
+                        filters.managements.includes(d.management) &&
+                        filters.propertyTypes.includes(d.propertyType)
+                      ).map(d => d.projectName))]} 
+                      selected={filters.projectNames} 
+                      onChange={(val) => setFilters({...filters, projectNames: val})} 
+                      showSearch 
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div 
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => setIsIndicatorVisible(!isIndicatorVisible)}
+              >
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-emerald-600" />
+                  <h4 className="font-bold text-slate-700 text-sm">选择显示指标</h4>
+                </div>
+                <div className="flex items-center gap-4">
+                  {isIndicatorVisible && (
+                    <div className="flex gap-2 mr-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators(categories); }}
+                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                      >
+                        全选
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators([]); }}
+                        className="text-[10px] font-bold text-slate-400 hover:underline"
+                      >
+                        清空
+                      </button>
+                    </div>
+                  )}
+                  {isIndicatorVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                </div>
               </div>
 
-              <div className="mt-6 border-t border-slate-100 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-emerald-600" />
-                    <h4 className="font-bold text-slate-700 text-sm">选择显示指标</h4>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => setSelectedIndicators(categories)}
-                      className="text-[10px] font-bold text-blue-600 hover:underline"
-                    >
-                      全选
-                    </button>
-                    <button 
-                      onClick={() => setSelectedIndicators([])}
-                      className="text-[10px] font-bold text-slate-400 hover:underline"
-                    >
-                      清空
-                    </button>
+              {isIndicatorVisible && (
+                <div className="p-4 pt-0 border-t border-slate-50">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 mt-4">
+                    {categories.map(indicator => (
+                      <label 
+                        key={indicator} 
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
+                          selectedIndicators.includes(indicator) 
+                            ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200" 
+                            : "bg-white border-slate-200 hover:border-slate-300"
+                        )}
+                      >
+                        <input 
+                          type="checkbox" 
+                          className="hidden"
+                          checked={selectedIndicators.includes(indicator)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIndicators([...selectedIndicators, indicator]);
+                            } else {
+                              setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                            }
+                          }}
+                        />
+                        <div className={cn(
+                          "w-3 h-3 rounded-sm border flex items-center justify-center",
+                          selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
+                        )}>
+                          {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                        </div>
+                        <span className={cn(
+                          "text-[11px] font-bold truncate",
+                          selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
+                        )}>
+                          {indicator}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-                  {categories.map(indicator => (
-                    <label 
-                      key={indicator} 
-                      className={cn(
-                        "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
-                        selectedIndicators.includes(indicator) 
-                          ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200" 
-                          : "bg-white border-slate-200 hover:border-slate-300"
-                      )}
-                    >
-                      <input 
-                        type="checkbox" 
-                        className="hidden"
-                        checked={selectedIndicators.includes(indicator)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIndicators([...selectedIndicators, indicator]);
-                          } else {
-                            setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
-                          }
-                        }}
-                      />
-                      <div className={cn(
-                        "w-3 h-3 rounded-sm border flex items-center justify-center",
-                        selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
-                      )}>
-                        {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                      </div>
-                      <span className={cn(
-                        "text-[11px] font-bold truncate",
-                        selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
-                      )}>
-                        {indicator}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              )}
             </section>
 
             <MetricSelector 
