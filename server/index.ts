@@ -9,6 +9,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 const DB_PATH = path.join(__dirname, '../data');
 const USERS_FILE = path.join(DB_PATH, 'users.json');
 const FEEDBACK_FILE = path.join(DB_PATH, 'feedback.json');
