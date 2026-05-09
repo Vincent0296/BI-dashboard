@@ -284,9 +284,11 @@ export const Dashboard: React.FC = () => {
     clonedSvg.setAttribute('height', height.toString());
     clonedSvg.style.backgroundColor = 'white';
 
-    // 2. 转换为 Data URL
+    // 2. 转换为 Data URL (使用现代 UTF-8 兼容方案)
     const svgData = new XMLSerializer().serializeToString(clonedSvg);
-    const svgBase64 = window.btoa(unescape(encodeURIComponent(svgData)));
+    const svgBase64 = window.btoa(encodeURIComponent(svgData).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+      return String.fromCharCode(parseInt(p1, 16));
+    }));
     const url = `data:image/svg+xml;base64,${svgBase64}`;
 
     const canvas = document.createElement('canvas');
