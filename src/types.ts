@@ -24,3 +24,14 @@ export interface FilterState {
   propertyTypes: string[];
   projectNames: string[];
 }
+
+export interface User {
+  id: string;
+  nickname: string;
+  avatar: string;
+}
+
+export interface AuthState {
+  isLoggedIn: boolean;
+  user: User | null;
+}

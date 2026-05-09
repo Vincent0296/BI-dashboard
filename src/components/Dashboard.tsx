@@ -4,8 +4,11 @@ import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera } from 'lucide-react';
+import { AuthModal } from './AuthModal';
+import { FeedbackModal } from './FeedbackModal';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { AuthState, User } from '../types';
 
 export const Dashboard: React.FC = () => {
   // --- States ---
@@ -17,8 +20,36 @@ export const Dashboard: React.FC = () => {
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
   const [isSlicerVisible, setIsSlicerVisible] = useState(true);
   const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, user: null });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  const checkAuth = (action: () => void) => {
+    if (!authState.isLoggedIn) {
+      setPendingAction(() => action);
+      setIsAuthModalOpen(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleLoginSuccess = (user: User) => {
+    setAuthState({ isLoggedIn: true, user });
+    if (pendingAction) {
+      setTimeout(() => {
+        pendingAction();
+        setPendingAction(null);
+      }, 500);
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthState({ isLoggedIn: false, user: null });
+  };
 
   const uniqueOptions = useMemo(() => {
     const months = [...new Set(sourceData.map(d => d.month))].sort().reverse();
@@ -299,7 +330,7 @@ export const Dashboard: React.FC = () => {
   };
 
   const exportChartToPDF = () => {
-    window.print();
+    checkAuth(() => window.print());
   };
 
   return (
@@ -369,6 +400,30 @@ export const Dashboard: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <div className="h-8 w-px bg-slate-200 mx-2"></div>
+
+          {authState.isLoggedIn ? (
+            <div className="flex items-center gap-3 bg-slate-50 pl-2 pr-4 py-1.5 rounded-2xl border border-slate-200">
+              <img src={authState.user?.avatar} alt="avatar" className="w-7 h-7 rounded-full border border-white shadow-sm" />
+              <span className="text-sm font-black text-slate-700">{authState.user?.nickname}</span>
+              <button 
+                onClick={handleLogout}
+                className="ml-2 text-slate-400 hover:text-red-500 transition-colors"
+                title="退出登录"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-black hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-100"
+            >
+              <LogIn className="w-4 h-4" />
+              登录
+            </button>
+          )}
         </div>
       </header>
 
@@ -548,7 +603,7 @@ export const Dashboard: React.FC = () => {
                     保存 PDF
                   </button>
                   <button 
-                    onClick={exportToExcel}
+                    onClick={() => checkAuth(exportToExcel)}
                     className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
                   >
                     <Download className="w-4 h-4" />
@@ -578,6 +633,29 @@ export const Dashboard: React.FC = () => {
           Confidential Data Analysis System • No Cloud Storage
         </p>
       </footer>
+
+      {/* Floating Feedback Button */}
+      <button 
+        onClick={() => checkAuth(() => setIsFeedbackModalOpen(true))}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all group z-[90] active:scale-95"
+        title="意见反馈"
+      >
+        <MessageSquareMore className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+        <div className="absolute right-full mr-4 bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          反馈建议
+        </div>
+      </button>
+
+      {/* Modals */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => { setIsAuthModalOpen(false); setPendingAction(null); }}
+        onLoginSuccess={handleLoginSuccess}
+      />
+      <FeedbackModal 
+        isOpen={isFeedbackModalOpen} 
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 };
