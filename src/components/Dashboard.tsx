@@ -298,63 +298,15 @@ export const Dashboard: React.FC = () => {
     XLSX.writeFile(wb, `BI_Export_${selectedMonth}_All_Metrics.xlsx`);
   };
 
-  const exportChartToImage = () => {
-    if (!chartRef.current) return;
-    
-    const svgElement = chartRef.current.querySelector('svg');
-    if (!svgElement) return;
-
-    // 1. 克隆并显式处理样式与命名空间
-    const clonedSvg = svgElement.cloneNode(true) as SVGElement;
-    const width = svgElement.clientWidth || 1000;
-    const height = svgElement.clientHeight || 500;
-    
-    clonedSvg.setAttribute('width', width.toString());
-    clonedSvg.setAttribute('height', height.toString());
-    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    clonedSvg.style.backgroundColor = 'white';
-
-    // 2. 转换为 Data URL (使用现代 UTF-8 兼容方案)
-    const svgData = new XMLSerializer().serializeToString(clonedSvg);
-    const svgBase64 = window.btoa(encodeURIComponent(svgData).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-      return String.fromCharCode(parseInt(p1, 16));
-    }));
-    const url = `data:image/svg+xml;base64,${svgBase64}`;
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    const scale = 2; 
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-
-    img.onload = () => {
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const pngUrl = canvas.toDataURL('image/png', 1.0);
-        const link = document.createElement('a');
-        link.href = pngUrl;
-        link.download = `BI_Chart_${selectedMonth}.png`;
-        link.click();
-      }
-    };
-
-    img.onerror = (err) => {
-      console.error('SVG 图片加载失败，可能由于格式无效：', err);
-      alert('图片生成失败，请检查控制台以获取更多信息。');
-    };
-
-    img.src = url;
+  const exportChartToPDF = () => {
+    window.print();
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm print:hidden">
+        <div className="max-w-[1600px] mx-auto w-full px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
             <FileSpreadsheet className="w-5 h-5 text-white" />
           </div>
@@ -440,7 +392,7 @@ export const Dashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-40">
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-40 print:hidden">
               <div 
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsSlicerVisible(!isSlicerVisible)}
@@ -575,10 +527,12 @@ export const Dashboard: React.FC = () => {
               )}
             </section>
 
-            <MetricSelector 
-              selected={selectedMetric} 
-              onChange={setSelectedMetric} 
-            />
+            <div className="print:hidden">
+              <MetricSelector 
+                selected={selectedMetric} 
+                onChange={setSelectedMetric} 
+              />
+            </div>
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" ref={chartRef}>
               <div className="flex items-center justify-between mb-6">
@@ -586,13 +540,13 @@ export const Dashboard: React.FC = () => {
                 <div className="flex-1">
                   <h3 className="text-lg font-black text-slate-800">{`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)} 排行`}</h3>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 print:hidden">
                   <button 
-                    onClick={exportChartToImage}
+                    onClick={exportChartToPDF}
                     className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-100"
                   >
                     <Camera className="w-4 h-4" />
-                    保存图片
+                    保存 PDF
                   </button>
                   <button 
                     onClick={exportToExcel}
