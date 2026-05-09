@@ -14,6 +14,7 @@ export const Dashboard: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('YTD');
   const [isImporting, setIsImporting] = useState(false);
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uniqueOptions = useMemo(() => {
@@ -96,6 +97,7 @@ export const Dashboard: React.FC = () => {
           const dimensionKeys = ['产权口径', '管理口径', '业态', '项目名称', '日期', '项目编号'];
           const metricKeys = keys.filter(k => !dimensionKeys.includes(k));
           setCategories(metricKeys);
+          setSelectedIndicators(metricKeys); // Default to all
         }
 
         const ms = [...new Set(processed.map(d => d.month))].sort().reverse();
@@ -182,6 +184,7 @@ export const Dashboard: React.FC = () => {
     if (!hasCurrentData) return [];
 
     return categories
+      .filter(cat => selectedIndicators.includes(cat))
       .map(cat => {
         const val = calculateValue(cat, selectedMetric);
         return {
@@ -239,6 +242,7 @@ export const Dashboard: React.FC = () => {
                   propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
                   projectNames: [...new Set(sourceData.map(d => d.projectName))]
                 });
+                setSelectedIndicators(categories);
                 setSelectedMonth(ms[0] || '');
               }}
               className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
@@ -347,6 +351,67 @@ export const Dashboard: React.FC = () => {
                   onChange={(val) => setFilters({...filters, projectNames: val})} 
                   showSearch 
                 />
+              </div>
+
+              <div className="mt-6 border-t border-slate-100 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-emerald-600" />
+                    <h4 className="font-bold text-slate-700 text-sm">选择显示指标</h4>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setSelectedIndicators(categories)}
+                      className="text-[10px] font-bold text-blue-600 hover:underline"
+                    >
+                      全选
+                    </button>
+                    <button 
+                      onClick={() => setSelectedIndicators([])}
+                      className="text-[10px] font-bold text-slate-400 hover:underline"
+                    >
+                      清空
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {categories.map(indicator => (
+                    <label 
+                      key={indicator} 
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
+                        selectedIndicators.includes(indicator) 
+                          ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200" 
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="hidden"
+                        checked={selectedIndicators.includes(indicator)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIndicators([...selectedIndicators, indicator]);
+                          } else {
+                            setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                          }
+                        }}
+                      />
+                      <div className={cn(
+                        "w-3 h-3 rounded-sm border flex items-center justify-center",
+                        selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
+                      )}>
+                        {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      <span className={cn(
+                        "text-[11px] font-bold truncate",
+                        selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
+                      )}>
+                        {indicator}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </section>
 
