@@ -256,7 +256,17 @@ export const Dashboard: React.FC = () => {
     const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
     XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
 
-    XLSX.writeFile(wb, `BI_Export_${selectedMonth}_${getMetricLabel(selectedMetric)}.xlsx`);
+    const wb = XLSX.utils.book_new();
+    
+    // 添加第一个工作表：指标数据
+    const wsData = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, wsData, "分析结果");
+    
+    // 添加第二个工作表：筛选条件说明
+    const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
+    XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
+
+    XLSX.writeFile(wb, `BI_Export_${selectedMonth}_All_Metrics.xlsx`);
   };
 
   const exportChartToImage = () => {
@@ -265,27 +275,27 @@ export const Dashboard: React.FC = () => {
     const svgElement = chartRef.current.querySelector('svg');
     if (!svgElement) return;
 
-    // 1. 克隆并设置显式的宽高属性
+    // 1. 克隆并显式处理样式
     const clonedSvg = svgElement.cloneNode(true) as SVGElement;
-    const width = svgElement.clientWidth || 1200;
-    const height = svgElement.clientHeight || 600;
+    const width = svgElement.clientWidth || 1000;
+    const height = svgElement.clientHeight || 500;
     
     clonedSvg.setAttribute('width', width.toString());
     clonedSvg.setAttribute('height', height.toString());
-    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clonedSvg.style.backgroundColor = 'white';
 
-    // 2. 序列化
+    // 2. 转换为 Data URL
     const svgData = new XMLSerializer().serializeToString(clonedSvg);
+    const svgBase64 = window.btoa(unescape(encodeURIComponent(svgData)));
+    const url = `data:image/svg+xml;base64,${svgBase64}`;
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
-    const scale = 2; // 高清倍数
+    const scale = 2; 
     canvas.width = width * scale;
     canvas.height = height * scale;
-    
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
       if (ctx) {
@@ -294,21 +304,12 @@ export const Dashboard: React.FC = () => {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
         const pngUrl = canvas.toDataURL('image/png', 1.0);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pngUrl;
-        downloadLink.download = `BI_Chart_${selectedMonth}_${getMetricLabel(selectedMetric)}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const link = document.createElement('a');
+        link.href = pngUrl;
+        link.download = `BI_Chart_${selectedMonth}.png`;
+        link.click();
       }
-      URL.revokeObjectURL(url);
     };
-    
-    img.onerror = (err) => {
-      console.error('Image Load Error:', err);
-      URL.revokeObjectURL(url);
-    };
-
     img.src = url;
   };
 
