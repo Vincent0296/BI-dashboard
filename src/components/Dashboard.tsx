@@ -219,19 +219,58 @@ export const Dashboard: React.FC = () => {
   };
 
   const exportToExcel = () => {
-    if (categories.length === 0) return;
+    if (categories.length === 0 || !selectedMonth || !selectedMonth.includes('-')) return;
     
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const prevYear = year - 1;
+    const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
+
+    const isYTD = (d: DataRecord, y: number, m: number) => {
+      const [dy, dm] = d.month.split('-').map(Number);
+      return dy === y && dm <= m;
+    };
+    const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
+
+    const ytdData = filteredData.filter(d => isYTD(d, year, month));
+    const lyData = filteredData.filter(d => isYTD(d, prevYear, month));
+    const mtdData = filteredData.filter(d => isMTD(d, year, month));
+    const preMonthData = filteredData.filter(d => isMTD(d, pm.y, pm.m));
+
+    const sum = (data: DataRecord[], cat: string) => data.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
+
+    const calculateForExport = (cat: string, metric: MetricKey): number => {
+      const ytd = sum(ytdData, cat);
+      const ly = sum(lyData, cat);
+      const mtd = sum(mtdData, cat);
+      const preMonth = sum(preMonthData, cat);
+
+      const hasLY = lyData.length > 0;
+      const hasPM = preMonthData.length > 0;
+
+      switch (metric) {
+        case 'YTD': return ytd;
+        case 'LY': return hasLY ? ly : 0;
+        case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
+        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : 0;
+        case 'MTD': return mtd;
+        case 'PreMonth': return hasPM ? preMonth : 0;
+        case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
+        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : 0;
+        default: return 0;
+      }
+    };
+
     // 1. 准备汇总数据 (包含所有指标)
-    const metricKeys: MetricKey[] = ['YTD', 'LY', 'YoYDiff', 'YoYRate', 'CurrentMonth', 'LastMonth', 'MoMDiff', 'MoMRate'];
+    const metricKeys: MetricKey[] = ['YTD', 'LY', 'YoYDiff', 'YoYPercent', 'MTD', 'PreMonth', 'MoMDiff', 'MoMPercent'];
     const metricNames = ['本年累计', '去年同期', '同比增减额', '同比增减率', '当月发生额', '上月发生额', '环比增减额', '环比增减率'];
 
     const exportData = categories
       .filter(cat => selectedIndicators.includes(cat))
       .map(cat => {
-        const row: any = { '指标名称': cat };
+        const row: Record<string, string | number> = { '指标名称': cat };
         metricKeys.forEach((key, index) => {
-          const value = calculateMetric(cat, key, sourceData, selectedMonth, filteredData);
-          const isRate = key.toLowerCase().includes('rate');
+          const value = calculateForExport(cat, key);
+          const isRate = key.includes('Percent');
           row[metricNames[index]] = isRate ? (value * 100).toFixed(2) + '%' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
         });
         return row;
@@ -265,13 +304,14 @@ export const Dashboard: React.FC = () => {
     const svgElement = chartRef.current.querySelector('svg');
     if (!svgElement) return;
 
-    // 1. 克隆并显式处理样式
+    // 1. 克隆并显式处理样式与命名空间
     const clonedSvg = svgElement.cloneNode(true) as SVGElement;
     const width = svgElement.clientWidth || 1000;
     const height = svgElement.clientHeight || 500;
     
     clonedSvg.setAttribute('width', width.toString());
     clonedSvg.setAttribute('height', height.toString());
+    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     clonedSvg.style.backgroundColor = 'white';
 
     // 2. 转换为 Data URL (使用现代 UTF-8 兼容方案)
@@ -302,6 +342,12 @@ export const Dashboard: React.FC = () => {
         link.click();
       }
     };
+
+    img.onerror = (err) => {
+      console.error('SVG 图片加载失败，可能由于格式无效：', err);
+      alert('图片生成失败，请检查控制台以获取更多信息。');
+    };
+
     img.src = url;
   };
 
