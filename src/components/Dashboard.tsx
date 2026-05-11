@@ -4,12 +4,13 @@ import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
+import { TrendChart } from './TrendChart';
 import { CommentsSection } from './CommentsSection';
 import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
 import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
 import { AuthState, User, FilterPreset } from '../types';
 import { supabase } from '../lib/supabase';
@@ -33,6 +34,8 @@ export const Dashboard: React.FC = () => {
   const [isIntegerMode, setIsIntegerMode] = useState(false);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   const getMetricLabel = (key: MetricKey) => {
     switch(key) {
@@ -176,6 +179,7 @@ export const Dashboard: React.FC = () => {
     if (preset.selectedIndicators) {
       setSelectedIndicators(preset.selectedIndicators);
     }
+    setActivePresetId(preset.id);
   };
 
   const handleUpdatePreset = async (preset: FilterPreset, e: React.MouseEvent) => {
@@ -202,20 +206,23 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleRenamePreset = async (id: string, newName: string) => {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      setEditingPresetId(null);
+      return;
+    }
     try {
-      const res = await fetch(`/api/presets/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName })
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setPresets(presets.map(p => p.id === updated.id ? updated : p));
-        setEditingPresetId(null);
+      const { error } = await supabase
+        .from('presets')
+        .update({ name: newName })
+        .eq('id', id);
+
+      if (!error) {
+        setPresets(presets.map(p => p.id === id ? { ...p, name: newName } : p));
       }
     } catch (err) {
       console.error('Failed to rename preset', err);
+    } finally {
+      setEditingPresetId(null);
     }
   };
 
@@ -388,6 +395,40 @@ export const Dashboard: React.FC = () => {
         return true;
       });
   }, [selectedMonth, selectedMetric, filteredData, categories, selectedIndicators]);
+
+  const trendChartData = useMemo(() => {
+    if (chartType !== 'line') return [];
+    
+    // All available months from sourceData, sorted ascending and >= 2025-01
+    const allMonths = [...new Set(sourceData.map(d => d.month))]
+      .filter(m => m >= '2025-01')
+      .sort();
+    
+    return allMonths.map(monthStr => {
+      const [year, month] = monthStr.split('-').map(Number);
+      const prevYear = year - 1;
+      const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
+
+      const isYTD = (d: DataRecord, y: number, m: number) => {
+        const [dy, dm] = d.month.split('-').map(Number);
+        return dy === y && dm <= m;
+      };
+      const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
+
+      const sum = (data: DataRecord[], cat: string) => data.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
+      
+      const calculateValue = (cat: string): number => {
+        const mtdData = filteredData.filter(d => isMTD(d, year, month));
+        return sum(mtdData, cat);
+      };
+
+      const point: any = { month: monthStr.replace('-', '') };
+      selectedIndicators.forEach(cat => {
+        point[cat] = calculateValue(cat) ?? 0;
+      });
+      return point;
+    });
+  }, [chartType, sourceData, filteredData, selectedIndicators]);
 
   const exportToExcel = () => {
     if (categories.length === 0 || !selectedMonth || !selectedMonth.includes('-')) return;
@@ -707,6 +748,7 @@ export const Dashboard: React.FC = () => {
                 });
                 setSelectedIndicators(categories);
                 setSelectedMonth(ms[0] || '');
+                setActivePresetId(null);
               }}
               className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
             >
@@ -714,6 +756,46 @@ export const Dashboard: React.FC = () => {
               一键重置
             </button>
           )}
+
+          <div className="h-8 w-px bg-slate-200 mx-2"></div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
+            <button
+              onClick={() => setChartType('bar')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
+                chartType === 'bar' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <BarChart2 className="w-4 h-4" />
+              <span className="hidden sm:inline">柱状图</span>
+            </button>
+            <button
+              onClick={() => setChartType('line')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
+                chartType === 'line' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">趋势图</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <select 
+              className="bg-transparent text-sm font-bold outline-none cursor-pointer"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              disabled={sourceData.length === 0}
+            >
+              {[...new Set(sourceData.map(d => d.month))].sort().reverse().map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -730,23 +812,7 @@ export const Dashboard: React.FC = () => {
             {sourceData.length > 0 ? '重新导入数据' : '导入 Excel 数据'}
           </button>
 
-          <div className="h-8 w-px bg-slate-200"></div>
 
-          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <select 
-              className="bg-transparent text-sm font-bold outline-none cursor-pointer"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              disabled={sourceData.length === 0}
-            >
-              {[...new Set(sourceData.map(d => d.month))].sort().reverse().map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="h-8 w-px bg-slate-200 mx-2"></div>
 
           {authState.isLoggedIn ? (
             <div className="flex items-center gap-3 bg-slate-50 pl-2 pr-4 py-1.5 rounded-2xl border border-slate-200">
@@ -830,7 +896,8 @@ export const Dashboard: React.FC = () => {
                           onClick={() => applyPreset(preset)}
                           className={cn(
                             "group flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl cursor-pointer transition-all animate-in fade-in slide-in-from-left-2",
-                            editingPresetId === preset.id && "bg-white border-blue-500 ring-2 ring-blue-100"
+                            editingPresetId === preset.id && "bg-white border-blue-500 ring-2 ring-blue-100",
+                            activePresetId === preset.id && "bg-blue-100 border-blue-400 ring-1 ring-blue-200"
                           )}
                         >
                           {editingPresetId === preset.id ? (
@@ -915,7 +982,7 @@ export const Dashboard: React.FC = () => {
                         filters.projectNames.includes(d.projectName)
                       ).map(d => d.ownership))]} 
                       selected={filters.ownerships} 
-                      onChange={(val) => setFilters({...filters, ownerships: val})} 
+                      onChange={(val) => { setFilters({...filters, ownerships: val}); setActivePresetId(null); }} 
                     />
                     <Slicer 
                       label="管理口径" 
@@ -925,7 +992,7 @@ export const Dashboard: React.FC = () => {
                         filters.projectNames.includes(d.projectName)
                       ).map(d => d.management))]} 
                       selected={filters.managements} 
-                      onChange={(val) => setFilters({...filters, managements: val})} 
+                      onChange={(val) => { setFilters({...filters, managements: val}); setActivePresetId(null); }} 
                     />
                     <Slicer 
                       label="业务业态" 
@@ -935,7 +1002,7 @@ export const Dashboard: React.FC = () => {
                         filters.projectNames.includes(d.projectName)
                       ).map(d => d.propertyType))]} 
                       selected={filters.propertyTypes} 
-                      onChange={(val) => setFilters({...filters, propertyTypes: val})} 
+                      onChange={(val) => { setFilters({...filters, propertyTypes: val}); setActivePresetId(null); }} 
                     />
                     <Slicer 
                       label="项目名称" 
@@ -945,7 +1012,7 @@ export const Dashboard: React.FC = () => {
                         filters.propertyTypes.includes(d.propertyType)
                       ).map(d => d.projectName))]} 
                       selected={filters.projectNames} 
-                      onChange={(val) => setFilters({...filters, projectNames: val})} 
+                      onChange={(val) => { setFilters({...filters, projectNames: val}); setActivePresetId(null); }} 
                       showSearch 
                     />
                   </div>
@@ -966,13 +1033,13 @@ export const Dashboard: React.FC = () => {
                   {isIndicatorVisible && (
                     <div className="flex gap-2 mr-2">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators(categories); }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators(categories); setActivePresetId(null); }}
                         className="text-[10px] font-bold text-blue-600 hover:underline"
                       >
                         全选
                       </button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators([]); }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedIndicators([]); setActivePresetId(null); }}
                         className="text-[10px] font-bold text-slate-400 hover:underline"
                       >
                         清空
@@ -1006,6 +1073,7 @@ export const Dashboard: React.FC = () => {
                             } else {
                               setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
                             }
+                            setActivePresetId(null);
                           }}
                         />
                         <div className={cn(
@@ -1027,21 +1095,35 @@ export const Dashboard: React.FC = () => {
               )}
             </section>
 
-            <div className="print:hidden">
-              <MetricSelector 
-                selected={selectedMetric} 
-                onChange={setSelectedMetric} 
-              />
-            </div>
+            {chartType === 'bar' && (
+              <div className="print:hidden">
+                <MetricSelector 
+                  selected={selectedMetric} 
+                  onChange={setSelectedMetric} 
+                />
+              </div>
+            )}
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" id="printable-chart" ref={chartRef}>
-              <PerformanceChart 
-                data={chartData} 
-                title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)}`}
-                isIntegerMode={isIntegerMode}
-                setIsIntegerMode={setIsIntegerMode}
-                onBarClick={setClickedIndicator}
-              />
+              {chartType === 'bar' ? (
+                <PerformanceChart 
+                  data={chartData} 
+                  title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)}`}
+                  isIntegerMode={isIntegerMode}
+                  setIsIntegerMode={setIsIntegerMode}
+                  onBarClick={setClickedIndicator}
+                />
+              ) : (
+                <TrendChart
+                  data={trendChartData}
+                  indicators={selectedIndicators}
+                  title={`单月指标趋势`}
+                  isIntegerMode={isIntegerMode}
+                  setIsIntegerMode={setIsIntegerMode}
+                  onLineClick={setClickedIndicator}
+                  isRate={false}
+                />
+              )}
               <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden">
                 <button 
                   onClick={exportChartToPDF}
