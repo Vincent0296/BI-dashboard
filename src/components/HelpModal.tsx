@@ -32,7 +32,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               <h3 className="font-bold text-lg">1. 灵活运用筛选方案</h3>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed ml-7">
-              在左侧的过滤器中，你可以保存常用的筛选组合（产权口径、业态等）。点击<strong className="text-slate-800">“保存当前方案”</strong>，即可命名并存储。在“预设方案”下拉菜单中，你可以随时一键切换不同的分析场景，甚至更新或删除旧方案。
+              在左侧的过滤器中，你可以保存常用的筛选组合（产权口径、业态等）。点击<strong className="text-slate-800">“保存当前方案”</strong>，即可命名并存储。在“预设方案”下拉菜单中，随时一键切换场景，被选中的方案会<strong className="text-slate-800">高亮显示</strong>；如果你手动微调了切片器，高亮会自动取消，提示你已偏离该预设。
             </p>
           </section>
 
@@ -45,7 +45,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               仪表盘不仅提供大盘预览，更支持深度拆解：
             </p>
             <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
-              <li>在图表中<strong className="text-slate-800">点击任意一根数据柱</strong>（如“18租赁费”），即可在下方唤出详细的“维度拆解表”。</li>
+              <li>在<strong className="text-slate-800">柱状图或饼图</strong>中点击图表区块，或者在<strong className="text-slate-800">折线图</strong>上点击数据节点，即可在下方唤出详细的“维度拆解表”。</li>
               <li>在拆解表中，支持随时切换<strong className="text-slate-800">列维度</strong>（产权、管理、业态、项目），系统会自动计算升序排列。</li>
               <li>横向数据过长时，可使用快捷按钮一键跳到首尾。</li>
             </ul>
@@ -78,7 +78,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               <h3 className="font-bold text-lg">5. 指标库动态分析</h3>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed ml-7">
-              在“指标分析维度”面板，你可以选择<strong className="text-slate-800">本年累计、去年同期、同比、环比</strong>等8大分析角度，所有的图表和下钻明细均会实时同步刷新，完全无需重新加载数据！
+              除了支持<strong className="text-slate-800">柱状图、平滑折线趋势图、饼图</strong>三大可视化视图无缝切换外，系统还会根据图表类型智能适配<strong className="text-slate-800">指标选择器</strong>。例如切换至饼图时仅保留分布型指标；切换至折线图时，自动转换为单月走势，一切都在实时同步刷新！
             </p>
           </section>
 

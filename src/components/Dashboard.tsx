@@ -5,12 +5,13 @@ import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
 import { TrendChart } from './TrendChart';
+import { PieChartWidget } from './PieChartWidget';
 import { CommentsSection } from './CommentsSection';
 import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
 import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
 import { AuthState, User, FilterPreset } from '../types';
 import { supabase } from '../lib/supabase';
@@ -34,7 +35,7 @@ export const Dashboard: React.FC = () => {
   const [isIntegerMode, setIsIntegerMode] = useState(false);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
-  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+  const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>('bar');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   const getMetricLabel = (key: MetricKey) => {
@@ -780,6 +781,21 @@ export const Dashboard: React.FC = () => {
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">趋势图</span>
             </button>
+            <button
+              onClick={() => {
+                setChartType('pie');
+                if (!['YTD', 'LY', 'MTD', 'PreMonth'].includes(selectedMetric)) {
+                  setSelectedMetric('YTD');
+                }
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
+                chartType === 'pie' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <PieChartIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">饼图</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
@@ -1095,17 +1111,18 @@ export const Dashboard: React.FC = () => {
               )}
             </section>
 
-            {chartType === 'bar' && (
+            {(chartType === 'bar' || chartType === 'pie') && (
               <div className="print:hidden">
                 <MetricSelector 
                   selected={selectedMetric} 
                   onChange={setSelectedMetric} 
+                  allowedKeys={chartType === 'pie' ? ['YTD', 'LY', 'MTD', 'PreMonth'] : undefined}
                 />
               </div>
             )}
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" id="printable-chart" ref={chartRef}>
-              {chartType === 'bar' ? (
+              {chartType === 'bar' && (
                 <PerformanceChart 
                   data={chartData} 
                   title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)}`}
@@ -1113,7 +1130,8 @@ export const Dashboard: React.FC = () => {
                   setIsIntegerMode={setIsIntegerMode}
                   onBarClick={setClickedIndicator}
                 />
-              ) : (
+              )}
+              {chartType === 'line' && (
                 <TrendChart
                   data={trendChartData}
                   indicators={selectedIndicators}
@@ -1122,6 +1140,16 @@ export const Dashboard: React.FC = () => {
                   setIsIntegerMode={setIsIntegerMode}
                   onLineClick={setClickedIndicator}
                   isRate={false}
+                />
+              )}
+              {chartType === 'pie' && (
+                <PieChartWidget
+                  data={chartData}
+                  title={`指标分布 ${getMetricLabel(selectedMetric)}`}
+                  isIntegerMode={isIntegerMode}
+                  setIsIntegerMode={setIsIntegerMode}
+                  onPieClick={setClickedIndicator}
+                  isRate={selectedMetric.includes('Percent')}
                 />
               )}
               <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden">

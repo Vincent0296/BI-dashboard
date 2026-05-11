@@ -6,6 +6,7 @@ import { BarChart2 } from 'lucide-react';
 interface MetricSelectorProps {
   selected: MetricKey;
   onChange: (key: MetricKey) => void;
+  allowedKeys?: MetricKey[];
 }
 
 const METRICS: { key: MetricKey; label: string }[] = [
@@ -19,7 +20,7 @@ const METRICS: { key: MetricKey; label: string }[] = [
   { key: 'MoMPercent', label: '环比增减率' },
 ];
 
-export const MetricSelector: React.FC<MetricSelectorProps> = ({ selected, onChange }) => {
+export const MetricSelector: React.FC<MetricSelectorProps> = ({ selected, onChange, allowedKeys }) => {
   return (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
@@ -27,7 +28,7 @@ export const MetricSelector: React.FC<MetricSelectorProps> = ({ selected, onChan
         <h3 className="font-bold text-slate-800">指标选择器</h3>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-        {METRICS.map((m) => (
+        {METRICS.filter(m => !allowedKeys || allowedKeys.includes(m.key)).map((m) => (
           <button
             key={m.key}
             onClick={() => onChange(m.key)}
