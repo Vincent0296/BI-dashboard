@@ -38,17 +38,19 @@ export const TrendChart: React.FC<TrendChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-lg max-h-[300px] overflow-y-auto">
-          <p className="text-xs font-bold text-slate-500 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2 mb-1 text-sm">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
-              <span className="font-medium text-slate-600">{entry.name}:</span>
-              <span className="font-bold text-slate-800">
-                {formatNumber(entry.value, isRate, isIntegerMode)}
-              </span>
-            </div>
-          ))}
+        <div className="bg-white p-4 border border-slate-100 shadow-xl rounded-lg max-w-[600px]">
+          <p className="text-xs font-bold text-slate-500 mb-3 border-b border-slate-100 pb-2">{label}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
+                <span className="font-medium text-slate-600 truncate" style={{ maxWidth: '140px' }} title={entry.name}>{entry.name}:</span>
+                <span className="font-bold text-slate-800 ml-auto whitespace-nowrap">
+                  {formatNumber(entry.value, isRate, isIntegerMode)}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }
@@ -100,7 +102,10 @@ export const TrendChart: React.FC<TrendChartProps> = ({
               tick={{ fill: '#000000', fontSize: 10, fontWeight: 700 }}
               tickFormatter={(val) => formatNumber(val, isRate, isIntegerMode)}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={<CustomTooltip />} 
+              wrapperStyle={{ pointerEvents: 'auto', zIndex: 100 }} 
+            />
             <Legend wrapperStyle={{ paddingTop: '20px' }} />
             {indicators.map((indicator, index) => (
               <Line
