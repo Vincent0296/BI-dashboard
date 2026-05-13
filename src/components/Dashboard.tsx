@@ -36,7 +36,7 @@ export const Dashboard: React.FC = () => {
   const [isIntegerMode, setIsIntegerMode] = useState(false);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
-  const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>('bar');
+  const [chartType, setChartType] = useState<'bar' | 'line' | 'pie' | 'table'>('bar');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isMultiDimTableVisible, setIsMultiDimTableVisible] = useState(true);
 
@@ -798,6 +798,16 @@ export const Dashboard: React.FC = () => {
               <PieChartIcon className="w-4 h-4" />
               <span className="hidden sm:inline">饼图</span>
             </button>
+            <button
+              onClick={() => setChartType('table')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
+                chartType === 'table' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <TableIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">数据表</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
@@ -1154,7 +1164,15 @@ export const Dashboard: React.FC = () => {
                   isRate={selectedMetric.includes('Percent')}
                 />
               )}
-              <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden">
+              {chartType === 'table' && (
+                <MultiDimTable 
+                  data={filteredData}
+                  categories={categories}
+                  selectedMonth={selectedMonth}
+                  isIntegerMode={isIntegerMode}
+                />
+              )}
+              <div className={cn("flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden", chartType === 'table' && "hidden")}>
                 <button 
                   onClick={exportChartToPDF}
                   className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-100"
@@ -1173,30 +1191,6 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {renderDimensionTable()}
-
-            {sourceData.length > 0 && (
-              <section className="mt-8">
-                <div 
-                  className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-sm mb-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => setIsMultiDimTableVisible(!isMultiDimTableVisible)}
-                >
-                  <div className="flex items-center gap-2">
-                    <TableIcon className="w-5 h-5 text-indigo-600" />
-                    <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">多维交叉看板 (计算组 x 指标)</h3>
-                  </div>
-                  {isMultiDimTableVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                </div>
-                
-                {isMultiDimTableVisible && (
-                  <MultiDimTable 
-                    data={filteredData}
-                    categories={categories}
-                    selectedMonth={selectedMonth}
-                    isIntegerMode={isIntegerMode}
-                  />
-                )}
-              </section>
-            )}
 
             {filteredData.length === 0 && (
               <div className="bg-amber-50 border border-amber-200 p-8 rounded-2xl text-center">
