@@ -190,13 +190,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     // Populate ValidationData
     const projectsList = availableProjects.length > 0 ? availableProjects : uniqueProjects;
     projectsList.forEach((p, idx) => {
-      valSheet.getCell(`A${idx + 1}`).value = p;
+      valSheet.getCell(`A${idx + 1}`).value = p as any;
     });
     
     const availablePeriods = Array.from(new Set(filteredData.map(d => d.month))).sort();
     const periodsList = availablePeriods.length > 0 ? availablePeriods : (uniquePeriods.length > 0 ? uniquePeriods : [selectedMonth]);
     periodsList.forEach((p, idx) => {
-      valSheet.getCell(`B${idx + 1}`).value = p;
+      valSheet.getCell(`B${idx + 1}`).value = p as any;
     });
 
     // Configure Main Sheet

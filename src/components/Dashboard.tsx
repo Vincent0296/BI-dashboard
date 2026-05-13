@@ -11,7 +11,8 @@ import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
 import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon } from 'lucide-react';
+import { MultiDimTable } from './MultiDimTable';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
 import { AuthState, User, FilterPreset } from '../types';
 import { supabase } from '../lib/supabase';
@@ -37,6 +38,7 @@ export const Dashboard: React.FC = () => {
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>('bar');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [isMultiDimTableVisible, setIsMultiDimTableVisible] = useState(true);
 
   const getMetricLabel = (key: MetricKey) => {
     switch(key) {
@@ -401,11 +403,11 @@ export const Dashboard: React.FC = () => {
     if (chartType !== 'line') return [];
     
     // All available months from sourceData, sorted ascending and >= 2025-01
-    const allMonths = [...new Set(sourceData.map(d => d.month))]
+    const allMonths = (Array.from(new Set(sourceData.map(d => d.month))) as string[])
       .filter(m => m >= '2025-01')
       .sort();
     
-    return allMonths.map(monthStr => {
+    return allMonths.map((monthStr: string) => {
       const [year, month] = monthStr.split('-').map(Number);
       const prevYear = year - 1;
       const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
@@ -423,7 +425,7 @@ export const Dashboard: React.FC = () => {
         return sum(mtdData, cat);
       };
 
-      const point: any = { month: monthStr.replace('-', '') };
+      const point: any = { month: (monthStr as string).replace('-', '') };
       selectedIndicators.forEach(cat => {
         point[cat] = calculateValue(cat) ?? 0;
       });
@@ -1171,6 +1173,30 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {renderDimensionTable()}
+
+            {sourceData.length > 0 && (
+              <section className="mt-8">
+                <div 
+                  className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-sm mb-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => setIsMultiDimTableVisible(!isMultiDimTableVisible)}
+                >
+                  <div className="flex items-center gap-2">
+                    <TableIcon className="w-5 h-5 text-indigo-600" />
+                    <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">多维交叉看板 (计算组 x 指标)</h3>
+                  </div>
+                  {isMultiDimTableVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                </div>
+                
+                {isMultiDimTableVisible && (
+                  <MultiDimTable 
+                    data={filteredData}
+                    categories={categories}
+                    selectedMonth={selectedMonth}
+                    isIntegerMode={isIntegerMode}
+                  />
+                )}
+              </section>
+            )}
 
             {filteredData.length === 0 && (
               <div className="bg-amber-50 border border-amber-200 p-8 rounded-2xl text-center">
