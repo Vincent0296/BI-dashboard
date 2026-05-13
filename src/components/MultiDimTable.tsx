@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { ChevronLeft, ChevronRight, Download, Filter, Table as TableIcon } from 'lucide-react';
 import { DataRecord, MetricKey } from '../types';
@@ -41,6 +41,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   const itemsPerPage = 5; // Number of indicators per page
 
   const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage >= totalPages && totalPages > 0) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [categories.length, totalPages, currentPage]);
+
   const currentIndicators = categories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
   const dimValues = useMemo(() => {

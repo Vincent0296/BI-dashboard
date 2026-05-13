@@ -1167,7 +1167,7 @@ export const Dashboard: React.FC = () => {
               {chartType === 'table' && (
                 <MultiDimTable 
                   data={filteredData}
-                  categories={categories}
+                  categories={categories.filter(cat => selectedIndicators.includes(cat))}
                   selectedMonth={selectedMonth}
                   isIntegerMode={isIntegerMode}
                 />
