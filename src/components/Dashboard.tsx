@@ -1,6 +1,18 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { FilterState, MetricKey, PerformanceItem, DataRecord } from '../types';
+import {
+  FilterState,
+  MetricKey,
+  PerformanceItem,
+  DataRecord,
+  EnrichedRecord,
+  AuthState,
+  User,
+  FilterPreset,
+  ProjectInfo,
+  MetricMetadata,
+  TimeGroupMetadata
+} from '../types';
 import { Slicer } from './Slicer';
 import { MetricSelector } from './MetricSelector';
 import { PerformanceChart } from './PerformanceChart';
@@ -13,18 +25,23 @@ import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
 import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
-import { cn, formatNumber } from '../lib/utils';
-import { AuthState, User, FilterPreset } from '../types';
+import { cn, formatNumber, isMoneyMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
 
 export const Dashboard: React.FC = () => {
   // --- States ---
-  const [sourceData, setSourceData] = useState<DataRecord[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [sourceData, setSourceData] = useState<EnrichedRecord[]>([]);
+  const [projectInfoMap, setProjectInfoMap] = useState<Record<string, ProjectInfo>>({});
+  const [metricMetadata, setMetricMetadata] = useState<MetricMetadata[]>(DEFAULT_METRICS_METADATA);
+  const [timeGroupMetadata, setTimeGroupMetadata] = useState<TimeGroupMetadata[]>(DEFAULT_TIME_GROUPS);
+  const [categoriesOrder, setCategoriesOrder] = useState<string[]>(DEFAULT_CATEGORIES_ORDER);
+
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES_ORDER);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('YTD');
+  const [selectedMetric, setSelectedMetric] = useState<string>('本年累计');
   const [isImporting, setIsImporting] = useState(false);
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>(DEFAULT_CATEGORIES_ORDER);
   const [isSlicerVisible, setIsSlicerVisible] = useState(true);
   const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
   const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, user: null });
@@ -32,7 +49,7 @@ export const Dashboard: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  
+
   const [isIntegerMode, setIsIntegerMode] = useState(false);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
@@ -40,17 +57,9 @@ export const Dashboard: React.FC = () => {
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isMultiDimTableVisible, setIsMultiDimTableVisible] = useState(true);
 
-  const getMetricLabel = (key: MetricKey) => {
-    switch(key) {
-      case 'YTD': return '本年累计';
-      case 'LY': return '去年同期';
-      case 'YoYDiff': return '同比增减额';
-      case 'YoYPercent': return '同比增减率';
-      case 'MTD': return '当月发生额';
-      case 'PreMonth': return '上月发生额';
-      case 'MoMDiff': return '环比增减额';
-      case 'MoMPercent': return '环比增减率';
-    }
+  const getMetricLabel = (key: string) => {
+    const group = timeGroupMetadata.find(g => g.name === key);
+    return group ? group.name : key;
   };
   const [presets, setPresets] = useState<FilterPreset[]>([]);
   const [isSavingPreset, setIsSavingPreset] = useState(false);
@@ -91,7 +100,10 @@ export const Dashboard: React.FC = () => {
       ownerships: [...new Set(sourceData.map(d => d.ownership))],
       managements: [...new Set(sourceData.map(d => d.management))],
       propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
+      secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
       projectNames: [...new Set(sourceData.map(d => d.projectName))],
+      isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
+      isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))],
       months
     };
   }, [sourceData]);
@@ -101,7 +113,10 @@ export const Dashboard: React.FC = () => {
     ownerships: [],
     managements: [],
     propertyTypes: [],
-    projectNames: []
+    secondaryPropertyTypes: [],
+    projectNames: [],
+    isKeyProjects: [],
+    isExistingProjects: []
   });
 
   // Handle File Upload
@@ -120,7 +135,7 @@ export const Dashboard: React.FC = () => {
         .select('*')
         .eq('userId', userId)
         .order('timestamp', { ascending: false });
-        
+
       if (!error && data) {
         // Filter out table presets from the main dashboard presets
         setPresets(data.filter((p: any) => !p.filters?.isTablePreset));
@@ -151,7 +166,7 @@ export const Dashboard: React.FC = () => {
         selectedIndicators: selectedIndicators,
         timestamp: new Date().toISOString()
       };
-      
+
       const { error } = await supabase.from('presets').insert([newPreset]);
 
       if (!error) {
@@ -230,200 +245,406 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        // Using raw: true to get the serial numbers for dates which is most reliable
-        const rawData = XLSX.utils.sheet_to_json(ws, { raw: true }) as any[];
 
-        const processed: DataRecord[] = rawData.map(row => {
-          let monthStr = '';
-          const rawDate = row['日期'];
-          
-          if (typeof rawDate === 'number') {
-            // Excel Serial Date
-            const dateObj = XLSX.SSF.parse_date_code(rawDate);
-            monthStr = `${dateObj.y}-${dateObj.m.toString().padStart(2, '0')}`;
-          } else if (rawDate) {
-            const dateStr = String(rawDate);
-            const match = dateStr.match(/(\d+)年(\d+)月/);
-            const matchHyphen = dateStr.match(/(\d{4})[-/](\d{1,2})/);
-            if (match) {
-              monthStr = `${match[1]}-${match[2].padStart(2, '0')}`;
-            } else if (matchHyphen) {
-              monthStr = `${matchHyphen[1]}-${matchHyphen[2].padStart(2, '0')}`;
-            }
+    let tempProjectInfo: Record<string, ProjectInfo> = { ...projectInfoMap };
+    let allFactRecords: DataRecord[] = [];
+    let staticProjectMetrics: Record<string, Record<string, number>> = {};
+    let currentOrder = [...categoriesOrder];
+    try {
+      console.log('Starting file upload...', files.length, 'files');
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        workbook.SheetNames.forEach(sheetName => {
+          const ws = workbook.Sheets[sheetName];
+          const cleanSheetName = sheetName.trim().toLowerCase();
+          const EXCLUDED_KEYS = ['项目编号', '日期', '项目名称', '项目代码', '项目ID', 'ProjectNo', '月份', '时间', 'Period', 'Name'];
+
+          // Branch 1: Project Bridge/Info Sheet
+          if (cleanSheetName.includes('项目基本信息') || cleanSheetName.includes('项目桥表') || cleanSheetName.includes('bridge')) {
+            const json = XLSX.utils.sheet_to_json(ws, { raw: true }) as any[];
+            json.forEach(row => {
+              const pNo = String(row['项目编号'] || row['项目代码'] || row['项目ID'] || row['ProjectNo'] || '');
+              if (pNo) {
+                tempProjectInfo[pNo] = {
+                  projectNo: pNo,
+                  projectName: String(row['项目名称'] || row['Name'] || ''),
+                  ownership: String(row['产权口径'] || row['Ownership'] || ''),
+                  management: String(row['管理口径'] || row['Management'] || ''),
+                  propertyType: String(row['业态'] || row['Type'] || ''),
+                  secondaryPropertyType: String(row['二级业态'] || ''),
+                  isKeyProject: String(row['重点项目'] || row['Key'] || '否'),
+                  isExistingProject: String(row['现有项目'] || '否')
+                };
+              }
+            });
           }
 
-          const metrics: Record<string, number> = {};
-          Object.keys(row).forEach(k => {
-            if (!['产权口径', '管理口径', '业态', '项目名称', '日期', '项目编号'].includes(k)) {
-              const val = row[k];
-              metrics[k] = typeof val === 'number' ? val : (parseFloat(String(val).replace(/,/g, '')) || 0);
+          // Branch 2: Operating Data Sheet — defines core 38-column slicer order
+          else if (cleanSheetName.includes('经营数据')) {
+            const dataRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+
+            // Find the actual header row
+            let headerIdx = 0;
+            for (let r = 0; r < Math.min(10, dataRows.length); r++) {
+              if (dataRows[r]?.includes('项目编号') || dataRows[r]?.includes('日期')) {
+                headerIdx = r;
+                break;
+              }
             }
-          });
 
-          return {
-            month: monthStr,
-            ownership: String(row['产权口径'] || '未分类'),
-            management: String(row['管理口径'] || '未分类'),
-            propertyType: String(row['业态'] || '未分类'),
-            projectName: String(row['项目名称'] || '未分类'),
-            metrics
-          };
-        }).filter(d => d.month.length >= 7);
+            const headersRow = dataRows[headerIdx] || [];
+            const dateColIdx = headersRow.indexOf('日期');
+            const projectNoColIdx = headersRow.indexOf('项目编号');
 
-        setSourceData(processed);
-        
-        // Extract Column Headers for Metrics (G1 to AR1) - KEEP ORDER
-        if (rawData.length > 0) {
-          const keys = Object.keys(rawData[0]);
-          const dimensionKeys = ['产权口径', '管理口径', '业态', '项目名称', '日期', '项目编号'];
-          const metricKeys = keys.filter(k => !dimensionKeys.includes(k));
-          setCategories(metricKeys);
-          setSelectedIndicators(metricKeys); // Default to all
+            // Extract strictly the core metric columns (C1:AN1 area): no __EMPTY, no dimension keys
+            const coreMetricHeaders: string[] = headersRow
+              .map(h => String(h || '').trim().replace(/R$/, '').replace(/^目标[-－\s]*/, '目标'))
+              .filter(h => h && !h.startsWith('__EMPTY') && !EXCLUDED_KEYS.includes(h));
+
+            // Set as definitive slicer order
+            currentOrder = [
+              ...coreMetricHeaders,
+              ...currentOrder.filter(h => !coreMetricHeaders.includes(h))
+            ];
+            setCategoriesOrder(currentOrder);
+
+            // Parse data rows
+            const factRecords: DataRecord[] = dataRows.slice(headerIdx + 1).map(row => {
+              const projectNo = String(row[projectNoColIdx] || '');
+              const rawDate = row[dateColIdx];
+              let monthStr = '';
+              if (typeof rawDate === 'number') {
+                const dateObj = XLSX.SSF.parse_date_code(rawDate);
+                monthStr = `${dateObj.y}-${dateObj.m.toString().padStart(2, '0')}`;
+              } else if (rawDate) {
+                const s = String(rawDate).trim();
+                const match = s.match(/(\d{4})[-/.]( \d{1,2})/);
+                const match2 = s.match(/(\d{4})[-\/.]( \d{1,2})/);
+                const m2 = s.match(/(\d{4})[-\/.](\d{1,2})/);
+                if (m2) monthStr = `${m2[1]}-${m2[2].padStart(2, '0')}`;
+                else if (s.includes('年') && s.includes('月')) {
+                  const y = s.match(/(\d{4})年/)?.[1];
+                  const m = s.match(/(\d{1,2})月/)?.[1];
+                  if (y && m) monthStr = `${y}-${m.padStart(2, '0')}`;
+                }
+              }
+              const metrics: Record<string, number> = {};
+              headersRow.forEach((h, idx) => {
+                const key = String(h || '').trim().replace(/R$/, '');
+                if (key && !key.startsWith('__EMPTY') && idx !== dateColIdx && idx !== projectNoColIdx) {
+                  const val = parseFloat(String(row[idx] ?? '0').replace(/,/g, ''));
+                  metrics[key] = isNaN(val) ? 0 : val;
+                }
+              });
+              return { month: monthStr, projectNo, metrics };
+            }).filter(r => r.month.length >= 7 && r.projectNo);
+
+            allFactRecords = [...allFactRecords, ...factRecords];
+          }
+
+          // Branch 3: Other Data Sheets (no month → static project-level metrics)
+          else {
+            const isFactSheet =
+              cleanSheetName.includes('数据') ||
+              cleanSheetName.includes('指标') ||
+              cleanSheetName.includes('达标') ||
+              cleanSheetName.includes('预算') ||
+              cleanSheetName.includes('fact');
+
+            if (isFactSheet) {
+              const json = XLSX.utils.sheet_to_json(ws, { raw: true }) as any[];
+              json.forEach(row => {
+                const pNo = String(row['项目编号'] || row['项目代码'] || row['项目ID'] || row['ProjectNo'] || '');
+                if (!pNo) return;
+                const metrics: Record<string, number> = {};
+                const isWanYuanSheet = cleanSheetName.includes('万元');
+                Object.keys(row).forEach(k => {
+                  const val = row[k];
+                  if (!k.startsWith('__EMPTY') && !EXCLUDED_KEYS.includes(k)) {
+                    let num = typeof val === 'number' ? val : (parseFloat(String(val).replace(/,/g, '')) || 0);
+                    if (isWanYuanSheet) num *= 10000; // 统一转换为元
+                    const cleanK = k.trim().replace(/^目标[-－\s]*/, '目标').replace(/R$/, '');
+                    metrics[cleanK] = num;
+                  }
+                });
+                if (!staticProjectMetrics[pNo]) staticProjectMetrics[pNo] = {};
+                staticProjectMetrics[pNo] = { ...staticProjectMetrics[pNo], ...metrics };
+              });
+            }
+          }
+        });
+      }
+
+
+      if (allFactRecords.length === 0) {
+        alert('未在文件中找到包含“月份/日期”的经营数据。');
+        return;
+      }
+
+      // Merge records with same month and projectNo
+      const mergedMap: Record<string, DataRecord> = {};
+      allFactRecords.forEach(r => {
+        const key = `${r.month}_${r.projectNo}`;
+        if (!mergedMap[key]) {
+          mergedMap[key] = { ...r };
+        } else {
+          mergedMap[key].metrics = { ...mergedMap[key].metrics, ...r.metrics };
+        }
+      });
+
+      // Enrich and Broadcast static metrics
+      const enriched: EnrichedRecord[] = Object.values(mergedMap).map(r => {
+        const info = tempProjectInfo[r.projectNo] || {
+          projectName: r.projectNo || '未知项目',
+          ownership: '未分类',
+          management: '未分类',
+          propertyType: '未分类',
+          secondaryPropertyType: '未分类',
+          isKeyProject: '否',
+          isExistingProject: '否'
+        };
+
+        // Combine monthly metrics with static metrics from other sheets
+        const staticMetrics = staticProjectMetrics[r.projectNo] || {};
+        const metrics = { ...staticMetrics, ...r.metrics };
+
+        // Derived Logic
+        const getM = (k: string) => metrics[k] || 0;
+        const profitTotal = getM('36利润总额');
+        const nonOp = getM('32营业外收支净额');
+        const otherInc = getM('34其他收益');
+        const invInc = getM('33投资收益');
+        const assetDisp = getM('30资产处置损益');
+
+        if (info.propertyType === '酒店业务') {
+          metrics['对标利润'] = profitTotal + getM('18租赁费') + getM('23折旧折耗及摊销') + getM('22财产性税费') + getM('26信用减值损失') + nonOp + otherInc + invInc + assetDisp;
+        } else {
+          metrics['对标利润'] = profitTotal + nonOp + otherInc + invInc + assetDisp + getM('31资产减值损失');
         }
 
-        const ms = [...new Set(processed.map(d => d.month))].sort().reverse();
-        const owns = [...new Set(processed.map(d => d.ownership))];
-        const mans = [...new Set(processed.map(d => d.management))];
-        const pts = [...new Set(processed.map(d => d.propertyType))];
-        const pns = [...new Set(processed.map(d => d.projectName))];
+        return { ...r, ...info, metrics };
+      });
 
-        setFilters({
-          months: [],
-          ownerships: owns,
-          managements: mans,
-          propertyTypes: pts,
-          projectNames: pns
-        });
-        setSelectedMonth(ms[0] || '');
-
-      } catch (err) {
-        console.error('Import Error:', err);
-        alert('文件导入失败，请检查文件格式。');
-      } finally {
-        setIsImporting(false);
+      if (enriched.length === 0) {
+        alert('解析后的有效记录数为0，请检查项目编号匹配情况。');
+        return;
       }
-    };
-    reader.readAsBinaryString(file);
+
+      setProjectInfoMap(tempProjectInfo);
+      setSourceData(enriched);
+
+      // Merge all built-in metadata with any new metrics found in the Excel
+      const allMetricKeys = new Set<string>();
+      enriched.forEach(r => Object.keys(r.metrics).forEach(k => allMetricKeys.add(k)));
+      DEFAULT_METRICS_METADATA.forEach(m => allMetricKeys.add(m.name));
+
+      const mergedMetadata = [...DEFAULT_METRICS_METADATA];
+      allMetricKeys.forEach(name => {
+        if (!mergedMetadata.some(m => m.name === name)) {
+          mergedMetadata.push({ name, formula: '', source: 'operating', unit: '元' });
+        }
+      });
+
+      const sortedCategories = Array.from(allMetricKeys).sort((a, b) => {
+        const idxA = currentOrder.indexOf(a);
+        const idxB = currentOrder.indexOf(b);
+        if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+
+      setMetricMetadata(mergedMetadata);
+      setCategories(sortedCategories);
+      setSelectedIndicators(sortedCategories);
+
+      const ms = [...new Set(enriched.map(d => d.month))].sort().reverse();
+      setSelectedMonth(ms[0] || '');
+
+      setFilters({
+        months: [],
+        ownerships: [...new Set(enriched.map(d => d.ownership))],
+        managements: [...new Set(enriched.map(d => d.management))],
+        propertyTypes: [...new Set(enriched.map(d => d.propertyType))],
+        secondaryPropertyTypes: [...new Set(enriched.map(d => d.secondaryPropertyType))],
+        projectNames: [...new Set(enriched.map(d => d.projectName))],
+        isKeyProjects: [...new Set(enriched.map(d => d.isKeyProject))],
+        isExistingProjects: [...new Set(enriched.map(d => d.isExistingProject))]
+      });
+
+      alert(`导入成功！共加载 ${enriched.length} 条项目月度数据。`);
+
+    } catch (err) {
+      console.error('Import Error:', err);
+      alert('文件解析过程出错，请检查控制台详情。');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
+  function getSumWithFuzzyInternal(items: EnrichedRecord[], name: string, timeGroupName: string, year: number, month: number, prevYear: number, pm: {y:number, m:number}): number {
+    const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+      const [dy, dm] = d.month.split('-').map(Number);
+      return dy === y && dm <= m;
+    };
+    const isMTD = (d: EnrichedRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
+
+    const getSumWithFuzzy = (dataList: EnrichedRecord[], targetName: string) => {
+      const isStatic = BUDGET_METRICS.includes(targetName) || THREE_YEAR_BENEFIT_METRICS.includes(targetName) || BUSINESS_METRICS.includes(targetName);
+      const calculateSum = (name: string) => {
+        if (isStatic) {
+          const projectMap: Record<string, number> = {};
+          dataList.forEach(d => {
+            if (!(d.projectNo in projectMap)) projectMap[d.projectNo] = d.metrics[name] || 0;
+          });
+          return Object.values(projectMap).reduce((a, b) => a + b, 0);
+        }
+        return dataList.reduce((acc, curr) => acc + (curr.metrics[name] || 0), 0);
+      };
+
+      let total = calculateSum(targetName);
+      if (total !== 0) return total;
+      const cleanName = targetName.replace(/^\d+/, '');
+      if (cleanName !== targetName) total = calculateSum(cleanName);
+      return total;
+    };
+
+    if (timeGroupName === '本年累计') return getSumWithFuzzy(items.filter(d => isYTD(d, year, month)), name);
+    if (timeGroupName === '去年同期') return getSumWithFuzzy(items.filter(d => isYTD(d, prevYear, month)), name);
+    if (timeGroupName === '当月发生额') return getSumWithFuzzy(items.filter(d => isMTD(d, year, month)), name);
+    if (timeGroupName === '上月发生额') return getSumWithFuzzy(items.filter(d => isMTD(d, pm.y, pm.m)), name);
+    return getSumWithFuzzy(items.filter(d => isMTD(d, year, month)), name);
+  }
+
+  function getMetricValue(data: EnrichedRecord[], metricName: string, timeGroupName: string, year: number, month: number): number {
+    const prevYear = year - 1;
+    const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
+
+    if (timeGroupName === '同比增减额') {
+      return getMetricValue(data, metricName, '本年累计', year, month) - getMetricValue(data, metricName, '去年同期', year, month);
+    }
+    if (timeGroupName === '环比增减额') {
+      return getMetricValue(data, metricName, '当月发生额', year, month) - getMetricValue(data, metricName, '上月发生额', year, month);
+    }
+    if (timeGroupName === '同比增减率') {
+      const current = getMetricValue(data, metricName, '本年累计', year, month);
+      const previous = getMetricValue(data, metricName, '去年同期', year, month);
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+    }
+    if (timeGroupName === '环比增减率') {
+      const current = getMetricValue(data, metricName, '当月发生额', year, month);
+      const previous = getMetricValue(data, metricName, '上月发生额', year, month);
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+    }
+
+    const meta = metricMetadata.find(m => m.name === metricName);
+    if (!meta) {
+      return getSumWithFuzzyInternal(data, metricName, timeGroupName, year, month, prevYear, pm);
+    }
+
+    const formula = meta.formula || '';
+    if (formula.startsWith('=') || formula.startsWith('‘=')) {
+      const cleanFormula = formula.replace(/^‘?=/, '').trim();
+      if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
+        return getMetricValue(data, cleanFormula, timeGroupName, year, month);
+      }
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('*100')) {
+        const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
+        const num = getMetricValue(data, numName, timeGroupName, year, month);
+        const den = getMetricValue(data, denName, timeGroupName, year, month);
+        return den !== 0 ? num / den : 0;
+      }
+      if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
+        const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
+        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
+        const val = den !== 0 ? (s1 + s2) / den : 0;
+        return cleanFormula.includes('*100') ? val * 100 : val;
+      }
+      if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
+        const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
+        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
+        const val = den !== 0 ? (s1 + s2) / den : 0;
+        return cleanFormula.includes('*100') ? val * 100 : val;
+      }
+      if (cleanFormula.includes('*100')) {
+        const base = cleanFormula.replace('*100', '').trim();
+        if (base.includes('/')) {
+          const [numName, denName] = base.split('/').map(s => s.trim());
+          const num = getMetricValue(data, numName, timeGroupName, year, month);
+          const den = getMetricValue(data, denName, timeGroupName, year, month);
+          const val = den !== 0 ? num / den : 0;
+          return val * 100;
+        }
+      }
+    }
+    return getSumWithFuzzyInternal(data, metricName, timeGroupName, year, month, prevYear, pm);
+  }
+
   const filteredData = useMemo(() => {
-    return sourceData.filter(d => 
-      filters.ownerships.includes(d.ownership) &&
-      filters.managements.includes(d.management) &&
-      filters.propertyTypes.includes(d.propertyType) &&
-      filters.projectNames.includes(d.projectName)
+    return sourceData.filter(d =>
+      (filters.ownerships || []).includes(d.ownership) &&
+      (filters.managements || []).includes(d.management) &&
+      (filters.propertyTypes || []).includes(d.propertyType) &&
+      (filters.secondaryPropertyTypes || []).includes(d.secondaryPropertyType) &&
+      (filters.projectNames || []).includes(d.projectName) &&
+      (filters.isKeyProjects || []).includes(d.isKeyProject) &&
+      (filters.isExistingProjects || []).includes(d.isExistingProject)
     );
   }, [filters, sourceData]);
 
   const chartData = useMemo((): PerformanceItem[] => {
     if (!selectedMonth || !selectedMonth.includes('-')) return [];
     const [year, month] = selectedMonth.split('-').map(Number);
-    
-    const prevYear = year - 1;
-    const isYTD = (d: DataRecord, y: number, m: number) => {
-      const [dy, dm] = d.month.split('-').map(Number);
-      return dy === y && dm <= m;
-    };
-    const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
-    const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 
-    const calculateValue = (cat: string, metric: MetricKey): number | null => {
-      const sum = (data: DataRecord[]) => data.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
-      
-      const ytdData = filteredData.filter(d => isYTD(d, year, month));
-      const lyData = filteredData.filter(d => isYTD(d, prevYear, month));
-      const mtdData = filteredData.filter(d => isMTD(d, year, month));
-      const preMonthData = filteredData.filter(d => isMTD(d, pm.y, pm.m));
-
-      const ytd = sum(ytdData);
-      const ly = sum(lyData);
-      const mtd = sum(mtdData);
-      const preMonth = sum(preMonthData);
-
-      // If switching to YoY and there's no data for LAST year, we should return null or 0 to indicate invalid
-      const hasLY = lyData.length > 0;
-      const hasPM = preMonthData.length > 0;
-
-      switch (metric) {
-        case 'YTD': return ytd;
-        case 'LY': return hasLY ? ly : 0;
-        case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
-        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : 0;
-        case 'MTD': return mtd;
-        case 'PreMonth': return hasPM ? preMonth : 0;
-        case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
-        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : 0;
-        default: return 0;
+    const calcForCategory = (cat: string, timeGroupName: string): number | null => {
+      // 限制逻辑：只有38个核心指标和6个经营指标适用计算组筛选
+      if (timeGroupName !== '本年累计' && !TIME_SERIES_ALLOWED_METRICS.includes(cat)) {
+        return 0;
       }
+      return getMetricValue(filteredData, cat, timeGroupName, year, month);
     };
 
-    const isRate = selectedMetric.includes('Percent');
-    const isYoY = selectedMetric.startsWith('YoY') || selectedMetric === 'LY';
-    
-    // Check if the current year has any data at all for the selected month
-    const hasCurrentData = filteredData.some(d => isYTD(d, year, month));
-    if (!hasCurrentData) return [];
+    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
 
     return categories
       .filter(cat => selectedIndicators.includes(cat))
       .map(cat => {
-        const val = calculateValue(cat, selectedMetric);
+        const val = calcForCategory(cat, selectedMetric);
         return {
           id: cat,
           category: cat,
           value: val ?? 0,
-          displayValue: '', 
-          isPercent: isRate
+          displayValue: '',
+          isPercent: isRate,
+          isWanYuan: !isRate && isMoneyMetric(cat)
         };
-      })
-      .filter(item => {
-        // If it's a YoY metric and there's no data for the previous year, 
-        // and the value is 0, we can choose to hide it or keep it. 
-        // User says it "should not exist".
-        if (isYoY) {
-          const lyExists = filteredData.some(d => isYTD(d, prevYear, month));
-          if (!lyExists) return false;
-        }
-        return true;
       });
-  }, [selectedMonth, selectedMetric, filteredData, categories, selectedIndicators]);
+  }, [selectedMonth, selectedMetric, filteredData, categories, selectedIndicators, metricMetadata, timeGroupMetadata]);
 
   const trendChartData = useMemo(() => {
     if (chartType !== 'line') return [];
-    
+
     // All available months from sourceData, sorted ascending and >= 2025-01
     const allMonths = (Array.from(new Set(sourceData.map(d => d.month))) as string[])
       .filter(m => m >= '2025-01')
       .sort();
-    
+
     return allMonths.map((monthStr: string) => {
-      const [year, month] = monthStr.split('-').map(Number);
-      const prevYear = year - 1;
-      const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
+      const [y, m] = monthStr.split('-').map(Number);
 
-      const isYTD = (d: DataRecord, y: number, m: number) => {
-        const [dy, dm] = d.month.split('-').map(Number);
-        return dy === y && dm <= m;
-      };
-      const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
-
-      const sum = (data: DataRecord[], cat: string) => data.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
-      
       const calculateValue = (cat: string): number => {
-        const mtdData = filteredData.filter(d => isMTD(d, year, month));
-        return sum(mtdData, cat);
+        // 对于趋势图，我们一律按“当月发生额”逻辑计算
+        return getMetricValue(filteredData, cat, '当月发生额', y, m);
       };
 
       const point: any = { month: (monthStr as string).replace('-', '') };
@@ -432,48 +653,24 @@ export const Dashboard: React.FC = () => {
       });
       return point;
     });
-  }, [chartType, sourceData, filteredData, selectedIndicators]);
+  }, [chartType, sourceData, filteredData, selectedIndicators, getMetricValue]);
 
   const exportToExcel = () => {
     if (categories.length === 0 || !selectedMonth || !selectedMonth.includes('-')) return;
-    
     const [year, month] = selectedMonth.split('-').map(Number);
-    const prevYear = year - 1;
-    const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
-
-    const isYTD = (d: DataRecord, y: number, m: number) => {
-      const [dy, dm] = d.month.split('-').map(Number);
-      return dy === y && dm <= m;
-    };
-    const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
-
-    const ytdData = filteredData.filter(d => isYTD(d, year, month));
-    const lyData = filteredData.filter(d => isYTD(d, prevYear, month));
-    const mtdData = filteredData.filter(d => isMTD(d, year, month));
-    const preMonthData = filteredData.filter(d => isMTD(d, pm.y, pm.m));
-
-    const sum = (data: DataRecord[], cat: string) => data.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
 
     const calculateForExport = (cat: string, metric: MetricKey): number => {
-      const ytd = sum(ytdData, cat);
-      const ly = sum(lyData, cat);
-      const mtd = sum(mtdData, cat);
-      const preMonth = sum(preMonthData, cat);
-
-      const hasLY = lyData.length > 0;
-      const hasPM = preMonthData.length > 0;
-
-      switch (metric) {
-        case 'YTD': return ytd;
-        case 'LY': return hasLY ? ly : 0;
-        case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
-        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : 0;
-        case 'MTD': return mtd;
-        case 'PreMonth': return hasPM ? preMonth : 0;
-        case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
-        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : 0;
-        default: return 0;
-      }
+      const mapping: Record<string, string> = {
+        'YTD': '本年累计',
+        'LY': '去年同期',
+        'YoYDiff': '同比增减额',
+        'YoYPercent': '同比增减率',
+        'MTD': '当月发生额',
+        'PreMonth': '上月发生额',
+        'MoMDiff': '环比增减额',
+        'MoMPercent': '环比增减率'
+      };
+      return getMetricValue(filteredData, cat, mapping[metric], year, month);
     };
 
     // 1. 准备汇总数据 (包含所有指标)
@@ -485,9 +682,23 @@ export const Dashboard: React.FC = () => {
       .map(cat => {
         const row: Record<string, string | number> = { '指标名称': cat };
         metricKeys.forEach((key, index) => {
+          // 只对 38个核心指标和 6个经营指标适用计算组筛选
+          // 其他指标只适用“本年累计”
+          if (key !== 'YTD' && !TIME_SERIES_ALLOWED_METRICS.includes(cat)) {
+            row[metricNames[index]] = '-';
+            return;
+          }
+
           const value = calculateForExport(cat, key);
-          const isRate = key.includes('Percent');
-          row[metricNames[index]] = isRate ? (value * 100).toFixed(2) + '%' : value.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+          const isRate = key.includes('率') || key.includes('Percent');
+          const isMoney = isMoneyMetric(cat);
+          if (isRate) {
+            row[metricNames[index]] = value.toFixed(2) + '%';
+          } else if (isMoney) {
+            row[metricNames[index]] = (value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+          } else {
+            row[metricNames[index]] = value.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+          }
         });
         return row;
       });
@@ -502,11 +713,11 @@ export const Dashboard: React.FC = () => {
     ];
 
     const wb = XLSX.utils.book_new();
-    
+
     // 添加第一个工作表：指标数据
     const wsData = XLSX.utils.json_to_sheet(exportData);
     XLSX.utils.book_append_sheet(wb, wsData, "分析结果");
-    
+
     // 添加第二个工作表：筛选条件说明
     const wsFilters = XLSX.utils.json_to_sheet(filterSummary);
     XLSX.utils.book_append_sheet(wb, wsFilters, "筛选条件说明");
@@ -533,17 +744,20 @@ export const Dashboard: React.FC = () => {
     const activeIndicator = clickedIndicator;
     if (!selectedMonth || !selectedMonth.includes('-')) return null;
 
-    const dimKeyMap: Record<string, keyof DataRecord> = {
+    const dimKeyMap: Record<string, keyof EnrichedRecord> = {
       '产权口径': 'ownership',
       '管理口径': 'management',
-      '业务业态': 'propertyType',
-      '项目名称': 'projectName'
+      '业态': 'propertyType',
+      '二级业态': 'secondaryPropertyType',
+      '项目名称': 'projectName',
+      '重点项目': 'isKeyProject',
+      '现有项目': 'isExistingProject'
     };
-    const dimKey = dimKeyMap[tableDimension];
-    
+    const dimKey = dimKeyMap[tableDimension] || 'projectName';
+
     // Get unique values for chosen dimension present in filtered data
     const dimValues = Array.from(new Set(filteredData.map(d => String(d[dimKey]))));
-    
+
     const [year, month] = selectedMonth.split('-').map(Number);
     const prevYear = year - 1;
     const isYTD = (d: DataRecord, y: number, m: number) => {
@@ -586,8 +800,9 @@ export const Dashboard: React.FC = () => {
       return { dimValue: dv, val: calculateForSlice(slice) };
     }).sort((a, b) => a.val - b.val);
     const totalVal = calculateForSlice(filteredData);
-    
-    const isRate = selectedMetric.includes('Percent');
+
+    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
+    const isWanYuan = isMoneyMetric(activeIndicator);
 
     const exportTableToExcel = () => {
       checkAuth(() => {
@@ -595,7 +810,7 @@ export const Dashboard: React.FC = () => {
           [tableDimension]: r.dimValue,
           [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: isRate ? (r.val * 100).toFixed(2) + '%' : r.val
         }));
-        
+
         exportData.push({
           [tableDimension]: '合计',
           [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: isRate ? (totalVal * 100).toFixed(2) + '%' : totalVal
@@ -636,37 +851,36 @@ export const Dashboard: React.FC = () => {
               {activeIndicator} <span className="text-slate-400 text-sm font-bold">({getMetricLabel(selectedMetric)}) 维度拆解</span>
             </h3>
           </div>
-          
+
           <div className="flex flex-col xl:flex-row gap-3 xl:items-center">
             <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto">
               {['产权口径', '管理口径', '业务业态', '项目名称'].map(dim => (
                 <button
                   key={dim}
                   onClick={() => setTableDimension(dim as any)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    tableDimension === dim ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${tableDimension === dim ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
                 >
                   {dim}
                 </button>
               ))}
             </div>
-            
+
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => scrollTable('start')} 
+              <button
+                onClick={() => scrollTable('start')}
                 className="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 border border-slate-200 transition-colors active:scale-95"
               >
                 跳到开头
               </button>
-              <button 
-                onClick={() => scrollTable('end')} 
+              <button
+                onClick={() => scrollTable('end')}
                 className="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-100 border border-slate-200 transition-colors active:scale-95"
               >
                 跳到结尾
               </button>
-              <button 
-                onClick={exportTableToExcel} 
+              <button
+                onClick={exportTableToExcel}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 border border-emerald-200 transition-colors active:scale-95"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -698,11 +912,11 @@ export const Dashboard: React.FC = () => {
                 </td>
                 {rowData.map(r => (
                   <td key={r.dimValue} className="p-4 border-b border-slate-100 text-slate-600 font-medium text-sm whitespace-nowrap">
-                    {formatNumber(r.val, isRate, isIntegerMode)}
+                    {formatNumber(r.val, isRate, isIntegerMode, isWanYuan)}
                   </td>
                 ))}
                 <td className="p-4 border-b border-indigo-100 text-indigo-700 font-bold text-sm bg-indigo-50/30 whitespace-nowrap">
-                  {formatNumber(totalVal, isRate, isIntegerMode)}
+                  {formatNumber(totalVal, isRate, isIntegerMode, isWanYuan)}
                 </td>
               </tr>
             </tbody>
@@ -737,10 +951,10 @@ export const Dashboard: React.FC = () => {
             <span className="hidden sm:inline">使用指南</span>
           </button>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {sourceData.length > 0 && (
-            <button 
+            <button
               onClick={() => {
                 const ms = [...new Set(sourceData.map(d => d.month))].sort().reverse();
                 setFilters({
@@ -748,7 +962,10 @@ export const Dashboard: React.FC = () => {
                   ownerships: [...new Set(sourceData.map(d => d.ownership))],
                   managements: [...new Set(sourceData.map(d => d.management))],
                   propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
-                  projectNames: [...new Set(sourceData.map(d => d.projectName))]
+                  secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
+                  projectNames: [...new Set(sourceData.map(d => d.projectName))],
+                  isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
+                  isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))]
                 });
                 setSelectedIndicators(categories);
                 setSelectedMonth(ms[0] || '');
@@ -765,7 +982,12 @@ export const Dashboard: React.FC = () => {
 
           <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
             <button
-              onClick={() => setChartType('bar')}
+              onClick={() => {
+                setChartType('bar');
+                // 从数据表切回时，移除看板不支持的指标组
+                const allowed = [...MAIN_INDICATORS, ...OPERATING_METRICS];
+                setSelectedIndicators(prev => prev.filter(i => allowed.includes(i)));
+              }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
                 chartType === 'bar' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
@@ -775,7 +997,12 @@ export const Dashboard: React.FC = () => {
               <span className="hidden sm:inline">柱状图</span>
             </button>
             <button
-              onClick={() => setChartType('line')}
+              onClick={() => {
+                setChartType('line');
+                // 同样移除不支持的指标
+                const allowed = [...MAIN_INDICATORS, ...OPERATING_METRICS];
+                setSelectedIndicators(prev => prev.filter(i => allowed.includes(i)));
+              }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
                 chartType === 'line' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
@@ -790,6 +1017,8 @@ export const Dashboard: React.FC = () => {
                 if (!['YTD', 'LY', 'MTD', 'PreMonth'].includes(selectedMetric)) {
                   setSelectedMetric('YTD');
                 }
+                // 饼图最严格：只允许核心指标
+                setSelectedIndicators(prev => prev.filter(i => MAIN_INDICATORS.includes(i)));
               }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
@@ -813,7 +1042,7 @@ export const Dashboard: React.FC = () => {
 
           <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
             <Calendar className="w-4 h-4 text-slate-400" />
-            <select 
+            <select
               className="bg-transparent text-sm font-bold outline-none cursor-pointer"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
@@ -825,14 +1054,14 @@ export const Dashboard: React.FC = () => {
             </select>
           </div>
 
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            accept=".xlsx,.xls" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept=".xlsx,.xls"
+            className="hidden"
           />
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600 transition-all shadow-md active:scale-95 disabled:opacity-50"
             disabled={isImporting}
@@ -849,7 +1078,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex flex-col">
                 <span className="text-xs font-black text-slate-700 leading-tight">{authState.user?.nickname}</span>
                 {authState.user?.username === 'admin' && (
-                  <button 
+                  <button
                     onClick={() => setView('admin')}
                     className="text-[9px] font-black text-blue-600 flex items-center gap-0.5 hover:underline"
                   >
@@ -858,7 +1087,7 @@ export const Dashboard: React.FC = () => {
                   </button>
                 )}
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="ml-2 text-slate-400 hover:text-red-500 transition-colors"
                 title="退出登录"
@@ -867,7 +1096,7 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => setIsAuthModalOpen(true)}
               className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-black hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-100"
             >
@@ -886,9 +1115,9 @@ export const Dashboard: React.FC = () => {
             </div>
             <h2 className="text-3xl font-black text-slate-900 mb-4">开始您的数据分析</h2>
             <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium leading-relaxed">
-              请上传您的 “项目利润表” Excel 文件。系统将动态解析 38 个关键指标并为您生成实时可视化报表。数据仅在浏览器本地处理，确保您的数据安全性。
+              请上传您的 “导入表” Excel 文件。系统将动态解析数据并为您生成实时可视化报表。数据仅在浏览器本地处理，确保您的数据安全性。
             </p>
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-lg hover:bg-slate-900 transition-all shadow-2xl shadow-blue-200 active:scale-95"
             >
@@ -898,17 +1127,17 @@ export const Dashboard: React.FC = () => {
         ) : (
           <>
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-40 print:hidden">
-              <div 
+              <div
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsSlicerVisible(!isSlicerVisible)}
               >
                 <div className="flex items-center gap-2">
                   <Filter className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">维度切片器</h3>
+                  <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">项目维度</h3>
                 </div>
                 {isSlicerVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
               </div>
-              
+
               {isSlicerVisible && (
                 <div className="p-4 pt-0 border-t border-slate-50">
                   {/* 方案管理工具栏 */}
@@ -918,9 +1147,9 @@ export const Dashboard: React.FC = () => {
                         <Bookmark className="w-3.5 h-3.5" />
                         <span className="text-[11px] font-bold uppercase tracking-wider">预设方案</span>
                       </div>
-                      
+
                       {presets.map(preset => (
-                        <div 
+                        <div
                           key={preset.id}
                           onClick={() => applyPreset(preset)}
                           className={cn(
@@ -945,21 +1174,21 @@ export const Dashboard: React.FC = () => {
                             <>
                               <span className="text-[11px] font-bold text-slate-600 group-hover:text-blue-600">{preset.name}</span>
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                                <button 
+                                <button
                                   onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
                                   title="重命名"
                                   className="p-1 hover:bg-blue-100 rounded text-slate-400 hover:text-blue-600 transition-all"
                                 >
                                   <Edit2 className="w-3 h-3" />
                                 </button>
-                                <button 
+                                <button
                                   onClick={(e) => handleUpdatePreset(preset, e)}
                                   title="覆盖更新当前设置"
                                   className="p-1 hover:bg-emerald-100 rounded text-slate-400 hover:text-emerald-600 transition-all"
                                 >
                                   <RefreshCcw className="w-3 h-3" />
                                 </button>
-                                <button 
+                                <button
                                   onClick={(e) => handleDeletePreset(preset.id, e)}
                                   title="删除"
                                   className="p-1 hover:bg-red-100 rounded text-slate-400 hover:text-red-500 transition-all"
@@ -974,9 +1203,9 @@ export const Dashboard: React.FC = () => {
 
                       {isSavingPreset ? (
                         <div className="flex items-center gap-2 animate-in zoom-in-95 duration-200">
-                          <input 
+                          <input
                             autoFocus
-                            type="text" 
+                            type="text"
                             placeholder="方案名称..."
                             value={newPresetName}
                             onChange={(e) => setNewPresetName(e.target.value)}
@@ -991,7 +1220,7 @@ export const Dashboard: React.FC = () => {
                           </button>
                         </div>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => setIsSavingPreset(true)}
                           className="flex items-center gap-1.5 px-3 py-1 text-blue-600 font-bold hover:bg-blue-50 rounded-lg border border-dashed border-blue-200 transition-all"
                         >
@@ -1003,46 +1232,48 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                    <Slicer 
-                      label="产权口径" 
-                      options={[...new Set(sourceData.filter(d => 
-                        filters.managements.includes(d.management) &&
-                        filters.propertyTypes.includes(d.propertyType) &&
-                        filters.projectNames.includes(d.projectName)
-                      ).map(d => d.ownership))]} 
-                      selected={filters.ownerships} 
-                      onChange={(val) => { setFilters({...filters, ownerships: val}); setActivePresetId(null); }} 
+                    <Slicer
+                      label="产权口径"
+                      options={uniqueOptions.ownerships}
+                      selected={filters.ownerships}
+                      onChange={(val) => { setFilters({ ...filters, ownerships: val }); setActivePresetId(null); }}
                     />
-                    <Slicer 
-                      label="管理口径" 
-                      options={[...new Set(sourceData.filter(d => 
-                        filters.ownerships.includes(d.ownership) &&
-                        filters.propertyTypes.includes(d.propertyType) &&
-                        filters.projectNames.includes(d.projectName)
-                      ).map(d => d.management))]} 
-                      selected={filters.managements} 
-                      onChange={(val) => { setFilters({...filters, managements: val}); setActivePresetId(null); }} 
+                    <Slicer
+                      label="管理口径"
+                      options={uniqueOptions.managements}
+                      selected={filters.managements}
+                      onChange={(val) => { setFilters({ ...filters, managements: val }); setActivePresetId(null); }}
                     />
-                    <Slicer 
-                      label="业务业态" 
-                      options={[...new Set(sourceData.filter(d => 
-                        filters.ownerships.includes(d.ownership) &&
-                        filters.managements.includes(d.management) &&
-                        filters.projectNames.includes(d.projectName)
-                      ).map(d => d.propertyType))]} 
-                      selected={filters.propertyTypes} 
-                      onChange={(val) => { setFilters({...filters, propertyTypes: val}); setActivePresetId(null); }} 
+                    <Slicer
+                      label="业态"
+                      options={uniqueOptions.propertyTypes}
+                      selected={filters.propertyTypes}
+                      onChange={(val) => { setFilters({ ...filters, propertyTypes: val }); setActivePresetId(null); }}
                     />
-                    <Slicer 
-                      label="项目名称" 
-                      options={[...new Set(sourceData.filter(d => 
-                        filters.ownerships.includes(d.ownership) &&
-                        filters.managements.includes(d.management) &&
-                        filters.propertyTypes.includes(d.propertyType)
-                      ).map(d => d.projectName))]} 
-                      selected={filters.projectNames} 
-                      onChange={(val) => { setFilters({...filters, projectNames: val}); setActivePresetId(null); }} 
-                      showSearch 
+                    <Slicer
+                      label="二级业态"
+                      options={uniqueOptions.secondaryPropertyTypes}
+                      selected={filters.secondaryPropertyTypes}
+                      onChange={(val) => { setFilters({ ...filters, secondaryPropertyTypes: val }); setActivePresetId(null); }}
+                    />
+                    <Slicer
+                      label="项目名称"
+                      options={uniqueOptions.projectNames}
+                      selected={filters.projectNames}
+                      onChange={(val) => { setFilters({ ...filters, projectNames: val }); setActivePresetId(null); }}
+                      showSearch
+                    />
+                    <Slicer
+                      label="重点项目"
+                      options={uniqueOptions.isKeyProjects}
+                      selected={filters.isKeyProjects}
+                      onChange={(val) => { setFilters({ ...filters, isKeyProjects: val }); setActivePresetId(null); }}
+                    />
+                    <Slicer
+                      label="现有项目"
+                      options={uniqueOptions.isExistingProjects}
+                      selected={filters.isExistingProjects}
+                      onChange={(val) => { setFilters({ ...filters, isExistingProjects: val }); setActivePresetId(null); }}
                     />
                   </div>
                 </div>
@@ -1050,24 +1281,24 @@ export const Dashboard: React.FC = () => {
             </section>
 
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div 
+              <div
                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsIndicatorVisible(!isIndicatorVisible)}
               >
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-emerald-600" />
-                  <h4 className="font-bold text-slate-700 text-sm">选择显示指标</h4>
+                  <h4 className="font-bold text-slate-700 text-sm">导入表 (切片器)</h4>
                 </div>
                 <div className="flex items-center gap-4">
                   {isIndicatorVisible && (
                     <div className="flex gap-2 mr-2">
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); setSelectedIndicators(categories); setActivePresetId(null); }}
                         className="text-[10px] font-bold text-blue-600 hover:underline"
                       >
                         全选
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); setSelectedIndicators([]); setActivePresetId(null); }}
                         className="text-[10px] font-bold text-slate-400 hover:underline"
                       >
@@ -1080,64 +1311,263 @@ export const Dashboard: React.FC = () => {
               </div>
 
               {isIndicatorVisible && (
-                <div className="p-4 pt-0 border-t border-slate-50">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 mt-4">
-                    {categories.map(indicator => (
-                      <label 
-                        key={indicator} 
-                        className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
-                          selectedIndicators.includes(indicator) 
-                            ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200" 
-                            : "bg-white border-slate-200 hover:border-slate-300"
-                        )}
-                      >
-                        <input 
-                          type="checkbox" 
-                          className="hidden"
-                          checked={selectedIndicators.includes(indicator)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedIndicators([...selectedIndicators, indicator]);
-                            } else {
-                              setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
-                            }
+                <div className="p-4 pt-0 border-t border-slate-50 space-y-6">
+                  {/* Section 1: Main Indicators (38) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                        <div className="w-1 h-3 bg-emerald-500 rounded-full" />
+                        利润表项目
+                      </h5>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            const group = categories.filter(c => MAIN_INDICATORS.includes(c));
+                            setSelectedIndicators(Array.from(new Set([...selectedIndicators, ...group])));
+                            setActivePresetId(null);
+                          }}
+                          className="text-[10px] font-bold text-blue-600 hover:underline"
+                        >
+                          全选
+                        </button>
+                        <button
+                          onClick={() => {
+                            const group = categories.filter(c => MAIN_INDICATORS.includes(c));
+                            setSelectedIndicators(selectedIndicators.filter(i => !group.includes(i)));
+                            setActivePresetId(null);
+                          }}
+                          className="text-[10px] font-bold text-slate-400 hover:underline"
+                        >
+                          清空
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {categories.filter(c => MAIN_INDICATORS.includes(c)).map(indicator => (
+                        <IndicatorCheckbox
+                          key={indicator}
+                          indicator={indicator}
+                          selectedIndicators={selectedIndicators}
+                          onChange={(val) => {
+                            if (val) setSelectedIndicators([...selectedIndicators, indicator]);
+                            else setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
                             setActivePresetId(null);
                           }}
                         />
-                        <div className={cn(
-                          "w-3 h-3 rounded-sm border flex items-center justify-center",
-                          selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
-                        )}>
-                          {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </div>
-                        <span className={cn(
-                          "text-[11px] font-bold truncate",
-                          selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
-                        )}>
-                          {indicator}
-                        </span>
-                      </label>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Section 2: Operating Metrics */}
+                  {chartType !== 'pie' && (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-1 h-3 bg-blue-500 rounded-full" />
+                          经营指标
+                        </h5>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => OPERATING_METRICS.includes(c));
+                              setSelectedIndicators(Array.from(new Set([...selectedIndicators, ...group])));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            全选
+                          </button>
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => OPERATING_METRICS.includes(c));
+                              setSelectedIndicators(selectedIndicators.filter(i => !group.includes(i)));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-slate-400 hover:underline"
+                          >
+                            清空
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {categories.filter(c => OPERATING_METRICS.includes(c)).map(indicator => (
+                          <IndicatorCheckbox
+                            key={indicator}
+                            indicator={indicator}
+                            selectedIndicators={selectedIndicators}
+                            onChange={(val) => {
+                              if (val) setSelectedIndicators([...selectedIndicators, indicator]);
+                              else setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                              setActivePresetId(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 3: 3-Year Benefit Metrics */}
+                  {chartType === 'table' && (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-1 h-3 bg-amber-500 rounded-full" />
+                          三年效益达标指标
+                        </h5>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => THREE_YEAR_BENEFIT_METRICS.includes(c));
+                              setSelectedIndicators(Array.from(new Set([...selectedIndicators, ...group])));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            全选
+                          </button>
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => THREE_YEAR_BENEFIT_METRICS.includes(c));
+                              setSelectedIndicators(selectedIndicators.filter(i => !group.includes(i)));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-slate-400 hover:underline"
+                          >
+                            清空
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {categories.filter(c => THREE_YEAR_BENEFIT_METRICS.includes(c)).map(indicator => (
+                          <IndicatorCheckbox
+                            key={indicator}
+                            indicator={indicator}
+                            selectedIndicators={selectedIndicators}
+                            onChange={(val) => {
+                              if (val) setSelectedIndicators([...selectedIndicators, indicator]);
+                              else setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                              setActivePresetId(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 4: Budget Metrics */}
+                  {chartType === 'table' && (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-xs font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-1 h-3 bg-rose-500 rounded-full" />
+                          预算指标
+                        </h5>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => BUDGET_METRICS.includes(c));
+                              setSelectedIndicators(Array.from(new Set([...selectedIndicators, ...group])));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            全选
+                          </button>
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => BUDGET_METRICS.includes(c));
+                              setSelectedIndicators(selectedIndicators.filter(i => !group.includes(i)));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-slate-400 hover:underline"
+                          >
+                            清空
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {categories.filter(c => BUDGET_METRICS.includes(c)).map(indicator => (
+                          <IndicatorCheckbox
+                            key={indicator}
+                            indicator={indicator}
+                            selectedIndicators={selectedIndicators}
+                            onChange={(val) => {
+                              if (val) setSelectedIndicators([...selectedIndicators, indicator]);
+                              else setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                              setActivePresetId(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 5: Business Metrics */}
+                  {chartType === 'table' && (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-1 h-3 bg-indigo-500 rounded-full" />
+                          业务指标
+                        </h5>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => BUSINESS_METRICS.includes(c));
+                              setSelectedIndicators(Array.from(new Set([...selectedIndicators, ...group])));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                          >
+                            全选
+                          </button>
+                          <button
+                            onClick={() => {
+                              const group = categories.filter(c => BUSINESS_METRICS.includes(c));
+                              setSelectedIndicators(selectedIndicators.filter(i => !group.includes(i)));
+                              setActivePresetId(null);
+                            }}
+                            className="text-[10px] font-bold text-slate-400 hover:underline"
+                          >
+                            清空
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {categories.filter(c => BUSINESS_METRICS.includes(c)).map(indicator => (
+                          <IndicatorCheckbox
+                            key={indicator}
+                            indicator={indicator}
+                            selectedIndicators={selectedIndicators}
+                            onChange={(val) => {
+                              if (val) setSelectedIndicators([...selectedIndicators, indicator]);
+                              else setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                              setActivePresetId(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
 
             {(chartType === 'bar' || chartType === 'pie') && (
               <div className="print:hidden">
-                <MetricSelector 
-                  selected={selectedMetric} 
-                  onChange={setSelectedMetric} 
-                  allowedKeys={chartType === 'pie' ? ['YTD', 'LY', 'MTD', 'PreMonth'] : undefined}
+                <MetricSelector
+                  selected={selectedMetric}
+                  onChange={setSelectedMetric}
+                  options={timeGroupMetadata}
+                  allowedKeys={chartType === 'pie' ? ['本年累计', '去年同期', '当月发生额', '上月发生额'] : undefined}
                 />
               </div>
             )}
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" id="printable-chart" ref={chartRef}>
               {chartType === 'bar' && (
-                <PerformanceChart 
-                  data={chartData} 
+                <PerformanceChart
+                  data={chartData}
                   title={`${selectedMonth} 多维指标 ${getMetricLabel(selectedMetric)}`}
                   isIntegerMode={isIntegerMode}
                   setIsIntegerMode={setIsIntegerMode}
@@ -1166,24 +1596,26 @@ export const Dashboard: React.FC = () => {
                 />
               )}
               {chartType === 'table' && (
-                <MultiDimTable 
+                <MultiDimTable
                   data={filteredData}
                   categories={categories.filter(cat => selectedIndicators.includes(cat))}
                   selectedMonth={selectedMonth}
                   isIntegerMode={isIntegerMode}
                   setIsIntegerMode={setIsIntegerMode}
                   authState={authState}
+                  metricMetadata={metricMetadata}
+                  timeGroupMetadata={timeGroupMetadata}
                 />
               )}
               <div className={cn("flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden", chartType === 'table' && "hidden")}>
-                <button 
+                <button
                   onClick={exportChartToPDF}
                   className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-100"
                 >
                   <Camera className="w-4 h-4" />
                   保存 PDF
                 </button>
-                <button 
+                <button
                   onClick={() => checkAuth(exportToExcel)}
                   className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
                 >
@@ -1204,7 +1636,7 @@ export const Dashboard: React.FC = () => {
             )}
 
             {sourceData.length > 0 && (
-              <CommentsSection 
+              <CommentsSection
                 authState={authState}
                 selectedMonth={selectedMonth}
                 filteredData={filteredData}
@@ -1225,7 +1657,7 @@ export const Dashboard: React.FC = () => {
       </footer>
 
       {/* Floating Feedback Button */}
-      <button 
+      <button
         onClick={() => checkAuth(() => setIsFeedbackModalOpen(true))}
         className="fixed bottom-8 right-8 w-14 h-14 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition-all group z-[90] active:scale-95"
         title="意见反馈"
@@ -1243,3 +1675,37 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+const IndicatorCheckbox: React.FC<{
+  indicator: string;
+  selectedIndicators: string[];
+  onChange: (val: boolean) => void;
+}> = ({ indicator, selectedIndicators, onChange }) => (
+  <label
+    className={cn(
+      "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
+      selectedIndicators.includes(indicator)
+        ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200"
+        : "bg-white border-slate-200 hover:border-slate-300"
+    )}
+  >
+    <input
+      type="checkbox"
+      className="hidden"
+      checked={selectedIndicators.includes(indicator)}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+    <div className={cn(
+      "w-3 h-3 rounded-sm border flex items-center justify-center",
+      selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
+    )}>
+      {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+    </div>
+    <span className={cn(
+      "text-[11px] font-bold truncate",
+      selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
+    )}>
+      {indicator}
+    </span>
+  </label>
+);

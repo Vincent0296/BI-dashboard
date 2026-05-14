@@ -49,11 +49,13 @@ export const PieChartWidget: React.FC<PieChartWidgetProps> = ({
     return null;
   };
 
-  const pieData = data.map(d => ({
-    name: d.category,
-    value: Math.max(0, d.value),
-    originalValue: d.value
-  }));
+  const pieData = data
+    .filter(d => d.value > 0)
+    .map(d => ({
+      name: d.category,
+      value: d.value,
+      originalValue: d.value
+    }));
 
   return (
     <div className="w-full h-full bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">

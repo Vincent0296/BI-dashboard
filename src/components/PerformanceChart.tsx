@@ -11,7 +11,7 @@ import {
   LabelList
 } from 'recharts';
 import { PerformanceItem } from '../types';
-import { formatNumber } from '../lib/utils';
+import { formatNumber, isMoneyMetric } from '../lib/utils';
 
 interface PerformanceChartProps {
   data: PerformanceItem[];
@@ -23,6 +23,7 @@ interface PerformanceChartProps {
 
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title, isIntegerMode, setIsIntegerMode, onBarClick }) => {
   const isRate = data.length > 0 && data[0].isPercent;
+  const isWanYuan = data.length > 0 && data[0].isWanYuan;
   // Use color coding if it's a rate OR a comparison metric (YoY/MoM Diff)
   const isComparison = isRate || title.includes('增减额') || title.includes('对比');
 
@@ -35,7 +36,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title,
         <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-lg">
           <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
           <p className={`text-lg font-black ${shouldColor ? (isNegative ? 'text-red-500' : 'text-emerald-500') : 'text-slate-800'}`}>
-            {formatNumber(value, isRate, isIntegerMode)}
+            {formatNumber(value, isRate, isIntegerMode, isWanYuan)}
           </p>
         </div>
       );
@@ -48,7 +49,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title,
     const isNegative = value < 0;
     const shouldColor = isComparison && value !== 0;
     const color = shouldColor ? (isNegative ? '#ef4444' : '#10b981') : '#64748b';
-    const displayVal = formatNumber(value, isRate, isIntegerMode);
+    const displayVal = formatNumber(value, isRate, isIntegerMode, isWanYuan);
 
     // For vertical bars: x is bar position, y is bar start, height is bar length
     const labelX = x + width / 2;

@@ -14,17 +14,21 @@ import {
   RefreshCcw,
   Edit2
 } from 'lucide-react';
-import { DataRecord, MetricKey, AuthState, TablePreset } from '../types';
-import { cn, formatNumber } from '../lib/utils';
+import { EnrichedRecord, AuthState, TablePreset, MetricMetadata, TimeGroupMetadata, MetricKey } from '../types';
 import { supabase } from '../lib/supabase';
+import { cn, formatNumber, isMoneyMetric } from '../lib/utils';
+import { TIME_SERIES_ALLOWED_METRICS, BUDGET_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS } from '../constants/internalData';
+
 
 interface MultiDimTableProps {
-  data: DataRecord[];
+  data: EnrichedRecord[];
   categories: string[];
   selectedMonth: string;
   isIntegerMode: boolean;
   setIsIntegerMode: (val: boolean) => void;
   authState: AuthState;
+  metricMetadata: MetricMetadata[];
+  timeGroupMetadata: TimeGroupMetadata[];
 }
 
 const METRIC_GROUPS: { key: MetricKey; label: string }[] = [
@@ -41,8 +45,11 @@ const METRIC_GROUPS: { key: MetricKey; label: string }[] = [
 const DIMENSIONS = [
   { key: 'ownership', label: '产权口径' },
   { key: 'management', label: '管理口径' },
-  { key: 'propertyType', label: '业务业态' },
+  { key: 'propertyType', label: '业态' },
+  { key: 'secondaryPropertyType', label: '二级业态' },
   { key: 'projectName', label: '项目名称' },
+  { key: 'isKeyProject', label: '重点项目' },
+  { key: 'isExistingProject', label: '现有项目' },
 ] as const;
 
 export const MultiDimTable: React.FC<MultiDimTableProps> = ({ 
@@ -51,10 +58,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   selectedMonth,
   isIntegerMode,
   setIsIntegerMode,
-  authState
+  authState,
+  metricMetadata,
+  timeGroupMetadata
 }) => {
   const [selectedYDim, setSelectedYDim] = useState<typeof DIMENSIONS[number]['key']>('propertyType');
-  const [selectedMetricGroups, setSelectedMetricGroups] = useState<MetricKey[]>(METRIC_GROUPS.map(g => g.key));
+  // 初始状态：默认全选
+  const [selectedMetricGroups, setSelectedMetricGroups] = useState<string[]>(() => {
+    return timeGroupMetadata.map(g => g.name);
+  });
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 5; 
 
@@ -72,6 +84,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       setCurrentPage(totalPages - 1);
     }
   }, [categories.length, totalPages, currentPage]);
+
+  // 移除之前的强制初始化 useEffect，保留 Preset 加载逻辑
 
   // Fetch presets on mount/auth change
   useEffect(() => {
@@ -94,14 +108,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         // Only keep table-specific presets
         const tableOnly = rawData
           .filter((p: any) => p.filters?.isTablePreset)
-          .map((p: any) => ({
-            id: p.id,
-            userId: p.userId,
-            name: p.name,
-            selectedYDim: p.filters.selectedYDim,
-            selectedMetricGroups: p.filters.selectedMetricGroups,
-            timestamp: p.timestamp
-          }));
+          .map((p: any) => {
+            // 增加兼容性转换：将英文 Key 转换为中文 Name
+            const groups = (p.filters.selectedMetricGroups || []).map((g: string) => {
+              const match = METRIC_GROUPS.find(m => m.key === g || m.label === g);
+              return match ? match.label : g;
+            });
+            return {
+              id: p.id,
+              userId: p.userId,
+              name: p.name,
+              selectedYDim: p.filters.selectedYDim,
+              selectedMetricGroups: groups,
+              timestamp: p.timestamp
+            };
+          });
         setTablePresets(tableOnly);
       }
     } catch (err) {
@@ -225,48 +246,146 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const currentIndicators = categories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
+  const getGroupIndicators = (groupName: string) => {
+    if (groupName === '本年累计') return currentIndicators;
+    return currentIndicators.filter(cat => TIME_SERIES_ALLOWED_METRICS.includes(cat));
+  };
+
   const dimValues = useMemo(() => {
     return Array.from(new Set(data.map(d => String(d[selectedYDim])))).sort();
   }, [data, selectedYDim]);
 
-  const calculateValue = (dataSlice: DataRecord[], cat: string, metric: MetricKey) => {
+  const getMetricAggregatedValue = (dataSlice: EnrichedRecord[], metricName: string, timeGroupName: string): number => {
     if (!selectedMonth || !selectedMonth.includes('-')) return 0;
     const [year, month] = selectedMonth.split('-').map(Number);
     const prevYear = year - 1;
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 
-    const isYTD = (d: DataRecord, y: number, m: number) => {
+    // 1. 处理计算类时间组（同比/环比）
+    // 对于率类指标，增减额应等于“结果之差”，例如 (当月率 - 上月率)
+    if (timeGroupName === '同比增减额') {
+      return getMetricAggregatedValue(dataSlice, metricName, '本年累计') - getMetricAggregatedValue(dataSlice, metricName, '去年同期');
+    }
+    if (timeGroupName === '环比增减额') {
+      return getMetricAggregatedValue(dataSlice, metricName, '当月发生额') - getMetricAggregatedValue(dataSlice, metricName, '上月发生额');
+    }
+    if (timeGroupName === '同比增减率') {
+      const current = getMetricAggregatedValue(dataSlice, metricName, '本年累计');
+      const previous = getMetricAggregatedValue(dataSlice, metricName, '去年同期');
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+    }
+    if (timeGroupName === '环比增减率') {
+      const current = getMetricAggregatedValue(dataSlice, metricName, '当月发生额');
+      const previous = getMetricAggregatedValue(dataSlice, metricName, '上月发生额');
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+    }
+
+    // 2. 基础时间组逻辑 (本年累计, 去年同期, 当月, 上月)
+    const meta = metricMetadata.find(m => m.name === metricName);
+    if (!meta) {
+      return getSumWithFuzzyInternal(dataSlice, metricName, timeGroupName, year, month, prevYear, pm);
+    }
+
+    const formula = meta.formula || '';
+    if (formula.startsWith('=') || formula.startsWith('‘=')) {
+      const cleanFormula = formula.replace(/^‘?=/, '').trim();
+      
+      if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
+        return getMetricAggregatedValue(dataSlice, cleanFormula, timeGroupName);
+      }
+
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('*100')) {
+        const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
+        const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
+        return den !== 0 ? num / den : 0;
+      }
+      
+      if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
+        const s1 = getMetricAggregatedValue(dataSlice, '15用工薪酬成本', timeGroupName);
+        const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
+        const val = den !== 0 ? (s1 + s2) / den : 0;
+        return cleanFormula.includes('*100') ? val * 100 : val;
+      }
+      if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
+        const s1 = getMetricAggregatedValue(dataSlice, '8外购燃料', timeGroupName);
+        const s2 = getMetricAggregatedValue(dataSlice, '9外购动力', timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
+        const val = den !== 0 ? (s1 + s2) / den : 0;
+        return cleanFormula.includes('*100') ? val * 100 : val;
+      }
+
+      if (cleanFormula.includes('*100')) {
+        const base = cleanFormula.replace('*100', '').trim();
+        if (base.includes('/')) {
+          const [numName, denName] = base.split('/').map(s => s.trim());
+          const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
+          const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
+          const val = den !== 0 ? num / den : 0;
+          return val * 100;
+        }
+      }
+    }
+
+    return getSumWithFuzzyInternal(dataSlice, metricName, timeGroupName, year, month, prevYear, pm);
+  };
+
+  function getSumWithFuzzyInternal(
+    items: EnrichedRecord[], 
+    name: string, 
+    timeGroupName: string, 
+    year: number, 
+    month: number, 
+    prevYear: number, 
+    pm: { y: number, m: number }
+  ): number {
+    const isYTD = (d: EnrichedRecord, y: number, m: number) => {
       const [dy, dm] = d.month.split('-').map(Number);
       return dy === y && dm <= m;
     };
-    const isMTD = (d: DataRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
+    const isMTD = (d: EnrichedRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
 
-    const sum = (items: DataRecord[]) => items.reduce((acc, curr) => acc + (curr.metrics[cat] || 0), 0);
+    const getSumWithFuzzy = (dataList: EnrichedRecord[], targetName: string) => {
+      const isStatic = 
+        BUDGET_METRICS.includes(targetName) || 
+        THREE_YEAR_BENEFIT_METRICS.includes(targetName) || 
+        BUSINESS_METRICS.includes(targetName);
 
-    const ytdData = dataSlice.filter(d => isYTD(d, year, month));
-    const lyData = dataSlice.filter(d => isYTD(d, prevYear, month));
-    const mtdData = dataSlice.filter(d => isMTD(d, year, month));
-    const preMonthData = dataSlice.filter(d => isMTD(d, pm.y, pm.m));
+      const calculateSum = (name: string) => {
+        if (isStatic) {
+          const projectMap: Record<string, number> = {};
+          dataList.forEach(d => {
+            if (!(d.projectNo in projectMap)) {
+              projectMap[d.projectNo] = d.metrics[name] || 0;
+            }
+          });
+          return Object.values(projectMap).reduce((a, b) => a + b, 0);
+        }
+        return dataList.reduce((acc, curr) => acc + (curr.metrics[name] || 0), 0);
+      };
 
-    const ytd = sum(ytdData);
-    const ly = sum(lyData);
-    const mtd = sum(mtdData);
-    const preMonth = sum(preMonthData);
+      let total = calculateSum(targetName);
+      if (total !== 0) return total;
+      const cleanName = targetName.replace(/^\d+/, '');
+      if (cleanName !== targetName) total = calculateSum(cleanName);
+      return total;
+    };
 
-    const hasLY = lyData.length > 0;
-    const hasPM = preMonthData.length > 0;
+    const ytdData = items.filter(d => isYTD(d, year, month));
+    const lyData = items.filter(d => isYTD(d, prevYear, month));
+    const mtdData = items.filter(d => isMTD(d, year, month));
+    const preMonthData = items.filter(d => isMTD(d, pm.y, pm.m));
 
-    switch (metric) {
-      case 'YTD': return ytd;
-      case 'LY': return hasLY ? ly : 0;
-      case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
-      case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : 0;
-      case 'MTD': return mtd;
-      case 'PreMonth': return hasPM ? preMonth : 0;
-      case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
-      case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : 0;
-      default: return 0;
-    }
+    if (timeGroupName === '本年累计') return getSumWithFuzzy(ytdData, name);
+    if (timeGroupName === '去年同期') return getSumWithFuzzy(lyData, name);
+    if (timeGroupName === '当月发生额') return getSumWithFuzzy(mtdData, name);
+    if (timeGroupName === '上月发生额') return getSumWithFuzzy(preMonthData, name);
+    return getSumWithFuzzy(mtdData, name);
+  }
+
+  const calculateValue = (dataSlice: EnrichedRecord[], cat: string, timeGroupName: string) => {
+    return getMetricAggregatedValue(dataSlice, cat, timeGroupName);
   };
 
   const tableData = useMemo(() => {
@@ -274,36 +393,36 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       const slice = data.filter(d => String(d[selectedYDim]) === dv);
       const metrics: Record<string, number> = {};
       
-      selectedMetricGroups.forEach(group => {
+      selectedMetricGroups.forEach(groupName => {
         categories.forEach(cat => {
-          metrics[`${group}_${cat}`] = calculateValue(slice, cat, group);
+          metrics[`${groupName}_${cat}`] = calculateValue(slice, cat, groupName);
         });
       });
       
       return { dimValue: dv, metrics };
     });
-  }, [data, dimValues, selectedYDim, selectedMetricGroups, categories, selectedMonth]);
+  }, [data, dimValues, selectedYDim, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata]);
 
   const totalRow = useMemo(() => {
     const metrics: Record<string, number> = {};
-    selectedMetricGroups.forEach(group => {
+    selectedMetricGroups.forEach(groupName => {
       categories.forEach(cat => {
-        metrics[`${group}_${cat}`] = calculateValue(data, cat, group);
+        metrics[`${groupName}_${cat}`] = calculateValue(data, cat, groupName);
       });
     });
     return metrics;
-  }, [data, selectedMetricGroups, categories, selectedMonth]);
+  }, [data, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata]);
 
   const exportToExcel = () => {
-    const header1 = ['维度', ...selectedMetricGroups.flatMap(g => Array(categories.length).fill(METRIC_GROUPS.find(mg => mg.key === g)?.label))];
-    const header2 = ['', ...selectedMetricGroups.flatMap(() => categories)];
+    const header1 = ['维度', ...selectedMetricGroups.flatMap(g => Array(currentIndicators.length).fill(g))];
+    const header2 = ['', ...selectedMetricGroups.flatMap(() => currentIndicators)];
     
     const rows = tableData.map(row => [
       row.dimValue,
       ...selectedMetricGroups.flatMap(g => 
-        categories.map(cat => {
+        currentIndicators.map(cat => {
           const val = row.metrics[`${g}_${cat}`];
-          const isRate = g.includes('Percent');
+          const isRate = g.includes('率') || g.includes('Percent');
           return isRate ? (val * 100).toFixed(2) + '%' : val;
         })
       )
@@ -312,9 +431,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const totalLine = [
       '合计',
       ...selectedMetricGroups.flatMap(g => 
-        categories.map(cat => {
+        currentIndicators.map(cat => {
           const val = totalRow[`${g}_${cat}`];
-          const isRate = g.includes('Percent');
+          const isRate = g.includes('率') || g.includes('Percent');
           return isRate ? (val * 100).toFixed(2) + '%' : val;
         })
       )
@@ -491,17 +610,40 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
           {/* X-Axis Metric Group Selection */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
-              <Filter className="w-3.5 h-3.5" />
-              X轴计算组多选
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
+                <Filter className="w-3.5 h-3.5" />
+                X轴计算组多选
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    const allNames = timeGroupMetadata.map(g => g.name);
+                    setSelectedMetricGroups(allNames);
+                    setActivePresetId(null);
+                  }}
+                  className="text-[10px] font-bold text-indigo-600 hover:underline"
+                >
+                  全选
+                </button>
+                <button 
+                  onClick={() => {
+                    setSelectedMetricGroups([]);
+                    setActivePresetId(null);
+                  }}
+                  className="text-[10px] font-bold text-slate-400 hover:underline"
+                >
+                  清空
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {METRIC_GROUPS.map(group => (
+              {timeGroupMetadata.map(group => (
                 <label 
-                  key={group.key}
+                  key={group.name}
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
-                    selectedMetricGroups.includes(group.key)
+                    selectedMetricGroups.includes(group.name)
                       ? "bg-blue-50 border-blue-200 text-blue-700"
                       : "bg-white border-slate-200 text-slate-400 hover:border-slate-300"
                   )}
@@ -509,21 +651,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   <input 
                     type="checkbox"
                     className="hidden"
-                    checked={selectedMetricGroups.includes(group.key)}
+                    checked={selectedMetricGroups.includes(group.name)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedMetricGroups([...selectedMetricGroups, group.key]);
+                        setSelectedMetricGroups([...selectedMetricGroups, group.name]);
                       } else {
-                        setSelectedMetricGroups(selectedMetricGroups.filter(k => k !== group.key));
+                        setSelectedMetricGroups(selectedMetricGroups.filter(k => k !== group.name));
                       }
                       setActivePresetId(null);
                     }}
                   />
                   <div className={cn(
                     "w-3 h-3 rounded-sm border",
-                    selectedMetricGroups.includes(group.key) ? "bg-blue-500 border-blue-500" : "bg-white border-slate-300"
+                    selectedMetricGroups.includes(group.name) ? "bg-blue-500 border-blue-500" : "bg-white border-slate-300"
                   )} />
-                  {group.label}
+                  {group.name}
                 </label>
               ))}
             </div>
@@ -576,15 +718,19 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <th className="p-4 border-b border-r border-slate-200 text-slate-500 font-bold text-xs sticky left-0 bg-slate-50 z-20 w-48">
                   维度 \ 计算组
                 </th>
-                {selectedMetricGroups.map(group => (
-                  <th 
-                    key={group} 
-                    colSpan={currentIndicators.length}
-                    className="p-3 border-b border-r border-slate-200 text-indigo-700 font-black text-xs text-center uppercase tracking-widest bg-indigo-50/30"
-                  >
-                    {METRIC_GROUPS.find(mg => mg.key === group)?.label}
-                  </th>
-                ))}
+                {selectedMetricGroups.map(group => {
+                  const indicators = getGroupIndicators(group);
+                  if (indicators.length === 0) return null;
+                  return (
+                    <th 
+                      key={group} 
+                      colSpan={indicators.length}
+                      className="p-3 border-b border-r border-slate-200 text-indigo-700 font-black text-xs text-center uppercase tracking-widest bg-indigo-50/30"
+                    >
+                      {group}
+                    </th>
+                  );
+                })}
               </tr>
               {/* Level 2 Header */}
               <tr className="bg-white">
@@ -592,7 +738,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedMetricGroups.map(group => (
-                  currentIndicators.map(cat => (
+                  getGroupIndicators(group).map(cat => (
                     <th 
                       key={`${group}_${cat}`}
                       className="p-3 border-b border-r border-slate-100 text-slate-600 font-bold text-[10px] bg-white min-w-[120px]"
@@ -610,18 +756,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     {row.dimValue}
                   </td>
                   {selectedMetricGroups.map(group => (
-                    currentIndicators.map(cat => {
+                    getGroupIndicators(group).map(cat => {
                       const val = row.metrics[`${group}_${cat}`];
-                      const isRate = group.includes('Percent');
+                      const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                      const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
                         <td 
                           key={`${group}_${cat}`}
                           className={cn(
                             "p-3 border-b border-r border-slate-50 text-sm font-medium",
-                            isRate ? (val >= 0 ? "text-emerald-600" : "text-rose-600") : "text-slate-600"
+                            (isRate || group === '同比增减额' || group === '环比增减额') 
+                              ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                              : "text-slate-600"
                           )}
                         >
-                          {formatNumber(val, isRate, isIntegerMode)}
+                          {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
                         </td>
                       );
                     })
@@ -634,18 +783,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   合计
                 </td>
                 {selectedMetricGroups.map(group => (
-                  currentIndicators.map(cat => {
+                  getGroupIndicators(group).map(cat => {
                     const val = totalRow[`${group}_${cat}`];
-                    const isRate = group.includes('Percent');
+                    const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                    const isWanYuan = !isRate && isMoneyMetric(cat);
                     return (
                       <td 
                         key={`${group}_${cat}`}
                         className={cn(
                           "p-3 border-b border-r border-indigo-100 text-sm",
-                          isRate ? (val >= 0 ? "text-emerald-700" : "text-rose-700") : "text-indigo-700"
+                          (isRate || group === '同比增减额' || group === '环比增减额') 
+                            ? (val >= 0 ? "text-emerald-700" : "text-rose-700") 
+                            : "text-indigo-700"
                         )}
                       >
-                        {formatNumber(val, isRate, isIntegerMode)}
+                        {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
                       </td>
                     );
                   })

@@ -1,20 +1,54 @@
-export type MetricKey = 'YTD' | 'LY' | 'YoYDiff' | 'YoYPercent' | 'MTD' | 'PreMonth' | 'MoMDiff' | 'MoMPercent';
+export type MetricKey = string; // Now dynamic based on metadata
 
 export interface PerformanceItem {
   id: string;
-  category: string; // e.g. "收入", "成本", "利润"
+  category: string; 
   value: number;
   displayValue: string;
   isPercent: boolean;
+  isWanYuan: boolean;
+}
+
+// Relational Data Structures
+export interface ProjectInfo {
+  projectNo: string;
+  projectName: string;
+  ownership: string;       // 产权口径
+  management: string;      // 管理口径
+  propertyType: string;    // 业态
+  secondaryPropertyType: string; // 二级业态
+  isKeyProject: string;    // 重点项目
+  isExistingProject: string; // 现有项目
+}
+
+export interface MetricMetadata {
+  name: string;
+  formula: string;
+  source: 'operating' | 'calculated' | 'other';
+  unit: string;
+}
+
+export interface TimeGroupMetadata {
+  name: string;
+  formula: string;
+  applyToAll: boolean; // "本年累计" is true, others false
 }
 
 export interface DataRecord {
   month: string;
+  projectNo: string;
+  metrics: Record<string, number>;
+}
+
+// Joined Record (Enriched with ProjectInfo)
+export interface EnrichedRecord extends DataRecord {
+  projectName: string;
   ownership: string;
   management: string;
   propertyType: string;
-  projectName: string;
-  metrics: Record<string, number>;
+  secondaryPropertyType: string;
+  isKeyProject: string;
+  isExistingProject: string;
 }
 
 export interface FilterState {
@@ -22,7 +56,10 @@ export interface FilterState {
   ownerships: string[];
   managements: string[];
   propertyTypes: string[];
+  secondaryPropertyTypes: string[];
   projectNames: string[];
+  isKeyProjects: string[];
+  isExistingProjects: string[];
 }
 
 export interface User {
@@ -43,7 +80,7 @@ export interface FilterPreset {
   id: string;
   userId: string;
   name: string;
-  filters: any; // Using any to allow flexible JSON structure
+  filters: any;
   selectedIndicators: string[];
   timestamp: string;
 }
@@ -53,9 +90,10 @@ export interface TablePreset {
   userId: string;
   name: string;
   selectedYDim: string;
-  selectedMetricGroups: MetricKey[];
+  selectedMetricGroups: string[]; // Now dynamic
   timestamp: string;
 }
+
 
 
 export interface CommentItem {
