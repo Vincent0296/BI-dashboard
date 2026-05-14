@@ -1,4 +1,3 @@
-import { MetricMetadata, TimeGroupMetadata } from '../types';
 // Auto-generated indicators from 内置信息.xlsx
 export const MAIN_INDICATORS = [
   "收入YTD",
@@ -43,14 +42,11 @@ export const MAIN_INDICATORS = [
 export const OPERATING_METRICS = [
   "对标利润",
   "对标利润率",
-  "经营利润率",
   "食材成本率",
   "百元收入人工成本",
   "百元收入能源成本",
   "百元收入材料成本"
 ];
-
-export const TIME_SERIES_ALLOWED_METRICS = [...MAIN_INDICATORS, ...OPERATING_METRICS];
 export const THREE_YEAR_BENEFIT_METRICS = [
   "目标收入",
   "目标外购材料",
@@ -60,17 +56,14 @@ export const THREE_YEAR_BENEFIT_METRICS = [
   "目标维修维护",
   "目标其他",
   "目标利润",
-  "目标利润率",
-  "目标百元收入人工成本",
-  "目标百元收入能源成本",
-  "目标百元收入材料成本"
-];
-
-export const BUDGET_METRICS = [
   "2026全年预算收入-内部",
   "2026全年预算利润-内部",
   "2026全年预算收入",
   "2026全年预算利润",
+  "目标利润率",
+  "目标百元收入人工成本",
+  "目标百元收入能源成本",
+  "目标百元收入材料成本",
   "预算收入完成率",
   "预算利润完成率",
   "预算收入完成率-内部",
@@ -410,79 +403,79 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
   },
   {
     "name": "目标利润率",
-    "formula": "=目标利润/目标收入*100",
+    "formula": "=目标利润/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "目标百元收入人工成本",
-    "formula": "=目标薪酬及外包/目标收入*100",
+    "formula": "=目标薪酬及外包/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "目标百元收入能源成本",
-    "formula": "=目标能源动力/目标收入*100",
+    "formula": "=目标能源动力/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "目标百元收入材料成本",
-    "formula": "=目标外购材料/目标收入*100",
+    "formula": "=目标外购材料/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "预算收入完成率",
-    "formula": "=收入YTD/2026全年预算收入*100",
+    "formula": "=收入YTD/2026全年预算收入",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "预算利润完成率",
-    "formula": "=(1+(利润YTD-2026全年预算利润)/ABS(2026全年预算利润))*100",
+    "formula": "=利润YTD/2026全年预算利润",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "预算收入完成率-内部",
-    "formula": "=收入YTD/2026全年预算收入-内部*100",
+    "formula": "=收入YTD/2026全年预算收入-内部",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "预算利润完成率-内部",
-    "formula": "=(1+(利润YTD-2026全年预算利润-内部)/ABS(2026全年预算利润-内部))*100",
+    "formula": "=利润YTD/2026全年预算利润-内部",
     "source": "calculated",
     "unit": "元"
   },
   {
     "name": "对标利润",
-    "formula": "=IF(业态=\"酒店业务\",36利润总额+18租赁费+23折旧折耗及摊销+22财产性税费+26信用减值损失+32营业外收支净额+34其他收益+33投资收益+30资产处置损益,36利润总额+32营业外收支净额+34其他收益+33投资收益+30资产处置损益+31资产减值损失)",
+    "formula": "‘=IF(业态=\"酒店业务\",036利润总额+018租赁费+023折旧折耗及摊销+022财产性税费+026信用减值损失+032营业外收支净额+034其他收益+033投资收益+030资产处置损益,036利润总额+032营业外收支净额+034其他收益+033投资收益+030资产处置损益+031资产减值损失)",
     "source": "operating",
     "unit": "元"
   },
   {
     "name": "对标利润率",
-    "formula": "=对标利润/收入YTD*100",
+    "formula": "=对标利润/收入YTD",
     "source": "operating",
     "unit": "元"
   },
   {
     "name": "食材成本率",
-    "formula": "=4食材耗用/收入YTD*100",
+    "formula": "=4食材耗用/收入YTD",
     "source": "operating",
     "unit": "元"
   },
   {
     "name": "百元收入人工成本",
-    "formula": "=(15用工薪酬成本+16外包劳务支出)/收入YTD*100",
+    "formula": "=（15用工薪酬成本+16外包劳务支出）/收入YTD*100",
     "source": "operating",
     "unit": "元"
   },
   {
     "name": "百元收入能源成本",
-    "formula": "=(8外购燃料+9外购动力)/收入YTD*100",
+    "formula": "=（8外购燃料+9外购动力）/收入YTD*100",
     "source": "operating",
     "unit": "元"
   },
@@ -491,30 +484,5 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "formula": "=3外购材料/收入YTD*100",
     "source": "operating",
     "unit": "元"
-  },
-  {
-    "name": "经营利润率",
-    "formula": "=利润YTD/收入YTD*100",
-    "source": "operating",
-    "unit": "元"
   }
-];
-
-export const DEFAULT_TIME_GROUPS: TimeGroupMetadata[] = [
-  { name: '本年累计', formula: '', applyToAll: true },
-  { name: '去年同期', formula: '', applyToAll: false },
-  { name: '同比增减额', formula: '', applyToAll: false },
-  { name: '同比增减率', formula: '', applyToAll: false },
-  { name: '当月发生额', formula: '', applyToAll: false },
-  { name: '上月发生额', formula: '', applyToAll: false },
-  { name: '环比增减额', formula: '', applyToAll: false },
-  { name: '环比增减率', formula: '', applyToAll: false },
-];
-
-export const DEFAULT_CATEGORIES_ORDER = [
-  ...MAIN_INDICATORS,
-  ...OPERATING_METRICS,
-  ...THREE_YEAR_BENEFIT_METRICS,
-  ...BUDGET_METRICS,
-  ...BUSINESS_METRICS
 ];

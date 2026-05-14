@@ -252,7 +252,41 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   };
 
   const dimValues = useMemo(() => {
-    return Array.from(new Set(data.map(d => String(d[selectedYDim])))).sort();
+    const rawValues = Array.from(new Set(data.map(d => String(d[selectedYDim]))));
+    if (selectedYDim === 'propertyType') {
+      const order = ['酒店业务', '物业业务', '餐饮业务', '租赁业务', '其他业务', '管理业务'];
+      return rawValues.sort((a: string, b: string) => {
+        const idxA = order.indexOf(a);
+        const idxB = order.indexOf(b);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+    if (selectedYDim === 'management') {
+      const order = ['上海酒店项目部', '上海物业项目部', '常州项目部', '南京项目部', '无锡宜兴项目', '浙江项目部', '南通项目部', '上海本部'];
+      return rawValues.sort((a: string, b: string) => {
+        const idxA = order.indexOf(a);
+        const idxB = order.indexOf(b);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+    if (selectedYDim === 'ownership') {
+      const order = ['上海母公司', '常州酒店', '南京酒店', '无锡酒店', '宜兴（华东分）', '黄山酒店', '合并抵消', '华东分抵消'];
+      return rawValues.sort((a: string, b: string) => {
+        const idxA = order.indexOf(a);
+        const idxB = order.indexOf(b);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return a.localeCompare(b);
+      });
+    }
+    return rawValues.sort((a: string, b: string) => a.localeCompare(b));
   }, [data, selectedYDim]);
 
   const getMetricAggregatedValue = (dataSlice: EnrichedRecord[], metricName: string, timeGroupName: string): number => {
@@ -317,7 +351,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       }
 
       if (cleanFormula.includes('*100')) {
-        const base = cleanFormula.replace('*100', '').trim();
+        const base = cleanFormula.replace('*100', '').replace(/^\(|\)$/g, '').trim();
+        if (base.includes('ABS(')) {
+          // Handle the new profit completion formula: (1+(利润YTD-Budget)/ABS(Budget))*100
+          const isInternal = metricName.includes('内部');
+          const budgetName = isInternal ? '2026全年预算利润-内部' : '2026全年预算利润';
+          const profit = getMetricAggregatedValue(dataSlice, '利润YTD', timeGroupName);
+          const budget = getMetricAggregatedValue(dataSlice, budgetName, timeGroupName);
+          if (budget === 0) return 0;
+          return (1 + (profit - budget) / Math.abs(budget)) * 100;
+        }
         if (base.includes('/')) {
           const [numName, denName] = base.split('/').map(s => s.trim());
           const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
@@ -714,8 +757,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
               {/* Level 1 Header */}
-              <tr className="bg-slate-50/80">
-                <th className="p-4 border-b border-r border-slate-200 text-slate-500 font-bold text-xs sticky left-0 bg-slate-50 z-20 w-48">
+              <tr className="bg-slate-800 text-white">
+                <th className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
                   维度 \ 计算组
                 </th>
                 {selectedMetricGroups.map(group => {
@@ -725,7 +768,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     <th 
                       key={group} 
                       colSpan={indicators.length}
-                      className="p-3 border-b border-r border-slate-200 text-indigo-700 font-black text-xs text-center uppercase tracking-widest bg-indigo-50/30"
+                      className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
                     >
                       {group}
                     </th>
@@ -733,15 +776,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 })}
               </tr>
               {/* Level 2 Header */}
-              <tr className="bg-white">
-                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-sm sticky left-0 bg-white z-20">
+              <tr className="bg-slate-100">
+                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedMetricGroups.map(group => (
                   getGroupIndicators(group).map(cat => (
                     <th 
                       key={`${group}_${cat}`}
-                      className="p-3 border-b border-r border-slate-100 text-slate-600 font-bold text-[10px] bg-white min-w-[120px]"
+                      className="p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px]"
                     >
                       {cat}
                     </th>
@@ -778,8 +821,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 </tr>
               ))}
               {/* Total Row */}
-              <tr className="bg-indigo-50/30 font-black">
-                <td className="p-4 border-b border-r border-indigo-100 text-indigo-700 text-sm sticky left-0 bg-indigo-50 z-10">
+              <tr className="bg-indigo-900 text-white font-black">
+                <td className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
                   合计
                 </td>
                 {selectedMetricGroups.map(group => (
@@ -791,10 +834,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <td 
                         key={`${group}_${cat}`}
                         className={cn(
-                          "p-3 border-b border-r border-indigo-100 text-sm",
+                          "p-3 border-b border-r border-indigo-800 text-sm",
                           (isRate || group === '同比增减额' || group === '环比增减额') 
-                            ? (val >= 0 ? "text-emerald-700" : "text-rose-700") 
-                            : "text-indigo-700"
+                            ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                            : "text-white"
                         )}
                       >
                         {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
