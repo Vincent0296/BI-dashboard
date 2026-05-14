@@ -122,7 +122,8 @@ export const Dashboard: React.FC = () => {
         .order('timestamp', { ascending: false });
         
       if (!error && data) {
-        setPresets(data);
+        // Filter out table presets from the main dashboard presets
+        setPresets(data.filter((p: any) => !p.filters?.isTablePreset));
       }
     } catch (err) {
       console.error('Failed to fetch presets', err);
@@ -1170,6 +1171,8 @@ export const Dashboard: React.FC = () => {
                   categories={categories.filter(cat => selectedIndicators.includes(cat))}
                   selectedMonth={selectedMonth}
                   isIntegerMode={isIntegerMode}
+                  setIsIntegerMode={setIsIntegerMode}
+                  authState={authState}
                 />
               )}
               <div className={cn("flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden", chartType === 'table' && "hidden")}>

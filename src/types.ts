@@ -43,10 +43,20 @@ export interface FilterPreset {
   id: string;
   userId: string;
   name: string;
-  filters: Record<string, string[]>;
+  filters: any; // Using any to allow flexible JSON structure
   selectedIndicators: string[];
   timestamp: string;
 }
+
+export interface TablePreset {
+  id: string;
+  userId: string;
+  name: string;
+  selectedYDim: string;
+  selectedMetricGroups: MetricKey[];
+  timestamp: string;
+}
+
 
 export interface CommentItem {
   id: string;
