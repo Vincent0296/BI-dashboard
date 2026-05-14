@@ -490,7 +490,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  function getSumWithFuzzyInternal(items: EnrichedRecord[], name: string, timeGroupName: string, year: number, month: number, prevYear: number, pm: {y:number, m:number}): number {
+  function getSumWithFuzzyInternal(items: EnrichedRecord[], name: string, timeGroupName: string, year: number, month: number, prevYear: number, pm: { y: number, m: number }): number {
     const isYTD = (d: EnrichedRecord, y: number, m: number) => {
       const [dy, dm] = d.month.split('-').map(Number);
       return dy === y && dm <= m;
@@ -577,16 +577,7 @@ export const Dashboard: React.FC = () => {
         return cleanFormula.includes('*100') ? val * 100 : val;
       }
       if (cleanFormula.includes('*100')) {
-        const base = cleanFormula.replace('*100', '').replace(/^\(|\)$/g, '').trim();
-        if (base.includes('ABS(')) {
-          // Handle the new profit completion formula: (1+(利润YTD-Budget)/ABS(Budget))*100
-          const isInternal = metricName.includes('内部');
-          const budgetName = isInternal ? '2026全年预算利润-内部' : '2026全年预算利润';
-          const profit = getMetricValue(data, '利润YTD', timeGroupName, year, month);
-          const budget = getMetricValue(data, budgetName, timeGroupName, year, month);
-          if (budget === 0) return 0;
-          return (1 + (profit - budget) / Math.abs(budget)) * 100;
-        }
+        const base = cleanFormula.replace('*100', '').trim();
         if (base.includes('/')) {
           const [numName, denName] = base.split('/').map(s => s.trim());
           const num = getMetricValue(data, numName, timeGroupName, year, month);

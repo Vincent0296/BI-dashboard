@@ -758,7 +758,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <thead>
               {/* Level 1 Header */}
               <tr className="bg-slate-800 text-white">
-                <th className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
+                <th className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center">
                   维度 \ 计算组
                 </th>
                 {selectedMetricGroups.map(group => {
@@ -777,14 +777,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               </tr>
               {/* Level 2 Header */}
               <tr className="bg-slate-100">
-                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">
+                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center">
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedMetricGroups.map(group => (
                   getGroupIndicators(group).map(cat => (
                     <th 
                       key={`${group}_${cat}`}
-                      className="p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px]"
+                      className="p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center"
                     >
                       {cat}
                     </th>
@@ -795,7 +795,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <tbody>
               {tableData.map((row, idx) => (
                 <tr key={row.dimValue} className={cn("hover:bg-slate-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")}>
-                  <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10">
+                  <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10 text-center">
                     {row.dimValue}
                   </td>
                   {selectedMetricGroups.map(group => (
@@ -807,8 +807,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         <td 
                           key={`${group}_${cat}`}
                           className={cn(
-                            "p-3 border-b border-r border-slate-50 text-sm font-medium",
-                            (isRate || group === '同比增减额' || group === '环比增减额') 
+                            "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
+                            (isRate || group === '同比增减额' || group === '环比增减率' || group === '同比增减率' || group === '环比增减额') 
                               ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
                               : "text-slate-600"
                           )}
@@ -822,7 +822,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               ))}
               {/* Total Row */}
               <tr className="bg-indigo-900 text-white font-black">
-                <td className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
+                <td className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center">
                   合计
                 </td>
                 {selectedMetricGroups.map(group => (
@@ -834,7 +834,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <td 
                         key={`${group}_${cat}`}
                         className={cn(
-                          "p-3 border-b border-r border-indigo-800 text-sm",
+                          "p-3 border-b border-r border-indigo-800 text-sm text-center",
                           (isRate || group === '同比增减额' || group === '环比增减额') 
                             ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
                             : "text-white"
