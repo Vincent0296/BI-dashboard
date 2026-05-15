@@ -111,6 +111,13 @@
   .no-print {
     display: none !important;
   }
+
+  /* 优化表格单元格文字换行 */
+  .print-area td, .print-area th {
+    word-break: keep-all !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.2 !important;
+  }
 }
 
 

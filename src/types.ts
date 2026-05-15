@@ -19,6 +19,8 @@ export interface ProjectInfo {
   secondaryPropertyType: string; // 二级业态
   isKeyProject: string;    // 重点项目
   isExistingProject: string; // 现有项目
+  reportCaliber: string;     // 报表口径
+  projectShortName: string;   // 项目简称
 }
 
 export interface MetricMetadata {
@@ -49,6 +51,8 @@ export interface EnrichedRecord extends DataRecord {
   secondaryPropertyType: string;
   isKeyProject: string;
   isExistingProject: string;
+  reportCaliber: string;
+  projectShortName: string;
 }
 
 export interface FilterState {
@@ -60,6 +64,8 @@ export interface FilterState {
   projectNames: string[];
   isKeyProjects: string[];
   isExistingProjects: string[];
+  reportCalibers: string[];
+  projectShortNames: string[];
 }
 
 export interface User {

@@ -103,7 +103,9 @@ export const Dashboard: React.FC = () => {
     secondaryPropertyTypes: [],
     projectNames: [],
     isKeyProjects: [],
-    isExistingProjects: []
+    isExistingProjects: [],
+    reportCalibers: [],
+    projectShortNames: []
   });
 
   const handleResetFilters = () => {
@@ -116,7 +118,9 @@ export const Dashboard: React.FC = () => {
       secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
       projectNames: [...new Set(sourceData.map(d => d.projectName))],
       isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
-      isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))]
+      isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))],
+      reportCalibers: [...new Set(sourceData.map(d => d.reportCaliber))],
+      projectShortNames: [...new Set(sourceData.map(d => d.projectShortName))]
     });
     setActivePresetId(null);
   };
@@ -131,7 +135,9 @@ export const Dashboard: React.FC = () => {
           (excludedDim === 'secondaryPropertyTypes' || (filters.secondaryPropertyTypes.length === 0 || filters.secondaryPropertyTypes.includes(d.secondaryPropertyType))) &&
           (excludedDim === 'projectNames' || (filters.projectNames.length === 0 || filters.projectNames.includes(d.projectName))) &&
           (excludedDim === 'isKeyProjects' || (filters.isKeyProjects.length === 0 || filters.isKeyProjects.includes(d.isKeyProject))) &&
-          (excludedDim === 'isExistingProjects' || (filters.isExistingProjects.length === 0 || filters.isExistingProjects.includes(d.isExistingProject)))
+          (excludedDim === 'isExistingProjects' || (filters.isExistingProjects.length === 0 || filters.isExistingProjects.includes(d.isExistingProject))) &&
+          (excludedDim === 'reportCalibers' || (filters.reportCalibers.length === 0 || filters.reportCalibers.includes(d.reportCaliber))) &&
+          (excludedDim === 'projectShortNames' || (filters.projectShortNames.length === 0 || filters.projectShortNames.includes(d.projectShortName)))
         );
       });
       return [...new Set(filtered.map(d => String(d[dim])))].sort();
@@ -144,7 +150,9 @@ export const Dashboard: React.FC = () => {
       secondaryPropertyTypes: getOptions('secondaryPropertyType', 'secondaryPropertyTypes'),
       projectNames: getOptions('projectName', 'projectNames'),
       isKeyProjects: getOptions('isKeyProject', 'isKeyProjects'),
-      isExistingProjects: getOptions('isExistingProject', 'isExistingProjects')
+      isExistingProjects: getOptions('isExistingProject', 'isExistingProjects'),
+      reportCalibers: getOptions('reportCaliber', 'reportCalibers'),
+      projectShortNames: getOptions('projectShortName', 'projectShortNames')
     };
   }, [sourceData, filters]);
 
@@ -310,7 +318,9 @@ export const Dashboard: React.FC = () => {
                   propertyType: String(row['业态'] || row['Type'] || ''),
                   secondaryPropertyType: String(row['二级业态'] || ''),
                   isKeyProject: String(row['重点项目'] || row['Key'] || '否'),
-                  isExistingProject: String(row['现有项目'] || '否')
+                  isExistingProject: String(row['现有项目'] || '否'),
+                  reportCaliber: String(row['报表口径'] || ''),
+                  projectShortName: String(row['项目简称'] || '')
                 };
               }
             });
@@ -438,7 +448,9 @@ export const Dashboard: React.FC = () => {
           propertyType: '未分类',
           secondaryPropertyType: '未分类',
           isKeyProject: '否',
-          isExistingProject: '否'
+          isExistingProject: '否',
+          reportCaliber: '未分类',
+          projectShortName: '未分类'
         };
 
         // Combine monthly metrics with static metrics from other sheets
@@ -1294,6 +1306,19 @@ export const Dashboard: React.FC = () => {
                       options={slicerOptions.isExistingProjects}
                       selected={filters.isExistingProjects}
                       onChange={(val) => { setFilters({ ...filters, isExistingProjects: val }); setActivePresetId(null); }}
+                    />
+                    <Slicer
+                      label="报表口径"
+                      options={slicerOptions.reportCalibers}
+                      selected={filters.reportCalibers}
+                      onChange={(val) => { setFilters({ ...filters, reportCalibers: val }); setActivePresetId(null); }}
+                    />
+                    <Slicer
+                      label="项目简称"
+                      options={slicerOptions.projectShortNames}
+                      selected={filters.projectShortNames}
+                      onChange={(val) => { setFilters({ ...filters, projectShortNames: val }); setActivePresetId(null); }}
+                      showSearch
                     />
                   </div>
                 </div>

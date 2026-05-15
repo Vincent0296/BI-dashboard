@@ -56,6 +56,8 @@ const DIMENSIONS = [
   { key: 'projectName', label: '项目名称' },
   { key: 'isKeyProject', label: '重点项目' },
   { key: 'isExistingProject', label: '现有项目' },
+  { key: 'reportCaliber', label: '报表口径' },
+  { key: 'projectShortName', label: '项目简称' },
 ] as const;
 
 export const MultiDimTable: React.FC<MultiDimTableProps> = ({
@@ -689,7 +691,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <table className="w-full text-left border-collapse table-fixed">
                   <thead>
                     <tr className="bg-slate-800 text-white">
-                      <th className="p-3 border border-slate-700 font-black text-[10px] text-center w-[120px]" colSpan={selectedYDim2 === 'none' ? 1 : 2}>维度</th>
+                      <th 
+                        className={cn(
+                          "p-3 border border-slate-700 font-black text-[10px] text-center",
+                          selectedYDim2 === 'none' ? "w-[150px]" : "w-[200px]"
+                        )}
+                        colSpan={selectedYDim2 === 'none' ? 1 : 2}
+                      >
+                        维度
+                      </th>
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => {
                           const indicatorsInChunk = chunk.filter(cat =>
@@ -725,11 +735,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       )}
                     </tr>
                     <tr className="bg-slate-100">
-                      <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center">
+                      <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center w-full">
                         {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                       </th>
                       {selectedYDim2 !== 'none' && (
-                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center">
+                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center w-full">
                           {DIMENSIONS.find(d => d.key === selectedYDim2)?.label}
                         </th>
                       )}
@@ -782,7 +792,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 </td>
                               )}
                               <td className={cn(
-                                "p-2 border border-slate-200 text-center",
+                                "p-2 border border-slate-200 text-center leading-tight",
                                 row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[10px]" : "text-slate-600 font-medium text-[9px]"
                               )}>
                                 {row.dimValue2}
