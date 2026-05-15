@@ -120,7 +120,6 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         .order('timestamp', { ascending: false });
 
       if (!error && rawData) {
-        // Only keep table-specific presets
         const tableOnly = rawData
           .filter((p: any) => p.filters?.isTablePreset)
           .map((p: any) => {
@@ -134,7 +133,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               userId: p.userId,
               name: p.name,
               selectedYDim: p.filters.selectedYDim,
+              selectedYDim2: p.filters.selectedYDim2 || 'none',
               selectedMetricGroups: groups,
+              isXAxisSwapped: p.filters.isXAxisSwapped || false,
               timestamp: p.timestamp
             };
           });
@@ -164,7 +165,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         filters: {
           isTablePreset: true,
           selectedYDim,
-          selectedMetricGroups
+          selectedYDim2,
+          selectedMetricGroups,
+          isXAxisSwapped
         },
         selectedIndicators: [], // Not used for table presets but required by schema
         timestamp: new Date().toISOString()
@@ -178,7 +181,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           userId: newPresetObj.userId!,
           name: newPresetObj.name,
           selectedYDim: newPresetObj.filters.selectedYDim,
-          selectedMetricGroups: newPresetObj.filters.selectedMetricGroups as MetricKey[],
+          selectedYDim2: newPresetObj.filters.selectedYDim2,
+          selectedMetricGroups: newPresetObj.filters.selectedMetricGroups as string[],
+          isXAxisSwapped: newPresetObj.filters.isXAxisSwapped,
           timestamp: newPresetObj.timestamp
         };
         setTablePresets([mappedPreset, ...tablePresets]);
@@ -193,7 +198,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const applyPreset = (preset: TablePreset) => {
     setSelectedYDim(preset.selectedYDim as any);
+    setSelectedYDim2(preset.selectedYDim2 as any);
     setSelectedMetricGroups(preset.selectedMetricGroups);
+    setIsXAxisSwapped(preset.isXAxisSwapped);
     setActivePresetId(preset.id);
   };
 
@@ -244,14 +251,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           filters: {
             isTablePreset: true,
             selectedYDim,
-            selectedMetricGroups
+            selectedYDim2,
+            selectedMetricGroups,
+            isXAxisSwapped
           },
           timestamp: new Date().toISOString()
         })
         .eq('id', preset.id);
 
       if (!error) {
-        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedMetricGroups } as TablePreset : p));
+        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedMetricGroups, isXAxisSwapped } as TablePreset : p));
         alert('方案已成功更新');
       }
     } catch (err) {
@@ -938,6 +947,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   <>
                     <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600">{preset.name}</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                      <button
+                        onClick={(e) => handleUpdatePreset(preset, e)}
+                        title="更新为当前配置"
+                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-emerald-500 transition-all"
+                      >
+                        <RefreshCcw className="w-3 h-3" />
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
                         className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all"

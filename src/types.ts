@@ -90,7 +90,9 @@ export interface TablePreset {
   userId: string;
   name: string;
   selectedYDim: string;
-  selectedMetricGroups: string[]; // Now dynamic
+  selectedYDim2: string;
+  selectedMetricGroups: string[];
+  isXAxisSwapped: boolean;
   timestamp: string;
 }
 
