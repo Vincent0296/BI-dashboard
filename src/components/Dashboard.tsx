@@ -25,7 +25,7 @@ import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
 import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
-import { cn, formatNumber, isMoneyMetric } from '../lib/utils';
+import { cn, formatNumber, isMoneyMetric, isRateMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
 

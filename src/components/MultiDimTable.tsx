@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { EnrichedRecord, AuthState, TablePreset, MetricMetadata, TimeGroupMetadata, MetricKey } from '../types';
 import { supabase } from '../lib/supabase';
-import { cn, formatNumber, isMoneyMetric } from '../lib/utils';
+import { cn, formatNumber, isMoneyMetric, isRateMetric } from '../lib/utils';
 import { TIME_SERIES_ALLOWED_METRICS, BUDGET_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS } from '../constants/internalData';
 
 
