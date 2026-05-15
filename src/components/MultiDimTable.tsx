@@ -1341,9 +1341,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                (isRate || group.includes('增减'))
-                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                  : "text-slate-600"
+                              group.includes('\u589e\u51cf')
+                                ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
+                                : "text-slate-600"
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -1365,7 +1365,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                (isRate || group.includes('增减'))
+                                group.includes('\u589e\u51cf')
                                   ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                   : "text-slate-600"
                               )}
@@ -1398,7 +1398,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           key={`${group}_${cat}`}
                           className={cn(
                             "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            (isRate || group.includes('增减'))
+                            group.includes('\u589e\u51cf')
                               ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
@@ -1422,7 +1422,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           key={`${group}_${cat}`}
                           className={cn(
                             "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            (isRate || group.includes('增减'))
+                            group.includes('\u589e\u51cf')
                               ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
