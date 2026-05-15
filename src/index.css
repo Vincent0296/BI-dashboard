@@ -1,5 +1,59 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --bg-main: #f8fafc;
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --card-border: rgba(226, 232, 240, 0.8);
+    --accent-primary: #4f46e5;
+    --accent-secondary: #0ea5e9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.5);
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Inter', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .premium-shadow {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .hover-lift {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
 @media print {
   @page {
     size: landscape;
@@ -13,20 +67,50 @@
     print-color-adjust: exact !important;
   }
 
+  /* 默认隐藏所有内容 */
   body * {
     visibility: hidden !important;
   }
-  #printable-chart, #printable-chart * {
+
+  /* 允许显示打印区域及其子元素 */
+  .print-area, .print-area * {
     visibility: visible !important;
   }
-  #printable-chart {
+
+  /* 定位打印区域 */
+  .print-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     background: white !important;
   }
+
+  /* 分页符 */
+  .print-page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+    margin-bottom: 2rem;
+    display: block;
+  }
+
+  /* 移除滚动限制 */
+  .print-no-overflow {
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* 打印时取消固定列（Sticky）以避免位置错乱 */
+  .print-static {
+    position: static !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
   .no-print {
     display: none !important;
   }
 }
+
+

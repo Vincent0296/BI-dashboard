@@ -12,7 +12,12 @@ import {
   Trash2, 
   Bookmark,
   RefreshCcw,
-  Edit2
+  Edit2,
+  Check,
+  Printer,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { EnrichedRecord, AuthState, TablePreset, MetricMetadata, TimeGroupMetadata, MetricKey } from '../types';
 import { supabase } from '../lib/supabase';
@@ -27,6 +32,7 @@ interface MultiDimTableProps {
   isIntegerMode: boolean;
   setIsIntegerMode: (val: boolean) => void;
   authState: AuthState;
+  checkAuth: (action: () => void) => void;
   metricMetadata: MetricMetadata[];
   timeGroupMetadata: TimeGroupMetadata[];
 }
@@ -59,6 +65,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   isIntegerMode,
   setIsIntegerMode,
   authState,
+  checkAuth,
   metricMetadata,
   timeGroupMetadata
 }) => {
@@ -76,6 +83,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   const [newPresetName, setNewPresetName] = useState('');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
+    key: '',
+    direction: null,
+  });
+  const PRINT_INDICATORS_PER_PAGE = 4; // 每页打印 4 个指标，确保列宽充足、易于阅读
 
   const totalPages = Math.ceil(categories.length / itemsPerPage);
 
@@ -244,7 +257,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     }
   };
 
-  const currentIndicators = categories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+  const currentIndicators = isPrinting ? categories : categories.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
 
   const getGroupIndicators = (groupName: string) => {
     if (groupName === '本年累计') return currentIndicators;
@@ -432,7 +445,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   };
 
   const tableData = useMemo(() => {
-    return dimValues.map(dv => {
+    const rawData = dimValues.map(dv => {
       const slice = data.filter(d => String(d[selectedYDim]) === dv);
       const metrics: Record<string, number> = {};
       
@@ -444,7 +457,26 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       
       return { dimValue: dv, metrics };
     });
-  }, [data, dimValues, selectedYDim, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata]);
+
+    if (sortConfig.key && sortConfig.direction) {
+      return [...rawData].sort((a, b) => {
+        const aVal = a.metrics[sortConfig.key] || 0;
+        const bVal = b.metrics[sortConfig.key] || 0;
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      });
+    }
+    return rawData;
+  }, [data, dimValues, selectedYDim, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev.key === key) {
+        if (prev.direction === 'asc') return { key, direction: 'desc' };
+        if (prev.direction === 'desc') return { key: '', direction: null };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   const totalRow = useMemo(() => {
     const metrics: Record<string, number> = {};
@@ -457,15 +489,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   }, [data, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata]);
 
   const exportToExcel = () => {
-    const header1 = ['维度', ...selectedMetricGroups.flatMap(g => Array(currentIndicators.length).fill(g))];
-    const header2 = ['', ...selectedMetricGroups.flatMap(() => currentIndicators)];
+    // Export ALL indicators from 'categories' prop, not just 'currentIndicators'
+    const header1 = ['维度', ...selectedMetricGroups.flatMap(g => Array(categories.length).fill(g))];
+    const header2 = ['', ...selectedMetricGroups.flatMap(() => categories)];
     
     const rows = tableData.map(row => [
       row.dimValue,
       ...selectedMetricGroups.flatMap(g => 
-        currentIndicators.map(cat => {
+        categories.map(cat => {
           const val = row.metrics[`${g}_${cat}`];
-          const isRate = g.includes('率') || g.includes('Percent');
+          const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
           return isRate ? (val * 100).toFixed(2) + '%' : val;
         })
       )
@@ -474,9 +507,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const totalLine = [
       '合计',
       ...selectedMetricGroups.flatMap(g => 
-        currentIndicators.map(cat => {
+        categories.map(cat => {
           const val = totalRow[`${g}_${cat}`];
-          const isRate = g.includes('率') || g.includes('Percent');
+          const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
           return isRate ? (val * 100).toFixed(2) + '%' : val;
         })
       )
@@ -485,12 +518,152 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const worksheet = XLSX.utils.aoa_to_sheet([header1, header2, ...rows, totalLine]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "多维分析表");
-    XLSX.writeFile(workbook, `MultiDim_Analysis_${selectedMonth}.xlsx`);
+    XLSX.writeFile(workbook, `MultiDim_Analysis_All_${selectedMonth}.xlsx`);
   };
 
+  const exportToPDF = () => {
+    setIsPrinting(true);
+    // 给 React 时间准备分段表格
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 500);
+  };
+
+  // 核心逻辑：横向切分指标
+  const indicatorChunks = useMemo(() => {
+    const chunks: string[][] = [];
+    for (let i = 0; i < categories.length; i += PRINT_INDICATORS_PER_PAGE) {
+      chunks.push(categories.slice(i, i + PRINT_INDICATORS_PER_PAGE));
+    }
+    return chunks;
+  }, [categories]);
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col space-y-6">
+    <>
+      {/* 打印专用视图：横向分段逻辑 */}
+      {isPrinting && (
+        <div className="print-area fixed inset-0 bg-white z-[9999] p-8 print-no-overflow">
+          <div className="flex flex-col space-y-12">
+            {indicatorChunks.map((chunk, chunkIdx) => (
+              <div key={chunkIdx} className="print-page-break flex flex-col space-y-4">
+                <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2">
+                  <div className="flex flex-col">
+                    <h2 className="text-xl font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} | 期间: {selectedMonth}
+                    </p>
+                  </div>
+                  <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                    INTERNAL REPORT
+                  </div>
+                </div>
+
+                <div className="border border-slate-200">
+                  <table className="w-full text-left border-collapse table-fixed">
+                    <thead>
+                      <tr className="bg-slate-800 text-white">
+                        <th className="p-3 border border-slate-700 font-black text-[10px] text-center w-[120px]">维度</th>
+                        {selectedMetricGroups.map(group => {
+                          // 只显示当前 Chunk 中的指标
+                          const indicatorsInChunk = chunk.filter(cat => 
+                            group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          );
+                          if (indicatorsInChunk.length === 0) return null;
+                          return (
+                            <th 
+                              key={group} 
+                              colSpan={indicatorsInChunk.length}
+                              className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
+                            >
+                              {group}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                      <tr className="bg-slate-100">
+                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center">
+                          {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
+                        </th>
+                        {selectedMetricGroups.map(group => (
+                          chunk.filter(cat => 
+                            group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          ).map(cat => (
+                            <th 
+                              key={`${group}_${cat}`}
+                              className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
+                            >
+                              {cat}
+                            </th>
+                          ))
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableData.map((row) => (
+                        <tr key={row.dimValue} className="bg-white">
+                          <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[10px] text-center">
+                            {row.dimValue}
+                          </td>
+                          {selectedMetricGroups.map(group => (
+                            chunk.filter(cat => 
+                              group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                            ).map(cat => {
+                              const val = row.metrics[`${group}_${cat}`];
+                              const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                              const isWanYuan = !isRate && isMoneyMetric(cat);
+                              return (
+                                <td 
+                                  key={`${group}_${cat}`}
+                                  className={cn(
+                                    "p-3 border border-slate-100 text-[11px] font-medium text-center",
+                                    (isRate || group.includes('增减')) 
+                                      ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                      : "text-slate-600"
+                                  )}
+                                >
+                                  {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                                </td>
+                              );
+                            })
+                          ))}
+                        </tr>
+                      ))}
+                      <tr className="bg-slate-800 text-white font-bold">
+                        <td className="p-2 border border-slate-700 text-center text-[10px]">合计</td>
+                        {selectedMetricGroups.map(group => (
+                          chunk.filter(cat => 
+                            group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          ).map(cat => {
+                            const val = totalRow[`${group}_${cat}`];
+                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                            const isWanYuan = !isRate && isMoneyMetric(cat);
+                            return (
+                              <td 
+                                key={`${group}_${cat}`}
+                                className="p-2 border border-slate-700 text-[10px] text-center"
+                              >
+                                {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                              </td>
+                            );
+                          })
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex justify-between items-center text-[8px] text-slate-400 font-bold">
+                  <span>导出时间: {new Date().toLocaleString()}</span>
+                  <span>报表数据期: {selectedMonth}</span>
+                  <span>第 {chunkIdx + 1} / {indicatorChunks.length} 页</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={cn("flex flex-col space-y-6", isPrinting && "hidden")}>
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -503,34 +676,39 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 print:hidden">
             <button
               onClick={() => setIsIntegerMode(!isIntegerMode)}
-              className="px-3 py-1.5 text-[11px] font-bold rounded-lg border transition-all hover:opacity-80 active:scale-95"
-              style={{
-                borderColor: isIntegerMode ? '#4f46e5' : '#e2e8f0',
-                backgroundColor: isIntegerMode ? '#eef2ff' : '#ffffff',
-                color: isIntegerMode ? '#4338ca' : '#64748b'
-              }}
+              className={cn(
+                "px-4 py-2 text-[10px] font-black rounded-xl border transition-all hover-lift active:scale-95 uppercase tracking-wider",
+                isIntegerMode ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-500 border-slate-200"
+              )}
             >
-              {isIntegerMode ? '恢复默认' : '切换整数显示'}
+              {isIntegerMode ? 'DEFAULT VIEW' : 'INTEGER MODE'}
             </button>
-            <button 
-              onClick={exportToExcel}
-              className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-100"
+            <button
+              onClick={() => checkAuth(exportToPDF)}
+              className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
             >
-              <Download className="w-4 h-4" />
-              Excel 导出
+              <Printer className="w-3.5 h-3.5 text-indigo-500" />
+              PRINT PDF
+            </button>
+            <button
+              onClick={() => checkAuth(exportToExcel)}
+              className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
+            >
+              <Download className="w-3.5 h-3.5" />
+              EXPORT EXCEL
             </button>
           </div>
         </div>
 
         {/* Separate Preset Management for Table */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5 text-slate-400 mr-2">
-              <Bookmark className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black uppercase tracking-wider">表格预设方案</span>
+        <div className="bg-white/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/60 shadow-sm print:hidden">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 text-slate-400 mr-2">
+              <Bookmark className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Table Presets</span>
             </div>
             
             {tablePresets.map(preset => (
@@ -538,9 +716,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 key={preset.id}
                 onClick={() => applyPreset(preset)}
                 className={cn(
-                  "group flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl cursor-pointer transition-all",
+                  "group flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl cursor-pointer transition-all hover-lift",
                   editingPresetId === preset.id && "bg-white border-indigo-500 ring-2 ring-indigo-100",
-                  activePresetId === preset.id && "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200"
+                  activePresetId === preset.id && "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200 shadow-sm"
                 )}
               >
                 {editingPresetId === preset.id ? (
@@ -557,28 +735,19 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   />
                 ) : (
                   <>
-                    <span className="text-[10px] font-bold text-slate-600 group-hover:text-indigo-600">{preset.name}</span>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                    <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600">{preset.name}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
-                        title="重命名"
-                        className="p-1 hover:bg-indigo-100 rounded text-slate-400 hover:text-indigo-600 transition-all"
+                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
                       >
-                        <Edit2 className="w-2.5 h-2.5" />
-                      </button>
-                      <button 
-                        onClick={(e) => handleUpdatePreset(preset, e)}
-                        title="覆盖更新当前设置"
-                        className="p-1 hover:bg-emerald-100 rounded text-slate-400 hover:text-emerald-600 transition-all"
-                      >
-                        <RefreshCcw className="w-2.5 h-2.5" />
+                        <Edit2 className="w-3 h-3" />
                       </button>
                       <button 
                         onClick={(e) => handleDeletePreset(preset.id, e)}
-                        title="删除"
-                        className="p-1 hover:bg-red-100 rounded text-slate-400 hover:text-red-500 transition-all"
+                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-rose-500 transition-all"
                       >
-                        <Trash2 className="w-2.5 h-2.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   </>
@@ -591,17 +760,17 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <input 
                   autoFocus
                   type="text" 
-                  placeholder="方案名称..."
+                  placeholder="New preset..."
                   value={newPresetName}
                   onChange={(e) => setNewPresetName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
-                  className="text-[10px] font-bold px-3 py-1 bg-white border-2 border-indigo-500 rounded-lg outline-none w-32"
+                  className="text-[11px] font-bold px-4 py-2 bg-white border-2 border-indigo-500 rounded-xl outline-none w-40 shadow-xl shadow-indigo-100"
                 />
-                <button onClick={handleSavePreset} className="p-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                  <Plus className="w-3.5 h-3.5" />
+                <button onClick={handleSavePreset} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg active:scale-95">
+                  <Plus className="w-4 h-4" />
                 </button>
-                <button onClick={() => setIsSavingPreset(false)} className="p-1 bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200">
-                  <X className="w-3.5 h-3.5" />
+                <button onClick={() => setIsSavingPreset(false)} className="p-2 bg-white text-slate-500 rounded-xl hover:bg-slate-50 border border-slate-200 active:scale-95">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ) : (
@@ -613,22 +782,24 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   }
                   setIsSavingPreset(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1 text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg border border-dashed border-indigo-200 transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-indigo-600 font-black text-[10px] hover:bg-indigo-50 rounded-xl border border-dashed border-indigo-200 transition-all active:scale-95 uppercase tracking-wider"
               >
-                <Save className="w-3 h-3" />
-                <span className="text-[10px]">保存当前表格配置</span>
+                <Save className="w-3.5 h-3.5" />
+                Save Layout
               </button>
             )}
           </div>
         </div>
 
         {/* Controls Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm premium-shadow print:hidden">
           {/* Y-Axis Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
-              <Filter className="w-3.5 h-3.5" />
-              Y轴维度选择
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-50 p-2 rounded-lg">
+                <Filter className="w-4 h-4 text-indigo-600" />
+              </div>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Dimension Axis</h4>
             </div>
             <div className="flex flex-wrap gap-2">
               {DIMENSIONS.map(dim => (
@@ -639,10 +810,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     setActivePresetId(null);
                   }}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-xs font-black transition-all",
+                    "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                     selectedYDim === dim.key 
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" 
-                      : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-200"
+                      ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100" 
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
                   )}
                 >
                   {dim.label}
@@ -652,31 +823,33 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           </div>
 
           {/* X-Axis Metric Group Selection */}
-          <div className="space-y-3">
+          <div className="space-y-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
-                <Filter className="w-3.5 h-3.5" />
-                X轴计算组多选
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-50 p-2 rounded-lg">
+                  <Filter className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Calculation Groups</h4>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button 
                   onClick={() => {
                     const allNames = timeGroupMetadata.map(g => g.name);
                     setSelectedMetricGroups(allNames);
                     setActivePresetId(null);
                   }}
-                  className="text-[10px] font-bold text-indigo-600 hover:underline"
+                  className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-wider"
                 >
-                  全选
+                  Select All
                 </button>
                 <button 
                   onClick={() => {
                     setSelectedMetricGroups([]);
                     setActivePresetId(null);
                   }}
-                  className="text-[10px] font-bold text-slate-400 hover:underline"
+                  className="text-[10px] font-black text-slate-400 hover:underline uppercase tracking-wider"
                 >
-                  清空
+                  Clear
                 </button>
               </div>
             </div>
@@ -685,10 +858,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <label 
                   key={group.name}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border hover-lift",
                     selectedMetricGroups.includes(group.name)
-                      ? "bg-blue-50 border-blue-200 text-blue-700"
-                      : "bg-white border-slate-200 text-slate-400 hover:border-slate-300"
+                      ? "bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm"
+                      : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white"
                   )}
                 >
                   <input 
@@ -705,9 +878,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     }}
                   />
                   <div className={cn(
-                    "w-3 h-3 rounded-sm border",
-                    selectedMetricGroups.includes(group.name) ? "bg-blue-500 border-blue-500" : "bg-white border-slate-300"
-                  )} />
+                    "w-4 h-4 rounded-lg border-2 flex items-center justify-center transition-all",
+                    selectedMetricGroups.includes(group.name) ? "bg-indigo-500 border-indigo-500 shadow-sm" : "bg-white border-slate-300"
+                  )}>
+                    {selectedMetricGroups.includes(group.name) && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                  </div>
                   {group.name}
                 </label>
               ))}
@@ -716,7 +891,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         </div>
 
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between bg-white px-2 py-1">
+        <div className="flex items-center justify-between bg-white px-2 py-1 print:hidden">
           <div className="text-xs font-bold text-slate-400">
             指标分页: <span className="text-indigo-600">{currentPage + 1}</span> / {totalPages} (共 {categories.length} 个指标)
           </div>
@@ -781,14 +956,34 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedMetricGroups.map(group => (
-                  getGroupIndicators(group).map(cat => (
-                    <th 
-                      key={`${group}_${cat}`}
-                      className="p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center"
-                    >
-                      {cat}
-                    </th>
-                  ))
+                  getGroupIndicators(group).map(cat => {
+                    const sortKey = `${group}_${cat}`;
+                    const isSorting = sortConfig.key === sortKey;
+                    return (
+                      <th 
+                        key={sortKey}
+                        onClick={() => handleSort(sortKey)}
+                        className={cn(
+                          "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
+                          isSorting && "bg-indigo-50 text-indigo-700"
+                        )}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          {cat}
+                          <div className={cn(
+                            "transition-all",
+                            isSorting ? "opacity-100 scale-110" : "opacity-0 group-hover/sort:opacity-100 scale-100"
+                          )}>
+                            {isSorting ? (
+                              sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+                            ) : (
+                              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                            )}
+                          </div>
+                        </div>
+                      </th>
+                    );
+                  })
                 ))}
               </tr>
             </thead>
@@ -865,7 +1060,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

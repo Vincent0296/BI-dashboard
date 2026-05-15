@@ -24,7 +24,7 @@ import { FeedbackModal } from './FeedbackModal';
 import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, RotateCcw, Check, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
 import { cn, formatNumber, isMoneyMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
@@ -932,118 +932,80 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm print:hidden">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
-            <FileSpreadsheet className="w-5 h-5 text-white" />
+      <header className="sticky top-0 z-50 glass-card border-b border-slate-200/60 px-6 py-3 flex items-center justify-between print:hidden">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-500 p-2.5 rounded-2xl shadow-lg shadow-indigo-200 animate-float">
+            <BarChart2 className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight">企业数据 BI 仪表盘</h1>
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-emerald-500">
-              {sourceData.length > 0 ? 'Data Loaded' : 'Waiting for Data Import'}
-            </p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              BI 经营分析中心
+              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200 font-bold uppercase tracking-widest">Enterprise</span>
+            </h1>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Financial Intelligence Dashboard</p>
           </div>
-          <button
-            onClick={() => setIsHelpModalOpen(true)}
-            className="ml-4 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors active:scale-95"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span className="hidden sm:inline">使用指南</span>
-          </button>
         </div>
 
         <div className="flex items-center gap-4">
-          {sourceData.length > 0 && (
-            <button
-              onClick={() => {
-                const ms = [...new Set(sourceData.map(d => d.month))].sort().reverse();
-                setFilters({
-                  months: [],
-                  ownerships: [...new Set(sourceData.map(d => d.ownership))],
-                  managements: [...new Set(sourceData.map(d => d.management))],
-                  propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
-                  secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
-                  projectNames: [...new Set(sourceData.map(d => d.projectName))],
-                  isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
-                  isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))]
-                });
-                setSelectedIndicators(categories);
-                setSelectedMonth(ms[0] || '');
-                setActivePresetId(null);
-              }}
-              className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
-            >
-              <RotateCcw className="w-4 h-4" />
-              一键重置
-            </button>
-          )}
-
-          <div className="h-8 w-px bg-slate-200 mx-2"></div>
-
-          <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
+          <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/50">
             <button
               onClick={() => {
                 setChartType('bar');
-                // 从数据表切回时，移除看板不支持的指标组
                 const allowed = [...MAIN_INDICATORS, ...OPERATING_METRICS];
                 setSelectedIndicators(prev => prev.filter(i => allowed.includes(i)));
               }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
-                chartType === 'bar' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2",
+                chartType === 'bar' ? "bg-white text-indigo-600 shadow-sm premium-shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
               )}
             >
-              <BarChart2 className="w-4 h-4" />
-              <span className="hidden sm:inline">柱状图</span>
+              <BarChart2 className="w-3.5 h-3.5" />
+              柱状图
             </button>
             <button
               onClick={() => {
                 setChartType('line');
-                // 同样移除不支持的指标
                 const allowed = [...MAIN_INDICATORS, ...OPERATING_METRICS];
                 setSelectedIndicators(prev => prev.filter(i => allowed.includes(i)));
               }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
-                chartType === 'line' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2",
+                chartType === 'line' ? "bg-white text-indigo-600 shadow-sm premium-shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
               )}
             >
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline">趋势图</span>
+              <TrendingUp className="w-3.5 h-3.5" />
+              趋势图
             </button>
             <button
               onClick={() => {
                 setChartType('pie');
-                if (!['YTD', 'LY', 'MTD', 'PreMonth'].includes(selectedMetric)) {
-                  setSelectedMetric('YTD');
-                }
-                // 饼图最严格：只允许核心指标
+                if (!['YTD', 'LY', 'MTD', 'PreMonth'].includes(selectedMetric)) setSelectedMetric('YTD');
                 setSelectedIndicators(prev => prev.filter(i => MAIN_INDICATORS.includes(i)));
               }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
-                chartType === 'pie' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2",
+                chartType === 'pie' ? "bg-white text-indigo-600 shadow-sm premium-shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
               )}
             >
-              <PieChartIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">饼图</span>
+              <PieChartIcon className="w-3.5 h-3.5" />
+              饼图
             </button>
             <button
               onClick={() => setChartType('table')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5",
-                chartType === 'table' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2",
+                chartType === 'table' ? "bg-white text-indigo-600 shadow-sm premium-shadow" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
               )}
             >
-              <TableIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">数据表</span>
+              <TableIcon className="w-3.5 h-3.5" />
+              数据表
             </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-            <Calendar className="w-4 h-4 text-slate-400" />
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm transition-all hover:border-indigo-300">
+            <Calendar className="w-4 h-4 text-indigo-500" />
             <select
-              className="bg-transparent text-sm font-bold outline-none cursor-pointer"
+              className="bg-transparent text-xs font-black outline-none cursor-pointer text-slate-700"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               disabled={sourceData.length === 0}
@@ -1063,33 +1025,32 @@ export const Dashboard: React.FC = () => {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-600 transition-all shadow-md active:scale-95 disabled:opacity-50"
+            className="group relative flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all shadow-lg active:scale-95 disabled:opacity-50 overflow-hidden"
             disabled={isImporting}
           >
-            {isImporting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Upload className="w-4 h-4" />}
-            {sourceData.length > 0 ? '重新导入数据' : '导入 Excel 数据'}
+            <span className="relative z-10 flex items-center gap-2">
+              {isImporting ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Upload className="w-3.5 h-3.5" />}
+              {sourceData.length > 0 ? 'RE-IMPORT' : 'IMPORT DATA'}
+            </span>
           </button>
 
-
-
           {authState.isLoggedIn ? (
-            <div className="flex items-center gap-3 bg-slate-50 pl-2 pr-4 py-1.5 rounded-2xl border border-slate-200">
-              <img src={authState.user?.avatar} alt="avatar" className="w-7 h-7 rounded-full border border-white shadow-sm" />
+            <div className="flex items-center gap-3 bg-white pl-1.5 pr-4 py-1.5 rounded-2xl border border-slate-200 shadow-sm">
+              <img src={authState.user?.avatar} alt="avatar" className="w-8 h-8 rounded-xl border border-slate-100 shadow-sm object-cover" />
               <div className="flex flex-col">
-                <span className="text-xs font-black text-slate-700 leading-tight">{authState.user?.nickname}</span>
+                <span className="text-[11px] font-black text-slate-800 leading-tight">{authState.user?.nickname}</span>
                 {authState.user?.username === 'admin' && (
                   <button
                     onClick={() => setView('admin')}
-                    className="text-[9px] font-black text-blue-600 flex items-center gap-0.5 hover:underline"
+                    className="text-[9px] font-black text-indigo-600 flex items-center gap-0.5 hover:underline uppercase tracking-tighter"
                   >
-                    <ShieldCheck className="w-2.5 h-2.5" />
-                    进入后台
+                    Console
                   </button>
                 )}
               </div>
               <button
                 onClick={handleLogout}
-                className="ml-2 text-slate-400 hover:text-red-500 transition-colors"
+                className="ml-2 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                 title="退出登录"
               >
                 <LogOut className="w-4 h-4" />
@@ -1098,45 +1059,58 @@ export const Dashboard: React.FC = () => {
           ) : (
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-sm font-black hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-100"
+              className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-100"
             >
               <LogIn className="w-4 h-4" />
-              登录
+              SIGN IN
             </button>
           )}
         </div>
       </header>
 
+
       <main className="flex-1 p-6 space-y-6 max-w-[1600px] mx-auto w-full">
         {sourceData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 p-12 text-center">
-            <div className="p-8 bg-blue-50 rounded-full mb-6">
-              <Upload className="w-16 h-16 text-blue-600 animate-bounce" />
+          <div className="flex flex-col items-center justify-center min-h-[70vh] bg-white/50 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-slate-200 p-12 text-center animate-in fade-in zoom-in duration-500">
+            <div className="p-10 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full mb-8 shadow-inner">
+              <Upload className="w-16 h-16 text-indigo-600 animate-bounce" />
             </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-4">开始您的数据分析</h2>
-            <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium leading-relaxed">
-              请上传您的 “导入表” Excel 文件。系统将动态解析数据并为您生成实时可视化报表。数据仅在浏览器本地处理，确保您的数据安全性。
+            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">智见数据，决策未来</h2>
+            <p className="text-slate-500 max-w-lg mx-auto mb-10 text-lg font-medium leading-relaxed">
+              上传您的 “导入表” Excel 文件。我们将为您呈现多维度的实时可视化分析报告。
+              <span className="block mt-2 text-sm text-slate-400 font-normal">您的数据仅在本地处理，隐私安全始终如一。</span>
             </p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-lg hover:bg-slate-900 transition-all shadow-2xl shadow-blue-200 active:scale-95"
+              className="group relative bg-slate-900 text-white px-12 py-5 rounded-2xl font-black text-lg hover:bg-indigo-600 transition-all shadow-2xl shadow-slate-200 active:scale-95 overflow-hidden"
             >
-              立即导入数据表
+              <span className="relative z-10 flex items-center gap-3">
+                <FileSpreadsheet className="w-6 h-6" />
+                立即开启智能分析
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
         ) : (
+
           <>
-            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm sticky top-[73px] z-40 print:hidden">
+            <section className="bg-white/70 backdrop-blur-md rounded-3xl border border-slate-200/60 shadow-sm sticky top-[80px] z-40 print:hidden overflow-visible premium-shadow transition-all hover:shadow-md">
               <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-5 cursor-pointer hover:bg-white/80 transition-colors"
                 onClick={() => setIsSlicerVisible(!isSlicerVisible)}
               >
-                <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">项目维度</h3>
+                <div className="flex items-center gap-3">
+                  <div className="bg-indigo-50 p-2 rounded-xl">
+                    <Filter className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Analysis Dimensions</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">项目多维切片器</p>
+                  </div>
                 </div>
                 {isSlicerVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
               </div>
+
 
               {isSlicerVisible && (
                 <div className="p-4 pt-0 border-t border-slate-50">
@@ -1603,24 +1577,25 @@ export const Dashboard: React.FC = () => {
                   isIntegerMode={isIntegerMode}
                   setIsIntegerMode={setIsIntegerMode}
                   authState={authState}
+                  checkAuth={checkAuth}
                   metricMetadata={metricMetadata}
                   timeGroupMetadata={timeGroupMetadata}
                 />
               )}
-              <div className={cn("flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100 print:hidden", chartType === 'table' && "hidden")}>
+              <div className={cn("flex justify-end gap-2 mt-2 pt-6 border-t border-slate-100 print:hidden", chartType === 'table' && "hidden")}>
                 <button
                   onClick={exportChartToPDF}
-                  className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-100"
+                  className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2.5 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
                 >
-                  <Camera className="w-4 h-4" />
-                  保存 PDF
+                  <Camera className="w-4 h-4 text-indigo-500" />
+                  CAPTURE VIEW
                 </button>
                 <button
                   onClick={() => checkAuth(exportToExcel)}
-                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                  className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
                 >
                   <Download className="w-4 h-4" />
-                  导出报表
+                  EXPORT REPORT
                 </button>
               </div>
             </div>
@@ -1650,9 +1625,9 @@ export const Dashboard: React.FC = () => {
         )}
       </main>
 
-      <footer className="bg-white border-t border-slate-200 p-4 text-center mt-auto">
-        <p className="text-xs text-slate-400 font-bold tracking-widest uppercase">
-          Confidential Data Analysis System • No Cloud Storage
+      <footer className="glass-card border-t border-slate-200/60 p-6 text-center mt-auto">
+        <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase">
+          Confidential Data Analysis System • Secured Local Instance • v2.0.4
         </p>
       </footer>
 
@@ -1683,10 +1658,10 @@ const IndicatorCheckbox: React.FC<{
 }> = ({ indicator, selectedIndicators, onChange }) => (
   <label
     className={cn(
-      "flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer select-none",
+      "flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none hover-lift",
       selectedIndicators.includes(indicator)
-        ? "bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200"
-        : "bg-white border-slate-200 hover:border-slate-300"
+        ? "bg-indigo-50/50 border-indigo-200 ring-1 ring-indigo-100"
+        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
     )}
   >
     <input
@@ -1696,16 +1671,17 @@ const IndicatorCheckbox: React.FC<{
       onChange={(e) => onChange(e.target.checked)}
     />
     <div className={cn(
-      "w-3 h-3 rounded-sm border flex items-center justify-center",
-      selectedIndicators.includes(indicator) ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-300"
+      "w-4 h-4 rounded-lg border-2 flex items-center justify-center transition-all",
+      selectedIndicators.includes(indicator) ? "bg-indigo-500 border-indigo-500 shadow-sm" : "bg-white border-slate-300 group-hover:border-indigo-300"
     )}>
-      {selectedIndicators.includes(indicator) && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+      {selectedIndicators.includes(indicator) && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
     </div>
     <span className={cn(
-      "text-[11px] font-bold truncate",
-      selectedIndicators.includes(indicator) ? "text-emerald-700" : "text-slate-500"
+      "text-[11px] font-bold truncate transition-colors",
+      selectedIndicators.includes(indicator) ? "text-indigo-900" : "text-slate-500"
     )}>
       {indicator}
     </span>
   </label>
 );
+

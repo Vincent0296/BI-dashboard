@@ -12,8 +12,9 @@ export function formatNumber(
   isWanYuan: boolean = false
 ): string {
   if (isPercent) {
-    // Percent values are already scaled (e.g. 85.23 → "85.23%")
-    return `${val.toFixed(2)}%`;
+    return isIntegerMode 
+      ? `${Math.round(val)}%` 
+      : `${val.toFixed(2)}%`;
   }
   if (isWanYuan) {
     const wan = val / 10000;
