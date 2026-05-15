@@ -41,7 +41,7 @@ export const Dashboard: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedMetric, setSelectedMetric] = useState<string>('本年累计');
   const [isImporting, setIsImporting] = useState(false);
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>(DEFAULT_CATEGORIES_ORDER);
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>(['收入YTD', '利润YTD']);
   const [isSlicerVisible, setIsSlicerVisible] = useState(true);
   const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
   const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, user: null });
@@ -464,7 +464,10 @@ export const Dashboard: React.FC = () => {
 
       setMetricMetadata(mergedMetadata);
       setCategories(sortedCategories);
-      setSelectedIndicators(sortedCategories);
+      
+      // Default to only showing Revenue and Profit YTD after import
+      const defaultIndicators = sortedCategories.filter(cat => ['收入YTD', '利润YTD'].includes(cat));
+      setSelectedIndicators(defaultIndicators.length > 0 ? defaultIndicators : sortedCategories);
 
       const ms = [...new Set(enriched.map(d => d.month))].sort().reverse();
       setSelectedMonth(ms[0] || '');
@@ -537,12 +540,12 @@ export const Dashboard: React.FC = () => {
     if (timeGroupName === '同比增减率') {
       const current = getMetricValue(data, metricName, '本年累计', year, month);
       const previous = getMetricValue(data, metricName, '去年同期', year, month);
-      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : NaN;
     }
     if (timeGroupName === '环比增减率') {
       const current = getMetricValue(data, metricName, '当月发生额', year, month);
       const previous = getMetricValue(data, metricName, '上月发生额', year, month);
-      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : NaN;
     }
 
     const meta = metricMetadata.find(m => m.name === metricName);
@@ -560,21 +563,21 @@ export const Dashboard: React.FC = () => {
         const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
         const num = getMetricValue(data, numName, timeGroupName, year, month);
         const den = getMetricValue(data, denName, timeGroupName, year, month);
-        return den !== 0 ? num / den : 0;
+        return den !== 0 ? num / den : NaN;
       }
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
         const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
         const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
         const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
-        const val = den !== 0 ? (s1 + s2) / den : 0;
-        return cleanFormula.includes('*100') ? val * 100 : val;
+        const val = den !== 0 ? (s1 + s2) / den : NaN;
+        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
       if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
         const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
         const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
         const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
-        const val = den !== 0 ? (s1 + s2) / den : 0;
-        return cleanFormula.includes('*100') ? val * 100 : val;
+        const val = den !== 0 ? (s1 + s2) / den : NaN;
+        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
       if (cleanFormula.includes('*100')) {
         const base = cleanFormula.replace('*100', '').trim();
@@ -582,8 +585,8 @@ export const Dashboard: React.FC = () => {
           const [numName, denName] = base.split('/').map(s => s.trim());
           const num = getMetricValue(data, numName, timeGroupName, year, month);
           const den = getMetricValue(data, denName, timeGroupName, year, month);
-          const val = den !== 0 ? num / den : 0;
-          return val * 100;
+          const val = den !== 0 ? num / den : NaN;
+          return isNaN(val) ? NaN : val * 100;
         }
       }
     }
@@ -620,10 +623,11 @@ export const Dashboard: React.FC = () => {
       .filter(cat => selectedIndicators.includes(cat))
       .map(cat => {
         const val = calcForCategory(cat, selectedMetric);
+        const finalVal = (val === null || isNaN(val as number)) ? NaN : val;
         return {
           id: cat,
           category: cat,
-          value: val ?? 0,
+          value: finalVal as number,
           displayValue: '',
           isPercent: isRate,
           isWanYuan: !isRate && isMoneyMetric(cat)
@@ -692,7 +696,9 @@ export const Dashboard: React.FC = () => {
           const value = calculateForExport(cat, key);
           const isRate = key.includes('率') || key.includes('Percent');
           const isMoney = isMoneyMetric(cat);
-          if (isRate) {
+          if (isNaN(value) || value === 0) {
+            row[metricNames[index]] = '-';
+          } else if (isRate) {
             row[metricNames[index]] = value.toFixed(2) + '%';
           } else if (isMoney) {
             row[metricNames[index]] = (value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
@@ -786,11 +792,11 @@ export const Dashboard: React.FC = () => {
         case 'YTD': return ytd;
         case 'LY': return hasLY ? ly : 0;
         case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
-        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : 0;
+        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : NaN;
         case 'MTD': return mtd;
         case 'PreMonth': return hasPM ? preMonth : 0;
         case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
-        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : 0;
+        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : NaN;
         default: return 0;
       }
     };
@@ -808,12 +814,12 @@ export const Dashboard: React.FC = () => {
       checkAuth(() => {
         const exportData = rowData.map(r => ({
           [tableDimension]: r.dimValue,
-          [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: isRate ? (r.val * 100).toFixed(2) + '%' : r.val
+          [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: (isNaN(r.val) || r.val === 0) ? '-' : (isRate ? (r.val * 100).toFixed(2) + '%' : r.val)
         }));
 
         exportData.push({
           [tableDimension]: '合计',
-          [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: isRate ? (totalVal * 100).toFixed(2) + '%' : totalVal
+          [`${activeIndicator} (${getMetricLabel(selectedMetric)})`]: (isNaN(totalVal) || totalVal === 0) ? '-' : (isRate ? (totalVal * 100).toFixed(2) + '%' : totalVal)
         });
 
         const filterSummary = [

@@ -70,6 +70,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   timeGroupMetadata
 }) => {
   const [selectedYDim, setSelectedYDim] = useState<typeof DIMENSIONS[number]['key']>('propertyType');
+  const [selectedYDim2, setSelectedYDim2] = useState<typeof DIMENSIONS[number]['key'] | 'none'>('none');
+  const [isXAxisSwapped, setIsXAxisSwapped] = useState(false);
   // 初始状态：默认全选
   const [selectedMetricGroups, setSelectedMetricGroups] = useState<string[]>(() => {
     return timeGroupMetadata.map(g => g.name);
@@ -265,42 +267,68 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   };
 
   const dimValues = useMemo(() => {
-    const rawValues = Array.from(new Set(data.map(d => String(d[selectedYDim]))));
-    if (selectedYDim === 'propertyType') {
-      const order = ['酒店业务', '物业业务', '餐饮业务', '租赁业务', '其他业务', '管理业务'];
-      return rawValues.sort((a: string, b: string) => {
-        const idxA = order.indexOf(a);
-        const idxB = order.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b);
+    const getDimOrder = (dim: string, values: string[]) => {
+      if (dim === 'propertyType') {
+        const order = ['酒店业务', '物业业务', '餐饮业务', '租赁业务', '其他业务', '管理业务'];
+        return values.sort((a, b) => {
+          const idxA = order.indexOf(a);
+          const idxB = order.indexOf(b);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.localeCompare(b);
+        });
+      }
+      if (dim === 'management') {
+        const order = ['上海酒店项目部', '上海物业项目部', '常州项目部', '南京项目部', '无锡宜兴项目', '浙江项目部', '南通项目部', '上海本部'];
+        return values.sort((a, b) => {
+          const idxA = order.indexOf(a);
+          const idxB = order.indexOf(b);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.localeCompare(b);
+        });
+      }
+      if (dim === 'ownership') {
+        const order = ['上海母公司', '常州酒店', '南京酒店', '无锡酒店', '宜兴（华东分）', '黄山酒店', '合并抵消', '华东分抵消'];
+        return values.sort((a, b) => {
+          const idxA = order.indexOf(a);
+          const idxB = order.indexOf(b);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.localeCompare(b);
+        });
+      }
+      return values.sort((a, b) => a.localeCompare(b));
+    };
+
+    if (selectedYDim2 === 'none') {
+      const rawValues = Array.from(new Set(data.map(d => String(d[selectedYDim])))) as string[];
+      return getDimOrder(selectedYDim, rawValues).map(v => ({ v1: v, v2: null }));
+    } else {
+      // Get unique pairs
+      const pairSet = new Set<string>();
+      data.forEach(d => {
+        pairSet.add(`${d[selectedYDim]}|${d[selectedYDim2]}`);
+      });
+      
+      const pairs = (Array.from(pairSet) as string[]).map(p => {
+        const [v1, v2] = p.split('|');
+        return { v1, v2 };
+      });
+
+      // Sort by v1 then v2
+      const sortedV1s = getDimOrder(selectedYDim, Array.from(new Set(pairs.map(p => p.v1))) as string[]);
+      
+      return sortedV1s.flatMap(v1 => {
+        const v2sForV1 = pairs.filter(p => p.v1 === v1).map(p => p.v2!);
+        const sortedV2s = getDimOrder(selectedYDim2, v2sForV1);
+        return sortedV2s.map(v2 => ({ v1, v2 }));
       });
     }
-    if (selectedYDim === 'management') {
-      const order = ['上海酒店项目部', '上海物业项目部', '常州项目部', '南京项目部', '无锡宜兴项目', '浙江项目部', '南通项目部', '上海本部'];
-      return rawValues.sort((a: string, b: string) => {
-        const idxA = order.indexOf(a);
-        const idxB = order.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b);
-      });
-    }
-    if (selectedYDim === 'ownership') {
-      const order = ['上海母公司', '常州酒店', '南京酒店', '无锡酒店', '宜兴（华东分）', '黄山酒店', '合并抵消', '华东分抵消'];
-      return rawValues.sort((a: string, b: string) => {
-        const idxA = order.indexOf(a);
-        const idxB = order.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return a.localeCompare(b);
-      });
-    }
-    return rawValues.sort((a: string, b: string) => a.localeCompare(b));
-  }, [data, selectedYDim]);
+  }, [data, selectedYDim, selectedYDim2]);
 
   const getMetricAggregatedValue = (dataSlice: EnrichedRecord[], metricName: string, timeGroupName: string): number => {
     if (!selectedMonth || !selectedMonth.includes('-')) return 0;
@@ -319,12 +347,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     if (timeGroupName === '同比增减率') {
       const current = getMetricAggregatedValue(dataSlice, metricName, '本年累计');
       const previous = getMetricAggregatedValue(dataSlice, metricName, '去年同期');
-      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : NaN;
     }
     if (timeGroupName === '环比增减率') {
       const current = getMetricAggregatedValue(dataSlice, metricName, '当月发生额');
       const previous = getMetricAggregatedValue(dataSlice, metricName, '上月发生额');
-      return previous !== 0 ? (current - previous) / Math.abs(previous) : 0;
+      return previous !== 0 ? (current - previous) / Math.abs(previous) : NaN;
     }
 
     // 2. 基础时间组逻辑 (本年累计, 去年同期, 当月, 上月)
@@ -345,22 +373,22 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
         const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
         const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
-        return den !== 0 ? num / den : 0;
+        return den !== 0 ? num / den : NaN;
       }
       
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
         const s1 = getMetricAggregatedValue(dataSlice, '15用工薪酬成本', timeGroupName);
         const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
         const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
-        const val = den !== 0 ? (s1 + s2) / den : 0;
-        return cleanFormula.includes('*100') ? val * 100 : val;
+        const val = den !== 0 ? (s1 + s2) / den : NaN;
+        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
       if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
         const s1 = getMetricAggregatedValue(dataSlice, '8外购燃料', timeGroupName);
         const s2 = getMetricAggregatedValue(dataSlice, '9外购动力', timeGroupName);
         const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
-        const val = den !== 0 ? (s1 + s2) / den : 0;
-        return cleanFormula.includes('*100') ? val * 100 : val;
+        const val = den !== 0 ? (s1 + s2) / den : NaN;
+        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
 
       if (cleanFormula.includes('*100')) {
@@ -371,15 +399,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           const budgetName = isInternal ? '2026全年预算利润-内部' : '2026全年预算利润';
           const profit = getMetricAggregatedValue(dataSlice, '利润YTD', timeGroupName);
           const budget = getMetricAggregatedValue(dataSlice, budgetName, timeGroupName);
-          if (budget === 0) return 0;
+          if (budget === 0) return NaN;
           return (1 + (profit - budget) / Math.abs(budget)) * 100;
         }
         if (base.includes('/')) {
           const [numName, denName] = base.split('/').map(s => s.trim());
           const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
           const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
-          const val = den !== 0 ? num / den : 0;
-          return val * 100;
+          const val = den !== 0 ? num / den : NaN;
+          return isNaN(val) ? NaN : val * 100;
         }
       }
     }
@@ -446,7 +474,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const tableData = useMemo(() => {
     const rawData = dimValues.map(dv => {
-      const slice = data.filter(d => String(d[selectedYDim]) === dv);
+      const slice = data.filter(d => 
+        String(d[selectedYDim]) === dv.v1 && 
+        (dv.v2 === null || String(d[selectedYDim2]) === dv.v2)
+      );
       const metrics: Record<string, number> = {};
       
       selectedMetricGroups.forEach(groupName => {
@@ -455,7 +486,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         });
       });
       
-      return { dimValue: dv, metrics };
+      return { dimValue: dv.v1, dimValue2: dv.v2, metrics };
     });
 
     if (sortConfig.key && sortConfig.direction) {
@@ -466,7 +497,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       });
     }
     return rawData;
-  }, [data, dimValues, selectedYDim, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig]);
+  }, [data, dimValues, selectedYDim, selectedYDim2, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig]);
 
   const handleSort = (key: string) => {
     setSortConfig(prev => {
@@ -490,28 +521,64 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const exportToExcel = () => {
     // Export ALL indicators from 'categories' prop, not just 'currentIndicators'
-    const header1 = ['维度', ...selectedMetricGroups.flatMap(g => Array(categories.length).fill(g))];
-    const header2 = ['', ...selectedMetricGroups.flatMap(() => categories)];
+    const showSecondary = selectedYDim2 !== 'none';
+    const dim1Label = DIMENSIONS.find(d => d.key === selectedYDim)?.label || '维度1';
+    const dim2Label = DIMENSIONS.find(d => d.key === selectedYDim2)?.label || '维度2';
+
+    let header1: string[] = [];
+    let header2: string[] = [];
+
+    if (!isXAxisSwapped) {
+      header1 = [dim1Label, ...(showSecondary ? [dim2Label] : []), ...selectedMetricGroups.flatMap(g => Array(categories.length).fill(g))];
+      header2 = ['', ...(showSecondary ? [''] : []), ...selectedMetricGroups.flatMap(() => categories)];
+    } else {
+      header1 = [dim1Label, ...(showSecondary ? [dim2Label] : []), ...categories.flatMap(cat => Array(selectedMetricGroups.length).fill(cat))];
+      header2 = ['', ...(showSecondary ? [''] : []), ...categories.flatMap(() => selectedMetricGroups)];
+    }
     
     const rows = tableData.map(row => [
       row.dimValue,
-      ...selectedMetricGroups.flatMap(g => 
-        categories.map(cat => {
-          const val = row.metrics[`${g}_${cat}`];
-          const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-          return isRate ? (val * 100).toFixed(2) + '%' : val;
-        })
+      ...(showSecondary ? [row.dimValue2] : []),
+      ...(!isXAxisSwapped 
+        ? selectedMetricGroups.flatMap(g => 
+            categories.map(cat => {
+              const val = row.metrics[`${g}_${cat}`];
+              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+              if (isNaN(val) || val === 0) return '-';
+              return isRate ? (val * 100).toFixed(2) + '%' : val;
+            })
+          )
+        : categories.flatMap(cat => 
+            selectedMetricGroups.map(g => {
+              const val = row.metrics[`${g}_${cat}`];
+              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+              if (isNaN(val) || val === 0) return '-';
+              return isRate ? (val * 100).toFixed(2) + '%' : val;
+            })
+          )
       )
     ]);
 
     const totalLine = [
       '合计',
-      ...selectedMetricGroups.flatMap(g => 
-        categories.map(cat => {
-          const val = totalRow[`${g}_${cat}`];
-          const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-          return isRate ? (val * 100).toFixed(2) + '%' : val;
-        })
+      ...(showSecondary ? [''] : []),
+      ...(!isXAxisSwapped 
+        ? selectedMetricGroups.flatMap(g => 
+            categories.map(cat => {
+              const val = totalRow[`${g}_${cat}`];
+              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+              if (isNaN(val) || val === 0) return '-';
+              return isRate ? (val * 100).toFixed(2) + '%' : val;
+            })
+          )
+        : categories.flatMap(cat => 
+            selectedMetricGroups.map(g => {
+              const val = totalRow[`${g}_${cat}`];
+              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+              if (isNaN(val) || val === 0) return '-';
+              return isRate ? (val * 100).toFixed(2) + '%' : val;
+            })
+          )
       )
     ];
 
@@ -523,11 +590,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const exportToPDF = () => {
     setIsPrinting(true);
-    // 给 React 时间准备分段表格
+    // 给 React 时间准备分段表格，特别是多维层级渲染较慢
     setTimeout(() => {
       window.print();
-      setIsPrinting(false);
-    }, 500);
+      // 在打印对话框关闭后恢复
+      setTimeout(() => {
+        setIsPrinting(false);
+      }, 100);
+    }, 1000);
   };
 
   // 核心逻辑：横向切分指标
@@ -539,33 +609,49 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     return chunks;
   }, [categories]);
 
-  return (
-    <>
-      {/* 打印专用视图：横向分段逻辑 */}
-      {isPrinting && (
-        <div className="print-area fixed inset-0 bg-white z-[9999] p-8 print-no-overflow">
-          <div className="flex flex-col space-y-12">
-            {indicatorChunks.map((chunk, chunkIdx) => (
-              <div key={chunkIdx} className="print-page-break flex flex-col space-y-4">
-                <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2">
-                  <div className="flex flex-col">
-                    <h2 className="text-xl font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} | 期间: {selectedMonth}
-                    </p>
-                  </div>
-                  <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                    INTERNAL REPORT
-                  </div>
-                </div>
+  if (isPrinting) {
+    // 预计算 span 以优化性能
+    const v1Spans = new Map<string, number>();
+    if (selectedYDim2 !== 'none') {
+      tableData.forEach(row => {
+        v1Spans.set(row.dimValue, (v1Spans.get(row.dimValue) || 0) + 1);
+      });
+    }
 
-                <div className="border border-slate-200">
-                  <table className="w-full text-left border-collapse table-fixed">
-                    <thead>
-                      <tr className="bg-slate-800 text-white">
-                        <th className="p-3 border border-slate-700 font-black text-[10px] text-center w-[120px]">维度</th>
-                        {selectedMetricGroups.map(group => {
-                          // 只显示当前 Chunk 中的指标
+    return (
+      <div className="bg-white min-h-screen p-8 print:p-0 print-area print-no-overflow">
+        <style>
+          {`
+            @media print {
+              @page { size: landscape; margin: 10mm; }
+              body { -webkit-print-color-adjust: exact; }
+              .print-page-break { page-break-after: always; }
+            }
+          `}
+        </style>
+        
+        <div className="flex flex-col space-y-12">
+          {indicatorChunks.map((chunk, chunkIdx) => (
+            <div key={chunkIdx} className="print-page-break flex flex-col space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2">
+                <div className="flex flex-col">
+                  <h2 className="text-xl font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} {selectedYDim2 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim2)?.label}` : ''} | 期间: {selectedMonth}
+                  </p>
+                </div>
+                <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  INTERNAL REPORT
+                </div>
+              </div>
+
+              <div className="border border-slate-200">
+                <table className="w-full text-left border-collapse table-fixed">
+                  <thead>
+                    <tr className="bg-slate-800 text-white">
+                      <th className="p-3 border border-slate-700 font-black text-[10px] text-center w-[120px]" colSpan={selectedYDim2 === 'none' ? 1 : 2}>维度</th>
+                      {!isXAxisSwapped ? (
+                        selectedMetricGroups.map(group => {
                           const indicatorsInChunk = chunk.filter(cat => 
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           );
@@ -579,13 +665,36 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               {group}
                             </th>
                           );
-                        })}
-                      </tr>
-                      <tr className="bg-slate-100">
+                        })
+                      ) : (
+                        chunk.map(cat => {
+                          const groupsForCat = selectedMetricGroups.filter(g => 
+                            g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          );
+                          if (groupsForCat.length === 0) return null;
+                          return (
+                            <th 
+                              key={cat} 
+                              colSpan={groupsForCat.length}
+                              className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
+                            >
+                              {cat}
+                            </th>
+                          );
+                        })
+                      )}
+                    </tr>
+                    <tr className="bg-slate-100">
+                      <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center">
+                        {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
+                      </th>
+                      {selectedYDim2 !== 'none' && (
                         <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center">
-                          {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
+                          {DIMENSIONS.find(d => d.key === selectedYDim2)?.label}
                         </th>
-                        {selectedMetricGroups.map(group => (
+                      )}
+                      {!isXAxisSwapped ? (
+                        selectedMetricGroups.map(group => (
                           chunk.filter(cat => 
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => (
@@ -596,73 +705,164 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               {cat}
                             </th>
                           ))
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tableData.map((row) => (
-                        <tr key={row.dimValue} className="bg-white">
-                          <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[10px] text-center">
-                            {row.dimValue}
-                          </td>
-                          {selectedMetricGroups.map(group => (
-                            chunk.filter(cat => 
-                              group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
-                            ).map(cat => {
-                              const val = row.metrics[`${group}_${cat}`];
-                              const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-                              const isWanYuan = !isRate && isMoneyMetric(cat);
-                              return (
-                                <td 
-                                  key={`${group}_${cat}`}
-                                  className={cn(
-                                    "p-3 border border-slate-100 text-[11px] font-medium text-center",
-                                    (isRate || group.includes('增减')) 
-                                      ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
-                                      : "text-slate-600"
-                                  )}
-                                >
-                                  {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                        ))
+                      ) : (
+                        chunk.map(cat => {
+                          const groupsForCat = selectedMetricGroups.filter(g => 
+                            g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          );
+                          return groupsForCat.map(group => (
+                            <th 
+                              key={`${group}_${cat}`}
+                              className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
+                            >
+                              {group}
+                            </th>
+                          ));
+                        })
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row, idx) => {
+                      const isFirstOfV1 = selectedYDim2 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue);
+                      const v1Span = v1Spans.get(row.dimValue) || 1;
+                      
+                      return (
+                        <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className="bg-white">
+                          {selectedYDim2 === 'none' ? (
+                            <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[10px] text-center">
+                              {row.dimValue}
+                            </td>
+                          ) : (
+                            <>
+                              {isFirstOfV1 && (
+                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[10px] text-center align-middle">
+                                  {row.dimValue}
                                 </td>
+                              )}
+                              <td className="p-2 border border-slate-200 text-slate-600 font-medium text-[9px] text-center">
+                                {row.dimValue2}
+                              </td>
+                            </>
+                          )}
+                          {!isXAxisSwapped ? (
+                            selectedMetricGroups.map(group => (
+                              chunk.filter(cat => 
+                                group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                              ).map(cat => {
+                                const val = row.metrics[`${group}_${cat}`];
+                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                                return (
+                                  <td 
+                                    key={`${group}_${cat}`} 
+                                    className={cn(
+                                      "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      (isRate || group.includes('增减')) 
+                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                        : "text-slate-600"
+                                    )}
+                                  >
+                                    {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
+                                  </td>
+                                );
+                              })
+                            ))
+                          ) : (
+                            chunk.map(cat => {
+                              const groupsForCat = selectedMetricGroups.filter(g => 
+                                g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                               );
+                              return groupsForCat.map(group => {
+                                const val = row.metrics[`${group}_${cat}`];
+                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                                return (
+                                  <td 
+                                    key={`${group}_${cat}`} 
+                                    className={cn(
+                                      "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      (isRate || group.includes('增减')) 
+                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                        : "text-slate-600"
+                                    )}
+                                  >
+                                    {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
+                                  </td>
+                                );
+                              });
                             })
-                          ))}
+                          )}
                         </tr>
-                      ))}
-                      <tr className="bg-slate-800 text-white font-bold">
-                        <td className="p-2 border border-slate-700 text-center text-[10px]">合计</td>
-                        {selectedMetricGroups.map(group => (
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="table-footer-group">
+                    <tr className="bg-slate-800 text-white font-bold">
+                      <td className="p-2 border border-slate-700 text-center text-[10px]" colSpan={selectedYDim2 === 'none' ? 1 : 2}>合计</td>
+                      {!isXAxisSwapped ? (
+                        selectedMetricGroups.map(group => (
                           chunk.filter(cat => 
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => {
                             const val = totalRow[`${group}_${cat}`];
                             const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-                            const isWanYuan = !isRate && isMoneyMetric(cat);
                             return (
                               <td 
-                                key={`${group}_${cat}`}
-                                className="p-2 border border-slate-700 text-[10px] text-center"
+                                key={`${group}_${cat}`} 
+                                className={cn(
+                                  "p-2 border border-slate-700 text-[10px] text-center",
+                                  (isRate || group.includes('增减')) 
+                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                                    : "text-white"
+                                )}
                               >
-                                {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                                {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
                               </td>
                             );
                           })
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex justify-between items-center text-[8px] text-slate-400 font-bold">
-                  <span>导出时间: {new Date().toLocaleString()}</span>
-                  <span>报表数据期: {selectedMonth}</span>
-                  <span>第 {chunkIdx + 1} / {indicatorChunks.length} 页</span>
-                </div>
+                        ))
+                      ) : (
+                        chunk.map(cat => {
+                          const groupsForCat = selectedMetricGroups.filter(g => 
+                            g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                          );
+                          return groupsForCat.map(group => {
+                            const val = totalRow[`${group}_${cat}`];
+                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                            return (
+                              <td 
+                                key={`${group}_${cat}`} 
+                                className={cn(
+                                  "p-2 border border-slate-700 text-[10px] text-center",
+                                  (isRate || group.includes('增减')) 
+                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                                    : "text-white"
+                                )}
+                              >
+                                {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
+                              </td>
+                            );
+                          });
+                        })
+                      )}
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
-            ))}
-          </div>
+              <div className="flex justify-between items-center text-[8px] text-slate-400 font-bold">
+                <span>导出时间: {new Date().toLocaleString()}</span>
+                <span>报表数据期: {selectedMonth}</span>
+                <span>第 {chunkIdx + 1} / {indicatorChunks.length} 页</span>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <>
       <div className={cn("flex flex-col space-y-6", isPrinting && "hidden")}>
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -684,7 +884,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 isIntegerMode ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-500 border-slate-200"
               )}
             >
-              {isIntegerMode ? 'DEFAULT VIEW' : 'INTEGER MODE'}
+              {isIntegerMode ? 'INTEGER MODE' : 'DEFAULT VIEW'}
             </button>
             <button
               onClick={() => checkAuth(exportToPDF)}
@@ -794,33 +994,75 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         {/* Controls Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm premium-shadow print:hidden">
           {/* Y-Axis Selection */}
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-indigo-50 p-2 rounded-lg">
-                <Filter className="w-4 h-4 text-indigo-600" />
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-50 p-2 rounded-lg">
+                  <Filter className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Dimension (Y1)</h4>
               </div>
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Dimension Axis</h4>
+              <div className="flex flex-wrap gap-2">
+                {DIMENSIONS.map(dim => (
+                  <button
+                    key={dim.key}
+                    onClick={() => {
+                      setSelectedYDim(dim.key);
+                      setActivePresetId(null);
+                    }}
+                    className={cn(
+                      "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                      selectedYDim === dim.key 
+                        ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100" 
+                        : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
+                    )}
+                  >
+                    {dim.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {DIMENSIONS.map(dim => (
+
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-50 p-2 rounded-lg">
+                  <Filter className="w-4 h-4 text-purple-600" />
+                </div>
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Secondary Dimension (Y2)</h4>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={dim.key}
                   onClick={() => {
-                    setSelectedYDim(dim.key);
+                    setSelectedYDim2('none');
                     setActivePresetId(null);
                   }}
                   className={cn(
                     "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                    selectedYDim === dim.key 
-                      ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100" 
+                    selectedYDim2 === 'none'
+                      ? "bg-purple-600 text-white shadow-xl shadow-purple-100"
                       : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
                   )}
                 >
-                  {dim.label}
+                  无
                 </button>
-              ))}
+                {DIMENSIONS.filter(d => d.key !== selectedYDim).map(dim => (
+                  <button
+                    key={dim.key}
+                    onClick={() => {
+                      setSelectedYDim2(dim.key);
+                      setActivePresetId(null);
+                    }}
+                    className={cn(
+                      "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                      selectedYDim2 === dim.key 
+                        ? "bg-purple-600 text-white shadow-xl shadow-purple-100" 
+                        : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
+                    )}
+                  >
+                    {dim.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
           {/* X-Axis Metric Group Selection */}
           <div className="space-y-5">
@@ -832,6 +1074,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Calculation Groups</h4>
               </div>
               <div className="flex gap-4">
+                <button 
+                  onClick={() => setIsXAxisSwapped(!isXAxisSwapped)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
+                    isXAxisSwapped ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-500 border-slate-200"
+                  )}
+                >
+                  <RefreshCcw className="w-3 h-3" />
+                  SWAP X-LEVELS
+                </button>
                 <button 
                   onClick={() => {
                     const allNames = timeGroupMetadata.map(g => g.name);
@@ -933,113 +1185,253 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <thead>
               {/* Level 1 Header */}
               <tr className="bg-slate-800 text-white">
-                <th className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center">
-                  维度 \ 计算组
+                <th 
+                  className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-[140px] shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
+                  colSpan={selectedYDim2 === 'none' ? 1 : 2}
+                >
+                  维度 \ {isXAxisSwapped ? '指标' : '计算组'}
                 </th>
-                {selectedMetricGroups.map(group => {
-                  const indicators = getGroupIndicators(group);
-                  if (indicators.length === 0) return null;
-                  return (
-                    <th 
-                      key={group} 
-                      colSpan={indicators.length}
-                      className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
-                    >
-                      {group}
-                    </th>
-                  );
-                })}
-              </tr>
-              {/* Level 2 Header */}
-              <tr className="bg-slate-100">
-                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center">
-                  {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
-                </th>
-                {selectedMetricGroups.map(group => (
-                  getGroupIndicators(group).map(cat => {
-                    const sortKey = `${group}_${cat}`;
-                    const isSorting = sortConfig.key === sortKey;
+                {!isXAxisSwapped ? (
+                  selectedMetricGroups.map(group => {
+                    const indicators = getGroupIndicators(group);
+                    if (indicators.length === 0) return null;
                     return (
                       <th 
-                        key={sortKey}
-                        onClick={() => handleSort(sortKey)}
-                        className={cn(
-                          "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
-                          isSorting && "bg-indigo-50 text-indigo-700"
-                        )}
+                        key={group} 
+                        colSpan={indicators.length}
+                        className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
                       >
-                        <div className="flex items-center justify-center gap-1.5">
-                          {cat}
-                          <div className={cn(
-                            "transition-all",
-                            isSorting ? "opacity-100 scale-110" : "opacity-0 group-hover/sort:opacity-100 scale-100"
-                          )}>
-                            {isSorting ? (
-                              sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
-                            ) : (
-                              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-                            )}
-                          </div>
-                        </div>
+                        {group}
                       </th>
                     );
                   })
-                ))}
+                ) : (
+                  currentIndicators.map(cat => {
+                    const groupsForCat = selectedMetricGroups.filter(g => 
+                      g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                    );
+                    if (groupsForCat.length === 0) return null;
+                    return (
+                      <th 
+                        key={cat} 
+                        colSpan={groupsForCat.length}
+                        className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
+                      >
+                        {cat}
+                      </th>
+                    );
+                  })
+                )}
+              </tr>
+              {/* Level 2 Header */}
+              <tr className="bg-slate-100">
+                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px]">
+                  {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
+                </th>
+                {selectedYDim2 !== 'none' && (
+                  <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-[140px] bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px]">
+                    {DIMENSIONS.find(d => d.key === selectedYDim2)?.label}
+                  </th>
+                )}
+                {!isXAxisSwapped ? (
+                  selectedMetricGroups.map(group => (
+                    getGroupIndicators(group).map(cat => {
+                      const sortKey = `${group}_${cat}`;
+                      const isSorting = sortConfig.key === sortKey;
+                      return (
+                        <th 
+                          key={sortKey}
+                          onClick={() => handleSort(sortKey)}
+                          className={cn(
+                            "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
+                            isSorting && "bg-indigo-50 text-indigo-700"
+                          )}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            {cat}
+                            <div className={cn(
+                              "transition-all",
+                              isSorting ? "opacity-100 scale-110" : "opacity-0 group-hover/sort:opacity-100 scale-100"
+                            )}>
+                              {isSorting ? (
+                                sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+                              ) : (
+                                <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                              )}
+                            </div>
+                          </div>
+                        </th>
+                      );
+                    })
+                  ))
+                ) : (
+                  currentIndicators.map(cat => {
+                    const groupsForCat = selectedMetricGroups.filter(g => 
+                      g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                    );
+                    return groupsForCat.map(group => {
+                      const sortKey = `${group}_${cat}`;
+                      const isSorting = sortConfig.key === sortKey;
+                      return (
+                        <th 
+                          key={sortKey}
+                          onClick={() => handleSort(sortKey)}
+                          className={cn(
+                            "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
+                            isSorting && "bg-indigo-50 text-indigo-700"
+                          )}
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            {group}
+                            <div className={cn(
+                              "transition-all",
+                              isSorting ? "opacity-100 scale-110" : "opacity-0 group-hover/sort:opacity-100 scale-100"
+                            )}>
+                              {isSorting ? (
+                                sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+                              ) : (
+                                <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                              )}
+                            </div>
+                          </div>
+                        </th>
+                      );
+                    });
+                  })
+                )}
               </tr>
             </thead>
             <tbody>
-              {tableData.map((row, idx) => (
-                <tr key={row.dimValue} className={cn("hover:bg-slate-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")}>
-                  <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10 text-center">
-                    {row.dimValue}
-                  </td>
-                  {selectedMetricGroups.map(group => (
+              {tableData.map((row, idx) => {
+                // Calculate row span for primary dimension
+                const isFirstOfV1 = selectedYDim2 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue);
+                const v1Span = selectedYDim2 !== 'none' ? tableData.filter(r => r.dimValue === row.dimValue).length : 1;
+
+                return (
+                  <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className={cn("hover:bg-slate-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")}>
+                    {selectedYDim2 === 'none' ? (
+                      <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10 text-center w-[140px]">
+                        {row.dimValue}
+                      </td>
+                    ) : (
+                      <>
+                        {isFirstOfV1 && (
+                          <td 
+                            rowSpan={v1Span}
+                            className="p-4 border-b border-r border-slate-100 text-slate-800 font-black text-sm sticky left-0 bg-white z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]"
+                          >
+                            {row.dimValue}
+                          </td>
+                        )}
+                        <td className="p-4 border-b border-r border-slate-100 text-slate-600 font-medium text-xs sticky left-[140px] bg-inherit z-10 text-center w-[140px]">
+                          {row.dimValue2}
+                        </td>
+                      </>
+                    )}
+                    
+                    {!isXAxisSwapped ? (
+                      selectedMetricGroups.map(group => (
+                        getGroupIndicators(group).map(cat => {
+                          const val = row.metrics[`${group}_${cat}`];
+                          const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                          const isWanYuan = !isRate && isMoneyMetric(cat);
+                          return (
+                            <td 
+                              key={`${group}_${cat}`}
+                              className={cn(
+                                "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
+                                (isRate || group.includes('增减')) 
+                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                  : "text-slate-600"
+                              )}
+                            >
+                              {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                            </td>
+                          );
+                        })
+                      ))
+                    ) : (
+                      currentIndicators.map(cat => {
+                        const groupsForCat = selectedMetricGroups.filter(g => 
+                          g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
+                        );
+                        return groupsForCat.map(group => {
+                          const val = row.metrics[`${group}_${cat}`];
+                          const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                          const isWanYuan = !isRate && isMoneyMetric(cat);
+                          return (
+                            <td 
+                              key={`${group}_${cat}`}
+                              className={cn(
+                                "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
+                                (isRate || group.includes('增减')) 
+                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                  : "text-slate-600"
+                              )}
+                            >
+                              {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                            </td>
+                          );
+                        });
+                      })
+                    )}
+                  </tr>
+                );
+              })}
+              {/* Total Row */}
+              <tr className="bg-indigo-900 text-white font-black">
+                <td 
+                  className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
+                  colSpan={selectedYDim2 === 'none' ? 1 : 2}
+                >
+                  合计
+                </td>
+                {!isXAxisSwapped ? (
+                  selectedMetricGroups.map(group => (
                     getGroupIndicators(group).map(cat => {
-                      const val = row.metrics[`${group}_${cat}`];
+                      const val = totalRow[`${group}_${cat}`];
                       const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                       const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
                         <td 
                           key={`${group}_${cat}`}
                           className={cn(
-                            "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                            (isRate || group === '同比增减额' || group === '环比增减率' || group === '同比增减率' || group === '环比增减额') 
-                              ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
-                              : "text-slate-600"
+                            "p-3 border-b border-r border-indigo-800 text-sm text-center",
+                            (isRate || group.includes('增减')) 
+                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                              : "text-white"
                           )}
                         >
                           {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
                         </td>
                       );
                     })
-                  ))}
-                </tr>
-              ))}
-              {/* Total Row */}
-              <tr className="bg-indigo-900 text-white font-black">
-                <td className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center">
-                  合计
-                </td>
-                {selectedMetricGroups.map(group => (
-                  getGroupIndicators(group).map(cat => {
-                    const val = totalRow[`${group}_${cat}`];
-                    const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-                    const isWanYuan = !isRate && isMoneyMetric(cat);
-                    return (
-                      <td 
-                        key={`${group}_${cat}`}
-                        className={cn(
-                          "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                          (isRate || group === '同比增减额' || group === '环比增减额') 
-                            ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
-                            : "text-white"
-                        )}
-                      >
-                        {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
-                      </td>
+                  ))
+                ) : (
+                  currentIndicators.map(cat => {
+                    const groupsForCat = selectedMetricGroups.filter(g => 
+                      g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                     );
+                    return groupsForCat.map(group => {
+                      const val = totalRow[`${group}_${cat}`];
+                      const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                      const isWanYuan = !isRate && isMoneyMetric(cat);
+                      return (
+                        <td 
+                          key={`${group}_${cat}`}
+                          className={cn(
+                            "p-3 border-b border-r border-indigo-800 text-sm text-center",
+                            (isRate || group.includes('增减')) 
+                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                              : "text-white"
+                          )}
+                        >
+                          {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
+                        </td>
+                      );
+                    });
                   })
-                ))}
+                )}
               </tr>
             </tbody>
           </table>

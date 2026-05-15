@@ -6,25 +6,50 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatNumber(
-  val: number,
+  val: number | null | undefined,
   isPercent: boolean = false,
   isIntegerMode: boolean = false,
   isWanYuan: boolean = false
 ): string {
+  if (val === null || val === undefined || isNaN(val as number)) {
+    return '-';
+  }
+  
+  const numVal = val as number;
+  if (numVal === 0) return '-';
+
   if (isPercent) {
-    return isIntegerMode 
-      ? `${Math.round(val)}%` 
-      : `${val.toFixed(2)}%`;
+    const percentVal = numVal * 100;
+    
+    // Cap at 10000% for aesthetic reasons and to prevent UI breaking
+    if (percentVal > 10000) return "10000%+";
+    if (percentVal < -10000) return "-10000%-";
+
+    if (isIntegerMode) {
+      return `${Math.round(percentVal)}%`;
+    }
+    const fixedVal = percentVal.toFixed(1);
+    
+    // Handle very small values that round to 0.0 but are not 0
+    if (fixedVal === "0.0" && percentVal > 0) return "0.1%";
+    if (fixedVal === "0.0" && percentVal < 0) return "-0.1%";
+    if (fixedVal === "-0.0") return "-0.1%";
+    
+    return `${fixedVal}%`;
   }
+
   if (isWanYuan) {
-    const wan = val / 10000;
-    return isIntegerMode
-      ? `${Math.round(wan).toLocaleString()}`
-      : `${wan.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const wan = numVal / 10000;
+    if (isIntegerMode) {
+      return `${Math.round(wan).toLocaleString()}`;
+    }
+    return `${wan.toFixed(2).replace(/\.00$/, '')}`;
   }
-  return isIntegerMode
-    ? Math.round(val).toLocaleString()
-    : val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  if (isIntegerMode) {
+    return `${Math.round(numVal).toLocaleString()}`;
+  }
+  return `${numVal.toLocaleString()}`;
 }
 
 /** Returns true if the metric should be displayed in 万元 (i.e. it's a money amount, not a rate or ratio) */
