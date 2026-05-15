@@ -412,49 +412,49 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "name": "目标利润率",
     "formula": "=目标利润/目标收入",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "目标百元收入人工成本",
     "formula": "=目标薪酬及外包/目标收入",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "目标百元收入能源成本",
     "formula": "=目标能源动力/目标收入",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "目标百元收入材料成本",
     "formula": "=目标外购材料/目标收入",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "预算收入完成率",
     "formula": "=收入YTD/2026全年预算收入",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "预算利润完成率",
     "formula": "=(1+(利润YTD-2026全年预算利润)/ABS(2026全年预算利润))",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "预算收入完成率-内部",
     "formula": "=收入YTD/2026全年预算收入-内部",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "预算利润完成率-内部",
     "formula": "=(1+(利润YTD-2026全年预算利润-内部)/ABS(2026全年预算利润-内部))",
     "source": "calculated",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "对标利润",
@@ -466,37 +466,37 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "name": "对标利润率",
     "formula": "=对标利润/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "食材成本率",
     "formula": "=4食材耗用/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "百元收入人工成本",
     "formula": "=(15用工薪酬成本+16外包劳务支出)/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "百元收入能源成本",
     "formula": "=(8外购燃料+9外购动力)/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "百元收入材料成本",
     "formula": "=3外购材料/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   },
   {
     "name": "经营利润率",
     "formula": "=利润YTD/收入YTD",
     "source": "operating",
-    "unit": "%"
+    "unit": "元"
   }
 ];
 
