@@ -1034,7 +1034,7 @@ export const Dashboard: React.FC = () => {
           >
             <span className="relative z-10 flex items-center gap-2">
               {isImporting ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Upload className="w-3.5 h-3.5" />}
-              {sourceData.length > 0 ? 'RE-IMPORT' : 'IMPORT DATA'}
+              {sourceData.length > 0 ? '重新导入' : '导入数据'}
             </span>
           </button>
 
@@ -1048,7 +1048,7 @@ export const Dashboard: React.FC = () => {
                     onClick={() => setView('admin')}
                     className="text-[9px] font-black text-indigo-600 flex items-center gap-0.5 hover:underline uppercase tracking-tighter"
                   >
-                    Console
+                    控制台
                   </button>
                 )}
               </div>
@@ -1066,7 +1066,7 @@ export const Dashboard: React.FC = () => {
               className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-100"
             >
               <LogIn className="w-4 h-4" />
-              SIGN IN
+              登录
             </button>
           )}
         </div>
@@ -1108,7 +1108,7 @@ export const Dashboard: React.FC = () => {
                     <Filter className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">Analysis Dimensions</h3>
+                    <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">分析维度</h3>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">项目多维切片器</p>
                   </div>
                 </div>
@@ -1592,14 +1592,14 @@ export const Dashboard: React.FC = () => {
                   className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2.5 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
                 >
                   <Camera className="w-4 h-4 text-indigo-500" />
-                  CAPTURE VIEW
+                  截图保存
                 </button>
                 <button
                   onClick={() => checkAuth(exportToExcel)}
                   className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
                 >
                   <Download className="w-4 h-4" />
-                  EXPORT REPORT
+                  导出报告
                 </button>
               </div>
             </div>
@@ -1631,7 +1631,7 @@ export const Dashboard: React.FC = () => {
 
       <footer className="glass-card border-t border-slate-200/60 p-6 text-center mt-auto">
         <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase">
-          Confidential Data Analysis System • Secured Local Instance • v2.0.4
+          内部机密数据分析系统 • 安全本地实例 • v2.0.4
         </p>
       </footer>
 

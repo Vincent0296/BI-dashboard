@@ -59,7 +59,7 @@ export const Slicer: React.FC<SlicerProps> = ({
         )}>
           {selected.length === 0 ? '未选择' : 
            selected.length === options.length ? '全部已选' : 
-           `已选 ${selected.length} A项`}
+           `已选 ${selected.length} 个`}
         </span>
         <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-300", isOpen && "rotate-180 text-indigo-500")} />
       </button>
@@ -88,7 +88,7 @@ export const Slicer: React.FC<SlicerProps> = ({
               </div>
               {selected.length > 0 && (
                 <span className="text-[10px] font-black text-indigo-500 bg-indigo-50/50 px-2.5 py-1 rounded-full border border-indigo-100/50 animate-pulse">
-                  {selected.length} SELECTED
+                  已选择 {selected.length} 项
                 </span>
               )}
             </div>
@@ -112,7 +112,7 @@ export const Slicer: React.FC<SlicerProps> = ({
               {filteredOptions.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
                   <Filter className="w-8 h-8 opacity-20" />
-                  <div className="text-[10px] font-bold uppercase tracking-widest italic">No matches found</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest italic">未找到匹配项</div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-0.5">

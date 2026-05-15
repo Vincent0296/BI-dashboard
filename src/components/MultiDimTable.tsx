@@ -681,7 +681,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </p>
                 </div>
                 <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                  INTERNAL REPORT
+                  内部报表
                 </div>
               </div>
 
@@ -917,7 +917,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-800">多维交叉数据分析表</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Multidimensional Performance Matrix</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">多维性能分析矩阵</p>
             </div>
           </div>
 
@@ -929,21 +929,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 isIntegerMode ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-500 border-slate-200"
               )}
             >
-              {isIntegerMode ? 'INTEGER MODE' : 'DEFAULT VIEW'}
+              {isIntegerMode ? '取整模式' : '默认视图'}
             </button>
             <button
               onClick={() => checkAuth(exportToPDF)}
               className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
             >
               <Printer className="w-3.5 h-3.5 text-indigo-500" />
-              PRINT PDF
+              打印 PDF
             </button>
             <button
               onClick={() => checkAuth(exportToExcel)}
               className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
             >
               <Download className="w-3.5 h-3.5" />
-              EXPORT EXCEL
+              导出 EXCEL
             </button>
           </div>
         </div>
@@ -953,7 +953,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2 text-slate-400 mr-2">
               <Bookmark className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Table Presets</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">表格方案预设</span>
             </div>
 
             {tablePresets.map(preset => (
@@ -1012,7 +1012,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <input
                   autoFocus
                   type="text"
-                  placeholder="New preset..."
+                  placeholder="新方案名称..."
                   value={newPresetName}
                   onChange={(e) => setNewPresetName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
@@ -1037,7 +1037,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 className="flex items-center gap-2 px-4 py-2 text-indigo-600 font-black text-[10px] hover:bg-indigo-50 rounded-xl border border-dashed border-indigo-200 transition-all active:scale-95 uppercase tracking-wider"
               >
                 <Save className="w-3.5 h-3.5" />
-                Save Layout
+                保存布局
               </button>
             )}
           </div>
@@ -1051,7 +1051,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               <div className="bg-indigo-50 p-2 rounded-lg">
                 <Filter className="w-4 h-4 text-indigo-600" />
               </div>
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Dimension (Y1)</h4>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">主要维度 (Y1)</h4>
             </div>
             <div className="flex flex-wrap gap-2">
               {DIMENSIONS.map(dim => (
@@ -1079,7 +1079,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               <div className="bg-purple-50 p-2 rounded-lg">
                 <Filter className="w-4 h-4 text-purple-600" />
               </div>
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Secondary Dimension (Y2)</h4>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">次级维度 (Y2)</h4>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -1123,7 +1123,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <div className="bg-indigo-50 p-2 rounded-lg">
                   <Filter className="w-4 h-4 text-indigo-600" />
                 </div>
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Calculation Groups</h4>
+                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">指标计算组</h4>
               </div>
               <div className="flex gap-4">
                 <button
@@ -1134,7 +1134,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   )}
                 >
                   <RefreshCcw className="w-3 h-3" />
-                  SWAP X-LEVELS
+                  交换 X 轴层级
                 </button>
                 <button
                   onClick={() => setShowSubtotals(!showSubtotals)}
@@ -1144,7 +1144,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   )}
                 >
                   <Plus className="w-3 h-3" />
-                  SHOW SUBTOTALS
+                  显示小计
                 </button>
                 <button
                   onClick={() => {
@@ -1154,7 +1154,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   }}
                   className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-wider"
                 >
-                  Select All
+                  全选
                 </button>
                 <button
                   onClick={() => {
@@ -1163,7 +1163,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   }}
                   className="text-[10px] font-black text-slate-400 hover:underline uppercase tracking-wider"
                 >
-                  Clear
+                  清空
                 </button>
               </div>
             </div>
