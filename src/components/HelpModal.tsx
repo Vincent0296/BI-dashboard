@@ -75,38 +75,41 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <section>
             <div className="flex items-center gap-2 mb-3 text-purple-600">
               <BarChart2 className="w-5 h-5" />
-              <h3 className="font-bold text-lg">5. 深度多维分析表</h3>
+              <h3 className="font-bold text-lg">5. 深度多维分析表（核心更新）</h3>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed ml-7 mb-3">
-              系统配备了强大的多维数据看板，支持极高自由度的探索：
+              系统配备了专为复杂财务场景设计的“多维性能矩阵”，支持极高自由度的探索：
             </p>
             <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
-              <li><strong className="text-slate-800">X轴多选与快捷操作</strong>：支持跨计算组多选指标，并配备一键“全选”与“清空”按钮，快速构建对比视图。</li>
-              <li><strong className="text-slate-800">业务逻辑排序</strong>：Y轴维度（业态、口径）已实现深度业务定制化排序，确保关键业务部始终置顶，符合汇报习惯。</li>
-              <li><strong className="text-slate-800">视觉辅助</strong>：表格表头采用深色专业化美化；同比/环比增减额自动应用“红降绿增”配色，数据趋势一眼即知。</li>
-              <li><strong className="text-slate-800">智能算法库</strong>：内置了精准的预算利润完成率算法（支持负利润处理）及多项新增经营指标，数据口径严格对齐。</li>
+              <li><strong className="text-slate-800">二级维度钻取</strong>：在 Y 轴维度选择器中开启“二级维度”，即可实现嵌套钻取展示（如：业态 + 产权口径），系统会自动合并单元格。</li>
+              <li><strong className="text-slate-800">行列一键互换 (Axis Swap)</strong>：点击按钮可一键切换“指标优先”或“计算项优先”视图，满足不同汇报需求。</li>
+              <li><strong className="text-slate-800">指标全量管控</strong>：支持跨计算组多选指标，并配备一键“全选”与“清空”按钮。</li>
             </ul>
           </section>
 
           <section>
-            <div className="flex items-center gap-2 mb-3 text-blue-500">
-              <BarChart2 className="w-5 h-5" />
-              <h3 className="font-bold text-lg">6. 指标库与视图智能适配</h3>
+            <div className="flex items-center gap-2 mb-3 text-blue-600">
+              <Download className="w-5 h-5" />
+              <h3 className="font-bold text-lg">6. 专家级 PDF 报告导出</h3>
+            </div>
+            <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
+              <li><strong className="text-slate-800">智能横向分页</strong>：针对指标过多的“超宽表”，系统会自动切片分页导出 PDF，彻底告别文字模糊。</li>
+              <li><strong className="text-slate-800">页脚合计行固定</strong>：打印出的每一页 PDF 底部都会自动重复显示“合计行”，方便跨页查看汇总。</li>
+              <li><strong className="text-slate-800">纯净模式</strong>：自动隐去所有交互按钮，仅保留专业的报表视图。</li>
+            </ul>
+          </section>
+
+          <section className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-2 mb-3 text-indigo-600">
+              <Settings2 className="w-5 h-5" />
+              <h3 className="font-bold text-lg">7. 指标精度与趋势纠偏</h3>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed ml-7">
-              除了支持<strong className="text-slate-800">柱状图、趋势图、饼图</strong>无缝切换外，系统还会根据图表类型智能适配<strong className="text-slate-800">指标选择器</strong>。例如切换至饼图时会自动清洗并仅保留分布型指标，确保视图逻辑严密且系统运行稳定。
+              为保证财务报表的专业性，系统对增长率/完成率进行了特殊处理：
+              <br />• <strong className="text-slate-800">1位小数精度</strong>：默认显示 1 位小数，确保微小变动可见。
+              <br />• <strong className="text-slate-800">趋势纠偏</strong>：若计算结果极小但非零（如 0.02%），将显示为 <strong className="text-slate-800">0.1%</strong>。
+              <br />• <strong className="text-slate-800">极值封顶</strong>：极端离群值（>10000%）将显示为 <strong className="text-slate-800">10000%+</strong>。
             </p>
-          </section>
-
-          <section>
-            <div className="flex items-center gap-2 mb-3 text-rose-600">
-              <MessageSquareText className="w-5 h-5" />
-              <h3 className="font-bold text-lg">7. 业务评论与协同分析</h3>
-            </div>
-            <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
-              <li><strong className="text-slate-800">多维筛选与智能修正</strong>：最底部的评论看板允许针对项目、期间、维度等添加批注。编辑评论时，只需在下拉框选择项目，系统会立刻自动挂载正确的业态与口径信息，确保数据零差错。</li>
-              <li><strong className="text-slate-800">模板下载与全自动导入</strong>：点击“下载模板”可获取带原生下拉数据验证的官方 Excel。在线下填写海量批注后，通过“一键导入”即可全自动解析。系统将智能过滤无关行，并帮你将业务属性精准拼装入库。</li>
-            </ul>
           </section>
 
         </div>
