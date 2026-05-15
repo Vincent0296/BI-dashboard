@@ -24,8 +24,8 @@ interface PerformanceChartProps {
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, title, isIntegerMode, setIsIntegerMode, onBarClick }) => {
   const isRate = data.length > 0 && data[0].isPercent;
   const isWanYuan = data.length > 0 && data[0].isWanYuan;
-  // Use color coding if it's a rate OR a comparison metric (YoY/MoM Diff)
-  const isComparison = isRate || title.includes('增减额') || title.includes('对比');
+  // Only color if it's an increase/decrease metric (Diff Amount/Rate)
+  const isComparison = title.includes('\u589e\u51cf');
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

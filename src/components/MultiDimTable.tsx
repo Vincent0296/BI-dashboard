@@ -759,7 +759,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
-                                      (isRate || group.includes('增减'))
+                                      group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : "text-slate-600"
                                     )}
@@ -782,7 +782,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
-                                      (isRate || group.includes('增减'))
+                                      group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : "text-slate-600"
                                     )}
@@ -812,7 +812,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[10px] text-center",
-                                  (isRate || group.includes('增减'))
+                                  group.includes('\u589e\u51cf')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
@@ -835,7 +835,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[10px] text-center",
-                                  (isRate || group.includes('增减'))
+                                  group.includes('\u589e\u51cf')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
