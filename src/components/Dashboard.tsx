@@ -1277,6 +1277,12 @@ export const Dashboard: React.FC = () => {
                       onChange={(val) => { setFilters({ ...filters, ownerships: val }); setActivePresetId(null); }}
                     />
                     <Slicer
+                      label="报表口径"
+                      options={slicerOptions.reportCalibers}
+                      selected={filters.reportCalibers}
+                      onChange={(val) => { setFilters({ ...filters, reportCalibers: val }); setActivePresetId(null); }}
+                    />
+                    <Slicer
                       label="管理口径"
                       options={slicerOptions.managements}
                       selected={filters.managements}
@@ -1302,6 +1308,13 @@ export const Dashboard: React.FC = () => {
                       showSearch
                     />
                     <Slicer
+                      label="项目简称"
+                      options={slicerOptions.projectShortNames}
+                      selected={filters.projectShortNames}
+                      onChange={(val) => { setFilters({ ...filters, projectShortNames: val }); setActivePresetId(null); }}
+                      showSearch
+                    />
+                    <Slicer
                       label="重点项目"
                       options={slicerOptions.isKeyProjects}
                       selected={filters.isKeyProjects}
@@ -1312,19 +1325,6 @@ export const Dashboard: React.FC = () => {
                       options={slicerOptions.isExistingProjects}
                       selected={filters.isExistingProjects}
                       onChange={(val) => { setFilters({ ...filters, isExistingProjects: val }); setActivePresetId(null); }}
-                    />
-                    <Slicer
-                      label="报表口径"
-                      options={slicerOptions.reportCalibers}
-                      selected={filters.reportCalibers}
-                      onChange={(val) => { setFilters({ ...filters, reportCalibers: val }); setActivePresetId(null); }}
-                    />
-                    <Slicer
-                      label="项目简称"
-                      options={slicerOptions.projectShortNames}
-                      selected={filters.projectShortNames}
-                      onChange={(val) => { setFilters({ ...filters, projectShortNames: val }); setActivePresetId(null); }}
-                      showSearch
                     />
                   </div>
                 </div>
