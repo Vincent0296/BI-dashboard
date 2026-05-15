@@ -93,6 +93,7 @@ export interface TablePreset {
   selectedYDim2: string;
   selectedMetricGroups: string[];
   isXAxisSwapped: boolean;
+  showSubtotals: boolean;
   timestamp: string;
 }
 

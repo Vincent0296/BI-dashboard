@@ -85,6 +85,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   const [newPresetName, setNewPresetName] = useState('');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [showSubtotals, setShowSubtotals] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
     key: '',
@@ -136,6 +137,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               selectedYDim2: p.filters.selectedYDim2 || 'none',
               selectedMetricGroups: groups,
               isXAxisSwapped: p.filters.isXAxisSwapped || false,
+              showSubtotals: p.filters.showSubtotals || false,
               timestamp: p.timestamp
             };
           });
@@ -167,7 +169,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedYDim,
           selectedYDim2,
           selectedMetricGroups,
-          isXAxisSwapped
+          isXAxisSwapped,
+          showSubtotals
         },
         selectedIndicators: [], // Not used for table presets but required by schema
         timestamp: new Date().toISOString()
@@ -184,6 +187,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedYDim2: newPresetObj.filters.selectedYDim2,
           selectedMetricGroups: newPresetObj.filters.selectedMetricGroups as string[],
           isXAxisSwapped: newPresetObj.filters.isXAxisSwapped,
+          showSubtotals: newPresetObj.filters.showSubtotals,
           timestamp: newPresetObj.timestamp
         };
         setTablePresets([mappedPreset, ...tablePresets]);
@@ -201,6 +205,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     setSelectedYDim2(preset.selectedYDim2 as any);
     setSelectedMetricGroups(preset.selectedMetricGroups);
     setIsXAxisSwapped(preset.isXAxisSwapped);
+    setShowSubtotals(preset.showSubtotals || false);
     setActivePresetId(preset.id);
   };
 
@@ -253,14 +258,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             selectedYDim,
             selectedYDim2,
             selectedMetricGroups,
-            isXAxisSwapped
+            isXAxisSwapped,
+            showSubtotals
           },
           timestamp: new Date().toISOString()
         })
         .eq('id', preset.id);
 
       if (!error) {
-        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedMetricGroups, isXAxisSwapped } as TablePreset : p));
+        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedMetricGroups, isXAxisSwapped, showSubtotals } as TablePreset : p));
         alert('方案已成功更新');
       }
     } catch (err) {
@@ -500,14 +506,38 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     });
 
     if (sortConfig.key && sortConfig.direction) {
-      return [...rawData].sort((a, b) => {
+      const sorted = [...rawData].sort((a, b) => {
         const aVal = a.metrics[sortConfig.key] || 0;
         const bVal = b.metrics[sortConfig.key] || 0;
         return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
       });
+      return sorted;
     }
+
+    // Inject subtotals if showSubtotals is on and we have a secondary dimension
+    if (showSubtotals && selectedYDim2 !== 'none') {
+      const finalData: any[] = [];
+      const dim1Values = Array.from(new Set(rawData.map(d => d.dimValue)));
+      
+      dim1Values.forEach(v1 => {
+        const group = rawData.filter(d => d.dimValue === v1);
+        finalData.push(...group);
+        
+        // Calculate subtotal for this v1
+        const slice = data.filter(d => String(d[selectedYDim]) === v1);
+        const subtotalMetrics: Record<string, number> = {};
+        selectedMetricGroups.forEach(groupName => {
+          categories.forEach(cat => {
+            subtotalMetrics[`${groupName}_${cat}`] = calculateValue(slice, cat, groupName);
+          });
+        });
+        finalData.push({ dimValue: v1, dimValue2: '小计', metrics: subtotalMetrics, isSubtotal: true });
+      });
+      return finalData;
+    }
+
     return rawData;
-  }, [data, dimValues, selectedYDim, selectedYDim2, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig]);
+  }, [data, dimValues, selectedYDim, selectedYDim2, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig, showSubtotals]);
 
   const handleSort = (key: string) => {
     setSortConfig(prev => {
@@ -739,7 +769,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       const v1Span = v1Spans.get(row.dimValue) || 1;
 
                       return (
-                        <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className="bg-white">
+                        <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className={cn(row.isSubtotal ? "bg-slate-50" : "bg-white")}>
                           {selectedYDim2 === 'none' ? (
                             <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[10px] text-center">
                               {row.dimValue}
@@ -751,7 +781,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                   {row.dimValue}
                                 </td>
                               )}
-                              <td className="p-2 border border-slate-200 text-slate-600 font-medium text-[9px] text-center">
+                              <td className={cn(
+                                "p-2 border border-slate-200 text-center",
+                                row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[10px]" : "text-slate-600 font-medium text-[9px]"
+                              )}>
                                 {row.dimValue2}
                               </td>
                             </>
@@ -768,9 +801,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      row.isSubtotal && "bg-slate-50",
                                       group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                        : "text-slate-600"
+                                        : (row.isSubtotal ? "text-indigo-600" : "text-slate-600")
                                     )}
                                   >
                                     {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
@@ -791,9 +825,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      row.isSubtotal && "bg-slate-50",
                                       group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                        : "text-slate-600"
+                                        : (row.isSubtotal ? "text-indigo-600" : "text-slate-600")
                                     )}
                                   >
                                     {formatNumber(val, isRate, isIntegerMode, !isRate && isMoneyMetric(cat))}
@@ -1102,6 +1137,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   SWAP X-LEVELS
                 </button>
                 <button
+                  onClick={() => setShowSubtotals(!showSubtotals)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
+                    showSubtotals ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200"
+                  )}
+                >
+                  <Plus className="w-3 h-3" />
+                  SHOW SUBTOTALS
+                </button>
+                <button
                   onClick={() => {
                     const allNames = timeGroupMetadata.map(g => g.name);
                     setSelectedMetricGroups(allNames);
@@ -1325,7 +1370,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 const v1Span = selectedYDim2 !== 'none' ? tableData.filter(r => r.dimValue === row.dimValue).length : 1;
 
                 return (
-                  <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className={cn("hover:bg-slate-50/50 transition-colors", idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")}>
+                  <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className={cn(
+                    "hover:bg-slate-50/50 transition-colors",
+                    row.isSubtotal ? "bg-indigo-50/30" : (idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")
+                  )}>
                     {selectedYDim2 === 'none' ? (
                       <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10 text-center w-[140px]">
                         {row.dimValue}
@@ -1340,7 +1388,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             {row.dimValue}
                           </td>
                         )}
-                        <td className="p-4 border-b border-r border-slate-100 text-slate-600 font-medium text-xs sticky left-[140px] bg-inherit z-10 text-center w-[140px]">
+                        <td className={cn(
+                          "p-4 border-b border-r border-slate-100 sticky left-[140px] bg-inherit z-10 text-center w-[140px]",
+                          row.isSubtotal ? "text-indigo-600 font-black text-xs" : "text-slate-600 font-medium text-xs"
+                        )}>
                           {row.dimValue2}
                         </td>
                       </>
@@ -1383,7 +1434,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
                                 group.includes('\u589e\u51cf')
                                   ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                  : "text-slate-600"
+                                  : (row.isSubtotal ? "text-indigo-600 font-bold" : "text-slate-600")
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
