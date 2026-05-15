@@ -521,7 +521,9 @@ export const Dashboard: React.FC = () => {
         secondaryPropertyTypes: [...new Set(enriched.map(d => d.secondaryPropertyType))],
         projectNames: [...new Set(enriched.map(d => d.projectName))],
         isKeyProjects: [...new Set(enriched.map(d => d.isKeyProject))],
-        isExistingProjects: [...new Set(enriched.map(d => d.isExistingProject))]
+        isExistingProjects: [...new Set(enriched.map(d => d.isExistingProject))],
+        reportCalibers: [...new Set(enriched.map(d => d.reportCaliber))],
+        projectShortNames: [...new Set(enriched.map(d => d.projectShortName))]
       });
 
       alert(`导入成功！共加载 ${enriched.length} 条项目月度数据。`);
@@ -656,7 +658,9 @@ export const Dashboard: React.FC = () => {
       (filters.secondaryPropertyTypes || []).includes(d.secondaryPropertyType) &&
       (filters.projectNames || []).includes(d.projectName) &&
       (filters.isKeyProjects || []).includes(d.isKeyProject) &&
-      (filters.isExistingProjects || []).includes(d.isExistingProject)
+      (filters.isExistingProjects || []).includes(d.isExistingProject) &&
+      (filters.reportCalibers || []).includes(d.reportCaliber) &&
+      (filters.projectShortNames || []).includes(d.projectShortName)
     );
   }, [filters, sourceData]);
 
@@ -812,7 +816,9 @@ export const Dashboard: React.FC = () => {
       '二级业态': 'secondaryPropertyType',
       '项目名称': 'projectName',
       '重点项目': 'isKeyProject',
-      '现有项目': 'isExistingProject'
+      '现有项目': 'isExistingProject',
+      '报表口径': 'reportCaliber',
+      '项目简称': 'projectShortName'
     };
     const dimKey = dimKeyMap[tableDimension] || 'projectName';
 
