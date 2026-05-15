@@ -556,14 +556,16 @@ export const Dashboard: React.FC = () => {
     const formula = meta.formula || '';
     if (formula.startsWith('=') || formula.startsWith('‘=')) {
       const cleanFormula = formula.replace(/^‘?=/, '').trim();
-      if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
+      const allMetricNames = Object.keys(metricMetadata);
+      if (allMetricNames.includes(cleanFormula)) {
         return getMetricValue(data, cleanFormula, timeGroupName, year, month);
       }
       if (cleanFormula.includes('ABS(')) {
-        // Handle Budget Profit Completion Rate formula: (1+(利润YTD-Budget)/ABS(Budget))
         const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
         const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
-        const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
+        // Extract current metric from (1+(CURRENT-BUDGET)/...)
+        const currentMatch = cleanFormula.match(/\(1\+\(([^)-]+)-/);
+        const currentName = currentMatch ? currentMatch[1].trim() : (cleanFormula.includes('利润YTD') ? '利润YTD' : '');
         
         if (budgetName && currentName) {
           const current = getMetricValue(data, currentName, timeGroupName, year, month);
@@ -573,16 +575,12 @@ export const Dashboard: React.FC = () => {
         }
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && cleanFormula.split('/').length === 2) {
         const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
-        if (parts.length === 2) {
-          const num = getMetricValue(data, parts[0], timeGroupName, year, month);
-          const den = getMetricValue(data, parts[1], timeGroupName, year, month);
-          const val = den !== 0 ? num / den : NaN;
-          // Only scale by 100 if the formula explicitly has *100 AND we want to return the raw scaled number
-          // But our formatNumber handles scaling, so we generally want to return the ratio.
-          return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
-        }
+        const num = getMetricValue(data, parts[0], timeGroupName, year, month);
+        const den = getMetricValue(data, parts[1], timeGroupName, year, month);
+        const val = den !== 0 ? num / den : NaN;
+        return val;
       }
 
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {

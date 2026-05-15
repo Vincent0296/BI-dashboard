@@ -365,7 +365,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     if (formula.startsWith('=') || formula.startsWith('‘=')) {
       const cleanFormula = formula.replace(/^‘?=/, '').trim();
       
-      if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
+      const allMetricNames = Object.keys(metricMetadata);
+      if (allMetricNames.includes(cleanFormula)) {
         return getMetricAggregatedValue(dataSlice, cleanFormula, timeGroupName);
       }
 
@@ -373,7 +374,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       if (cleanFormula.includes('ABS(')) {
         const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
         const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
-        const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
+        // Extract current metric from (1+(CURRENT-BUDGET)/...)
+        const currentMatch = cleanFormula.match(/\(1\+\(([^)-]+)-/);
+        const currentName = currentMatch ? currentMatch[1].trim() : (cleanFormula.includes('利润YTD') ? '利润YTD' : '');
         
         if (budgetName && currentName) {
           const current = getMetricAggregatedValue(dataSlice, currentName, timeGroupName);
@@ -383,14 +386,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         }
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && cleanFormula.split('/').length === 2) {
         const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
-        if (parts.length === 2) {
-          const num = getMetricAggregatedValue(dataSlice, parts[0], timeGroupName);
-          const den = getMetricAggregatedValue(dataSlice, parts[1], timeGroupName);
-          const val = den !== 0 ? num / den : NaN;
-          return val;
-        }
+        const num = getMetricAggregatedValue(dataSlice, parts[0], timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, parts[1], timeGroupName);
+        const val = den !== 0 ? num / den : NaN;
+        return val;
       }
       
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
