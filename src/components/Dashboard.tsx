@@ -94,19 +94,6 @@ export const Dashboard: React.FC = () => {
     setAuthState({ isLoggedIn: false, user: null });
   };
 
-  const uniqueOptions = useMemo(() => {
-    const months = [...new Set(sourceData.map(d => d.month))].sort().reverse();
-    return {
-      ownerships: [...new Set(sourceData.map(d => d.ownership))],
-      managements: [...new Set(sourceData.map(d => d.management))],
-      propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
-      secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
-      projectNames: [...new Set(sourceData.map(d => d.projectName))],
-      isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
-      isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))],
-      months
-    };
-  }, [sourceData]);
 
   const [filters, setFilters] = useState<FilterState>({
     months: [],
@@ -118,6 +105,48 @@ export const Dashboard: React.FC = () => {
     isKeyProjects: [],
     isExistingProjects: []
   });
+
+  const handleResetFilters = () => {
+    const months = [...new Set(sourceData.map(d => d.month))].sort().reverse();
+    setFilters({
+      months: [],
+      ownerships: [...new Set(sourceData.map(d => d.ownership))],
+      managements: [...new Set(sourceData.map(d => d.management))],
+      propertyTypes: [...new Set(sourceData.map(d => d.propertyType))],
+      secondaryPropertyTypes: [...new Set(sourceData.map(d => d.secondaryPropertyType))],
+      projectNames: [...new Set(sourceData.map(d => d.projectName))],
+      isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
+      isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))]
+    });
+    setActivePresetId(null);
+  };
+
+  const slicerOptions = useMemo(() => {
+    const getOptions = (dim: keyof EnrichedRecord, excludedDim: keyof FilterState) => {
+      const filtered = sourceData.filter(d => {
+        return (
+          (excludedDim === 'ownerships' || (filters.ownerships.length === 0 || filters.ownerships.includes(d.ownership))) &&
+          (excludedDim === 'managements' || (filters.managements.length === 0 || filters.managements.includes(d.management))) &&
+          (excludedDim === 'propertyTypes' || (filters.propertyTypes.length === 0 || filters.propertyTypes.includes(d.propertyType))) &&
+          (excludedDim === 'secondaryPropertyTypes' || (filters.secondaryPropertyTypes.length === 0 || filters.secondaryPropertyTypes.includes(d.secondaryPropertyType))) &&
+          (excludedDim === 'projectNames' || (filters.projectNames.length === 0 || filters.projectNames.includes(d.projectName))) &&
+          (excludedDim === 'isKeyProjects' || (filters.isKeyProjects.length === 0 || filters.isKeyProjects.includes(d.isKeyProject))) &&
+          (excludedDim === 'isExistingProjects' || (filters.isExistingProjects.length === 0 || filters.isExistingProjects.includes(d.isExistingProject)))
+        );
+      });
+      return [...new Set(filtered.map(d => String(d[dim])))].sort();
+    };
+
+    return {
+      ownerships: getOptions('ownership', 'ownerships'),
+      managements: getOptions('management', 'managements'),
+      propertyTypes: getOptions('propertyType', 'propertyTypes'),
+      secondaryPropertyTypes: getOptions('secondaryPropertyType', 'secondaryPropertyTypes'),
+      projectNames: getOptions('projectName', 'projectNames'),
+      isKeyProjects: getOptions('isKeyProject', 'isKeyProjects'),
+      isExistingProjects: getOptions('isExistingProject', 'isExistingProjects')
+    };
+  }, [sourceData, filters]);
 
   // Handle File Upload
   useEffect(() => {
@@ -1109,7 +1138,20 @@ export const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">分析维度</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">项目多维切片器</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">项目多维切片器</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetFilters();
+                        }}
+                        className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-all text-[10px] font-black border border-indigo-100 shadow-sm hover:shadow active:scale-95 uppercase tracking-wider"
+                        title="重置所有筛选维度到初始状态"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        一键重置
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {isSlicerVisible ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
@@ -1212,44 +1254,44 @@ export const Dashboard: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                     <Slicer
                       label="产权口径"
-                      options={uniqueOptions.ownerships}
+                      options={slicerOptions.ownerships}
                       selected={filters.ownerships}
                       onChange={(val) => { setFilters({ ...filters, ownerships: val }); setActivePresetId(null); }}
                     />
                     <Slicer
                       label="管理口径"
-                      options={uniqueOptions.managements}
+                      options={slicerOptions.managements}
                       selected={filters.managements}
                       onChange={(val) => { setFilters({ ...filters, managements: val }); setActivePresetId(null); }}
                     />
                     <Slicer
                       label="业态"
-                      options={uniqueOptions.propertyTypes}
+                      options={slicerOptions.propertyTypes}
                       selected={filters.propertyTypes}
                       onChange={(val) => { setFilters({ ...filters, propertyTypes: val }); setActivePresetId(null); }}
                     />
                     <Slicer
                       label="二级业态"
-                      options={uniqueOptions.secondaryPropertyTypes}
+                      options={slicerOptions.secondaryPropertyTypes}
                       selected={filters.secondaryPropertyTypes}
                       onChange={(val) => { setFilters({ ...filters, secondaryPropertyTypes: val }); setActivePresetId(null); }}
                     />
                     <Slicer
                       label="项目名称"
-                      options={uniqueOptions.projectNames}
+                      options={slicerOptions.projectNames}
                       selected={filters.projectNames}
                       onChange={(val) => { setFilters({ ...filters, projectNames: val }); setActivePresetId(null); }}
                       showSearch
                     />
                     <Slicer
                       label="重点项目"
-                      options={uniqueOptions.isKeyProjects}
+                      options={slicerOptions.isKeyProjects}
                       selected={filters.isKeyProjects}
                       onChange={(val) => { setFilters({ ...filters, isKeyProjects: val }); setActivePresetId(null); }}
                     />
                     <Slicer
                       label="现有项目"
-                      options={uniqueOptions.isExistingProjects}
+                      options={slicerOptions.isExistingProjects}
                       selected={filters.isExistingProjects}
                       onChange={(val) => { setFilters({ ...filters, isExistingProjects: val }); setActivePresetId(null); }}
                     />

@@ -42,6 +42,10 @@ export const Slicer: React.FC<SlicerProps> = ({
     onChange([]);
   };
 
+  // Calculate valid selections (those that are actually available in the current options)
+  const validSelected = selected.filter(opt => options.includes(opt));
+  const isAllSelected = options.length > 0 && validSelected.length === options.length;
+
   return (
     <div className="relative inline-block w-full group">
       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 transition-colors group-hover:text-indigo-500">{label}</label>
@@ -55,11 +59,11 @@ export const Slicer: React.FC<SlicerProps> = ({
       >
         <span className={cn(
           "truncate font-bold",
-          selected.length === 0 ? "text-slate-400 font-medium" : "text-slate-700"
+          validSelected.length === 0 ? "text-slate-400 font-medium" : "text-slate-700"
         )}>
-          {selected.length === 0 ? '未选择' : 
-           selected.length === options.length ? '全部已选' : 
-           `已选 ${selected.length} 个`}
+          {validSelected.length === 0 ? '未选择' : 
+           isAllSelected ? '全部已选' : 
+           `已选 ${validSelected.length} 个`}
         </span>
         <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-300", isOpen && "rotate-180 text-indigo-500")} />
       </button>
@@ -86,9 +90,9 @@ export const Slicer: React.FC<SlicerProps> = ({
                   清除
                 </button>
               </div>
-              {selected.length > 0 && (
+              {validSelected.length > 0 && (
                 <span className="text-[10px] font-black text-indigo-500 bg-indigo-50/50 px-2.5 py-1 rounded-full border border-indigo-100/50 animate-pulse">
-                  已选择 {selected.length} 项
+                  已选择 {validSelected.length} 项
                 </span>
               )}
             </div>
