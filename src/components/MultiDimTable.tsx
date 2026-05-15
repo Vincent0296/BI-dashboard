@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Download, 
-  Filter, 
-  Table as TableIcon, 
-  Save, 
-  Plus, 
-  X, 
-  Trash2, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Filter,
+  Table as TableIcon,
+  Save,
+  Plus,
+  X,
+  Trash2,
   Bookmark,
   RefreshCcw,
   Edit2,
@@ -58,9 +58,9 @@ const DIMENSIONS = [
   { key: 'isExistingProject', label: '现有项目' },
 ] as const;
 
-export const MultiDimTable: React.FC<MultiDimTableProps> = ({ 
-  data, 
-  categories, 
+export const MultiDimTable: React.FC<MultiDimTableProps> = ({
+  data,
+  categories,
   selectedMonth,
   isIntegerMode,
   setIsIntegerMode,
@@ -77,7 +77,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     return timeGroupMetadata.map(g => g.name);
   });
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 5; 
+  const itemsPerPage = 5;
 
   // --- Preset States ---
   const [tablePresets, setTablePresets] = useState<TablePreset[]>([]);
@@ -313,7 +313,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       data.forEach(d => {
         pairSet.add(`${d[selectedYDim]}|${d[selectedYDim2]}`);
       });
-      
+
       const pairs = (Array.from(pairSet) as string[]).map(p => {
         const [v1, v2] = p.split('|');
         return { v1, v2 };
@@ -321,7 +321,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
       // Sort by v1 then v2
       const sortedV1s = getDimOrder(selectedYDim, Array.from(new Set(pairs.map(p => p.v1))) as string[]);
-      
+
       return sortedV1s.flatMap(v1 => {
         const v2sForV1 = pairs.filter(p => p.v1 === v1).map(p => p.v2!);
         const sortedV2s = getDimOrder(selectedYDim2, v2sForV1);
@@ -369,11 +369,28 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         return getMetricAggregatedValue(dataSlice, cleanFormula, timeGroupName);
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('*100')) {
-        const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
-        const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
-        const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
-        return den !== 0 ? num / den : NaN;
+      // Handle Budget Profit Completion Rate formula: (1+(利润YTD-Budget)/ABS(Budget))
+      if (cleanFormula.includes('ABS(')) {
+        const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
+        const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
+        const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
+        
+        if (budgetName && currentName) {
+          const current = getMetricAggregatedValue(dataSlice, currentName, timeGroupName);
+          const budget = getMetricAggregatedValue(dataSlice, budgetName, timeGroupName);
+          if (budget === 0 || isNaN(budget)) return NaN;
+          return 1 + (current - budget) / Math.abs(budget);
+        }
+      }
+
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+        const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
+        if (parts.length === 2) {
+          const num = getMetricAggregatedValue(dataSlice, parts[0], timeGroupName);
+          const den = getMetricAggregatedValue(dataSlice, parts[1], timeGroupName);
+          const val = den !== 0 ? num / den : NaN;
+          return val;
+        }
       }
       
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
@@ -381,34 +398,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
         const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
-        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
+        return val;
       }
+
       if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
         const s1 = getMetricAggregatedValue(dataSlice, '8外购燃料', timeGroupName);
         const s2 = getMetricAggregatedValue(dataSlice, '9外购动力', timeGroupName);
         const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
-        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
-      }
-
-      if (cleanFormula.includes('*100')) {
-        const base = cleanFormula.replace('*100', '').replace(/^\(|\)$/g, '').trim();
-        if (base.includes('ABS(')) {
-          // Handle the new profit completion formula: (1+(利润YTD-Budget)/ABS(Budget))*100
-          const isInternal = metricName.includes('内部');
-          const budgetName = isInternal ? '2026全年预算利润-内部' : '2026全年预算利润';
-          const profit = getMetricAggregatedValue(dataSlice, '利润YTD', timeGroupName);
-          const budget = getMetricAggregatedValue(dataSlice, budgetName, timeGroupName);
-          if (budget === 0) return NaN;
-          return (1 + (profit - budget) / Math.abs(budget)) * 100;
-        }
-        if (base.includes('/')) {
-          const [numName, denName] = base.split('/').map(s => s.trim());
-          const num = getMetricAggregatedValue(dataSlice, numName, timeGroupName);
-          const den = getMetricAggregatedValue(dataSlice, denName, timeGroupName);
-          const val = den !== 0 ? num / den : NaN;
-          return isNaN(val) ? NaN : val * 100;
-        }
+        return val;
       }
     }
 
@@ -416,12 +414,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   };
 
   function getSumWithFuzzyInternal(
-    items: EnrichedRecord[], 
-    name: string, 
-    timeGroupName: string, 
-    year: number, 
-    month: number, 
-    prevYear: number, 
+    items: EnrichedRecord[],
+    name: string,
+    timeGroupName: string,
+    year: number,
+    month: number,
+    prevYear: number,
     pm: { y: number, m: number }
   ): number {
     const isYTD = (d: EnrichedRecord, y: number, m: number) => {
@@ -431,9 +429,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const isMTD = (d: EnrichedRecord, y: number, m: number) => d.month === `${y}-${m.toString().padStart(2, '0')}`;
 
     const getSumWithFuzzy = (dataList: EnrichedRecord[], targetName: string) => {
-      const isStatic = 
-        BUDGET_METRICS.includes(targetName) || 
-        THREE_YEAR_BENEFIT_METRICS.includes(targetName) || 
+      const isStatic =
+        BUDGET_METRICS.includes(targetName) ||
+        THREE_YEAR_BENEFIT_METRICS.includes(targetName) ||
         BUSINESS_METRICS.includes(targetName);
 
       const calculateSum = (name: string) => {
@@ -474,18 +472,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   const tableData = useMemo(() => {
     const rawData = dimValues.map(dv => {
-      const slice = data.filter(d => 
-        String(d[selectedYDim]) === dv.v1 && 
+      const slice = data.filter(d =>
+        String(d[selectedYDim]) === dv.v1 &&
         (dv.v2 === null || String(d[selectedYDim2]) === dv.v2)
       );
       const metrics: Record<string, number> = {};
-      
+
       selectedMetricGroups.forEach(groupName => {
         categories.forEach(cat => {
           metrics[`${groupName}_${cat}`] = calculateValue(slice, cat, groupName);
         });
       });
-      
+
       return { dimValue: dv.v1, dimValue2: dv.v2, metrics };
     });
 
@@ -535,50 +533,50 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       header1 = [dim1Label, ...(showSecondary ? [dim2Label] : []), ...categories.flatMap(cat => Array(selectedMetricGroups.length).fill(cat))];
       header2 = ['', ...(showSecondary ? [''] : []), ...categories.flatMap(() => selectedMetricGroups)];
     }
-    
+
     const rows = tableData.map(row => [
       row.dimValue,
       ...(showSecondary ? [row.dimValue2] : []),
-      ...(!isXAxisSwapped 
-        ? selectedMetricGroups.flatMap(g => 
-            categories.map(cat => {
-              const val = row.metrics[`${g}_${cat}`];
-              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-              if (isNaN(val) || val === 0) return '-';
-              return isRate ? (val * 100).toFixed(2) + '%' : val;
-            })
-          )
-        : categories.flatMap(cat => 
-            selectedMetricGroups.map(g => {
-              const val = row.metrics[`${g}_${cat}`];
-              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-              if (isNaN(val) || val === 0) return '-';
-              return isRate ? (val * 100).toFixed(2) + '%' : val;
-            })
-          )
+      ...(!isXAxisSwapped
+        ? selectedMetricGroups.flatMap(g =>
+          categories.map(cat => {
+            const val = row.metrics[`${g}_${cat}`];
+            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            if (isNaN(val) || val === 0) return '-';
+            return isRate ? (val * 100).toFixed(2) + '%' : val;
+          })
+        )
+        : categories.flatMap(cat =>
+          selectedMetricGroups.map(g => {
+            const val = row.metrics[`${g}_${cat}`];
+            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            if (isNaN(val) || val === 0) return '-';
+            return isRate ? (val * 100).toFixed(2) + '%' : val;
+          })
+        )
       )
     ]);
 
     const totalLine = [
       '合计',
       ...(showSecondary ? [''] : []),
-      ...(!isXAxisSwapped 
-        ? selectedMetricGroups.flatMap(g => 
-            categories.map(cat => {
-              const val = totalRow[`${g}_${cat}`];
-              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-              if (isNaN(val) || val === 0) return '-';
-              return isRate ? (val * 100).toFixed(2) + '%' : val;
-            })
-          )
-        : categories.flatMap(cat => 
-            selectedMetricGroups.map(g => {
-              const val = totalRow[`${g}_${cat}`];
-              const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent');
-              if (isNaN(val) || val === 0) return '-';
-              return isRate ? (val * 100).toFixed(2) + '%' : val;
-            })
-          )
+      ...(!isXAxisSwapped
+        ? selectedMetricGroups.flatMap(g =>
+          categories.map(cat => {
+            const val = totalRow[`${g}_${cat}`];
+            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            if (isNaN(val) || val === 0) return '-';
+            return isRate ? (val * 100).toFixed(2) + '%' : val;
+          })
+        )
+        : categories.flatMap(cat =>
+          selectedMetricGroups.map(g => {
+            const val = totalRow[`${g}_${cat}`];
+            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            if (isNaN(val) || val === 0) return '-';
+            return isRate ? (val * 100).toFixed(2) + '%' : val;
+          })
+        )
       )
     ];
 
@@ -629,7 +627,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             }
           `}
         </style>
-        
+
         <div className="flex flex-col space-y-12">
           {indicatorChunks.map((chunk, chunkIdx) => (
             <div key={chunkIdx} className="print-page-break flex flex-col space-y-4">
@@ -652,13 +650,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <th className="p-3 border border-slate-700 font-black text-[10px] text-center w-[120px]" colSpan={selectedYDim2 === 'none' ? 1 : 2}>维度</th>
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => {
-                          const indicatorsInChunk = chunk.filter(cat => 
+                          const indicatorsInChunk = chunk.filter(cat =>
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           );
                           if (indicatorsInChunk.length === 0) return null;
                           return (
-                            <th 
-                              key={group} 
+                            <th
+                              key={group}
                               colSpan={indicatorsInChunk.length}
                               className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
                             >
@@ -668,13 +666,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         })
                       ) : (
                         chunk.map(cat => {
-                          const groupsForCat = selectedMetricGroups.filter(g => 
+                          const groupsForCat = selectedMetricGroups.filter(g =>
                             g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           );
                           if (groupsForCat.length === 0) return null;
                           return (
-                            <th 
-                              key={cat} 
+                            <th
+                              key={cat}
                               colSpan={groupsForCat.length}
                               className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
                             >
@@ -695,10 +693,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       )}
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => (
-                          chunk.filter(cat => 
+                          chunk.filter(cat =>
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => (
-                            <th 
+                            <th
                               key={`${group}_${cat}`}
                               className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
                             >
@@ -708,11 +706,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         ))
                       ) : (
                         chunk.map(cat => {
-                          const groupsForCat = selectedMetricGroups.filter(g => 
+                          const groupsForCat = selectedMetricGroups.filter(g =>
                             g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           );
                           return groupsForCat.map(group => (
-                            <th 
+                            <th
                               key={`${group}_${cat}`}
                               className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
                             >
@@ -727,7 +725,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     {tableData.map((row, idx) => {
                       const isFirstOfV1 = selectedYDim2 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue);
                       const v1Span = v1Spans.get(row.dimValue) || 1;
-                      
+
                       return (
                         <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className="bg-white">
                           {selectedYDim2 === 'none' ? (
@@ -748,18 +746,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           )}
                           {!isXAxisSwapped ? (
                             selectedMetricGroups.map(group => (
-                              chunk.filter(cat => 
+                              chunk.filter(cat =>
                                 group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                               ).map(cat => {
                                 const val = row.metrics[`${group}_${cat}`];
                                 const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                                 return (
-                                  <td 
-                                    key={`${group}_${cat}`} 
+                                  <td
+                                    key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
-                                      (isRate || group.includes('增减')) 
-                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                      (isRate || group.includes('增减'))
+                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : "text-slate-600"
                                     )}
                                   >
@@ -770,19 +768,19 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             ))
                           ) : (
                             chunk.map(cat => {
-                              const groupsForCat = selectedMetricGroups.filter(g => 
+                              const groupsForCat = selectedMetricGroups.filter(g =>
                                 g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                               );
                               return groupsForCat.map(group => {
                                 const val = row.metrics[`${group}_${cat}`];
                                 const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                                 return (
-                                  <td 
-                                    key={`${group}_${cat}`} 
+                                  <td
+                                    key={`${group}_${cat}`}
                                     className={cn(
                                       "p-2 border border-slate-200 text-[10px] text-center font-bold",
-                                      (isRate || group.includes('增减')) 
-                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                      (isRate || group.includes('增减'))
+                                        ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : "text-slate-600"
                                     )}
                                   >
@@ -801,18 +799,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <td className="p-2 border border-slate-700 text-center text-[10px]" colSpan={selectedYDim2 === 'none' ? 1 : 2}>合计</td>
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => (
-                          chunk.filter(cat => 
+                          chunk.filter(cat =>
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => {
                             const val = totalRow[`${group}_${cat}`];
                             const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                             return (
-                              <td 
-                                key={`${group}_${cat}`} 
+                              <td
+                                key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[10px] text-center",
-                                  (isRate || group.includes('增减')) 
-                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                                  (isRate || group.includes('增减'))
+                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
                               >
@@ -823,19 +821,19 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         ))
                       ) : (
                         chunk.map(cat => {
-                          const groupsForCat = selectedMetricGroups.filter(g => 
+                          const groupsForCat = selectedMetricGroups.filter(g =>
                             g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           );
                           return groupsForCat.map(group => {
                             const val = totalRow[`${group}_${cat}`];
                             const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                             return (
-                              <td 
-                                key={`${group}_${cat}`} 
+                              <td
+                                key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[10px] text-center",
-                                  (isRate || group.includes('增减')) 
-                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                                  (isRate || group.includes('增减'))
+                                    ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
                               >
@@ -910,9 +908,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               <Bookmark className="w-4 h-4" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Table Presets</span>
             </div>
-            
+
             {tablePresets.map(preset => (
-              <div 
+              <div
                 key={preset.id}
                 onClick={() => applyPreset(preset)}
                 className={cn(
@@ -937,13 +935,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   <>
                     <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600">{preset.name}</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
                         className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => handleDeletePreset(preset.id, e)}
                         className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-rose-500 transition-all"
                       >
@@ -957,9 +955,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
             {isSavingPreset ? (
               <div className="flex items-center gap-2 animate-in zoom-in-95 duration-200">
-                <input 
+                <input
                   autoFocus
-                  type="text" 
+                  type="text"
                   placeholder="New preset..."
                   value={newPresetName}
                   onChange={(e) => setNewPresetName(e.target.value)}
@@ -974,7 +972,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => {
                   if (!authState.isLoggedIn) {
                     alert('请先登录');
@@ -994,75 +992,75 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         {/* Controls Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm premium-shadow print:hidden">
           {/* Y-Axis Selection */}
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-50 p-2 rounded-lg">
-                  <Filter className="w-4 h-4 text-indigo-600" />
-                </div>
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Dimension (Y1)</h4>
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-50 p-2 rounded-lg">
+                <Filter className="w-4 h-4 text-indigo-600" />
               </div>
-              <div className="flex flex-wrap gap-2">
-                {DIMENSIONS.map(dim => (
-                  <button
-                    key={dim.key}
-                    onClick={() => {
-                      setSelectedYDim(dim.key);
-                      setActivePresetId(null);
-                    }}
-                    className={cn(
-                      "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                      selectedYDim === dim.key 
-                        ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100" 
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
-                    )}
-                  >
-                    {dim.label}
-                  </button>
-                ))}
-              </div>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Primary Dimension (Y1)</h4>
             </div>
-
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="bg-purple-50 p-2 rounded-lg">
-                  <Filter className="w-4 h-4 text-purple-600" />
-                </div>
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Secondary Dimension (Y2)</h4>
-              </div>
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
+              {DIMENSIONS.map(dim => (
                 <button
+                  key={dim.key}
                   onClick={() => {
-                    setSelectedYDim2('none');
+                    setSelectedYDim(dim.key);
                     setActivePresetId(null);
                   }}
                   className={cn(
                     "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                    selectedYDim2 === 'none'
+                    selectedYDim === dim.key
+                      ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
+                  )}
+                >
+                  {dim.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-purple-50 p-2 rounded-lg">
+                <Filter className="w-4 h-4 text-purple-600" />
+              </div>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Secondary Dimension (Y2)</h4>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  setSelectedYDim2('none');
+                  setActivePresetId(null);
+                }}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                  selectedYDim2 === 'none'
+                    ? "bg-purple-600 text-white shadow-xl shadow-purple-100"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
+                )}
+              >
+                无
+              </button>
+              {DIMENSIONS.filter(d => d.key !== selectedYDim).map(dim => (
+                <button
+                  key={dim.key}
+                  onClick={() => {
+                    setSelectedYDim2(dim.key);
+                    setActivePresetId(null);
+                  }}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                    selectedYDim2 === dim.key
                       ? "bg-purple-600 text-white shadow-xl shadow-purple-100"
                       : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
                   )}
                 >
-                  无
+                  {dim.label}
                 </button>
-                {DIMENSIONS.filter(d => d.key !== selectedYDim).map(dim => (
-                  <button
-                    key={dim.key}
-                    onClick={() => {
-                      setSelectedYDim2(dim.key);
-                      setActivePresetId(null);
-                    }}
-                    className={cn(
-                      "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                      selectedYDim2 === dim.key 
-                        ? "bg-purple-600 text-white shadow-xl shadow-purple-100" 
-                        : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
-                    )}
-                  >
-                    {dim.label}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
+          </div>
 
           {/* X-Axis Metric Group Selection */}
           <div className="space-y-5">
@@ -1074,7 +1072,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Calculation Groups</h4>
               </div>
               <div className="flex gap-4">
-                <button 
+                <button
                   onClick={() => setIsXAxisSwapped(!isXAxisSwapped)}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
@@ -1084,7 +1082,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   <RefreshCcw className="w-3 h-3" />
                   SWAP X-LEVELS
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     const allNames = timeGroupMetadata.map(g => g.name);
                     setSelectedMetricGroups(allNames);
@@ -1094,7 +1092,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 >
                   Select All
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setSelectedMetricGroups([]);
                     setActivePresetId(null);
@@ -1107,7 +1105,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             </div>
             <div className="flex flex-wrap gap-2">
               {timeGroupMetadata.map(group => (
-                <label 
+                <label
                   key={group.name}
                   className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border hover-lift",
@@ -1116,7 +1114,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white"
                   )}
                 >
-                  <input 
+                  <input
                     type="checkbox"
                     className="hidden"
                     checked={selectedMetricGroups.includes(group.name)}
@@ -1185,7 +1183,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <thead>
               {/* Level 1 Header */}
               <tr className="bg-slate-800 text-white">
-                <th 
+                <th
                   className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-[140px] shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
                   colSpan={selectedYDim2 === 'none' ? 1 : 2}
                 >
@@ -1196,8 +1194,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     const indicators = getGroupIndicators(group);
                     if (indicators.length === 0) return null;
                     return (
-                      <th 
-                        key={group} 
+                      <th
+                        key={group}
                         colSpan={indicators.length}
                         className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
                       >
@@ -1207,13 +1205,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   })
                 ) : (
                   currentIndicators.map(cat => {
-                    const groupsForCat = selectedMetricGroups.filter(g => 
+                    const groupsForCat = selectedMetricGroups.filter(g =>
                       g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                     );
                     if (groupsForCat.length === 0) return null;
                     return (
-                      <th 
-                        key={cat} 
+                      <th
+                        key={cat}
                         colSpan={groupsForCat.length}
                         className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
                       >
@@ -1239,7 +1237,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       const sortKey = `${group}_${cat}`;
                       const isSorting = sortConfig.key === sortKey;
                       return (
-                        <th 
+                        <th
                           key={sortKey}
                           onClick={() => handleSort(sortKey)}
                           className={cn(
@@ -1266,14 +1264,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   ))
                 ) : (
                   currentIndicators.map(cat => {
-                    const groupsForCat = selectedMetricGroups.filter(g => 
+                    const groupsForCat = selectedMetricGroups.filter(g =>
                       g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                     );
                     return groupsForCat.map(group => {
                       const sortKey = `${group}_${cat}`;
                       const isSorting = sortConfig.key === sortKey;
                       return (
-                        <th 
+                        <th
                           key={sortKey}
                           onClick={() => handleSort(sortKey)}
                           className={cn(
@@ -1316,7 +1314,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     ) : (
                       <>
                         {isFirstOfV1 && (
-                          <td 
+                          <td
                             rowSpan={v1Span}
                             className="p-4 border-b border-r border-slate-100 text-slate-800 font-black text-sm sticky left-0 bg-white z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]"
                           >
@@ -1328,7 +1326,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         </td>
                       </>
                     )}
-                    
+
                     {!isXAxisSwapped ? (
                       selectedMetricGroups.map(group => (
                         getGroupIndicators(group).map(cat => {
@@ -1336,12 +1334,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                           const isWanYuan = !isRate && isMoneyMetric(cat);
                           return (
-                            <td 
+                            <td
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                (isRate || group.includes('增减')) 
-                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                (isRate || group.includes('增减'))
+                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                   : "text-slate-600"
                               )}
                             >
@@ -1352,7 +1350,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       ))
                     ) : (
                       currentIndicators.map(cat => {
-                        const groupsForCat = selectedMetricGroups.filter(g => 
+                        const groupsForCat = selectedMetricGroups.filter(g =>
                           g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                         );
                         return groupsForCat.map(group => {
@@ -1360,12 +1358,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                           const isWanYuan = !isRate && isMoneyMetric(cat);
                           return (
-                            <td 
+                            <td
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                (isRate || group.includes('增减')) 
-                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600") 
+                                (isRate || group.includes('增减'))
+                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                   : "text-slate-600"
                               )}
                             >
@@ -1380,7 +1378,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               })}
               {/* Total Row */}
               <tr className="bg-indigo-900 text-white font-black">
-                <td 
+                <td
                   className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
                   colSpan={selectedYDim2 === 'none' ? 1 : 2}
                 >
@@ -1393,12 +1391,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                       const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
-                        <td 
+                        <td
                           key={`${group}_${cat}`}
                           className={cn(
                             "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            (isRate || group.includes('增减')) 
-                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                            (isRate || group.includes('增减'))
+                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
                         >
@@ -1409,7 +1407,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   ))
                 ) : (
                   currentIndicators.map(cat => {
-                    const groupsForCat = selectedMetricGroups.filter(g => 
+                    const groupsForCat = selectedMetricGroups.filter(g =>
                       g === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                     );
                     return groupsForCat.map(group => {
@@ -1417,12 +1415,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
                       const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
-                        <td 
+                        <td
                           key={`${group}_${cat}`}
                           className={cn(
                             "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            (isRate || group.includes('增减')) 
-                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400") 
+                            (isRate || group.includes('增减'))
+                              ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
                         >
@@ -1436,7 +1434,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             </tbody>
           </table>
         </div>
-        
+
         {/* Footer info */}
         <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
           <div className="flex items-center gap-1.5">

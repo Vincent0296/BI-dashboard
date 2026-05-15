@@ -787,31 +787,8 @@ export const Dashboard: React.FC = () => {
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 
     const calculateForSlice = (dataSlice: DataRecord[]) => {
-      const sum = (data: DataRecord[]) => data.reduce((acc, curr) => acc + (curr.metrics[activeIndicator] || 0), 0);
-      const ytdData = dataSlice.filter(d => isYTD(d, year, month));
-      const lyData = dataSlice.filter(d => isYTD(d, prevYear, month));
-      const mtdData = dataSlice.filter(d => isMTD(d, year, month));
-      const preMonthData = dataSlice.filter(d => isMTD(d, pm.y, pm.m));
-
-      const ytd = sum(ytdData);
-      const ly = sum(lyData);
-      const mtd = sum(mtdData);
-      const preMonth = sum(preMonthData);
-
-      const hasLY = lyData.length > 0;
-      const hasPM = preMonthData.length > 0;
-
-      switch (selectedMetric) {
-        case 'YTD': return ytd;
-        case 'LY': return hasLY ? ly : 0;
-        case 'YoYDiff': return hasLY ? (ytd - ly) : 0;
-        case 'YoYPercent': return (hasLY && ly !== 0) ? (ytd - ly) / Math.abs(ly) : NaN;
-        case 'MTD': return mtd;
-        case 'PreMonth': return hasPM ? preMonth : 0;
-        case 'MoMDiff': return hasPM ? (mtd - preMonth) : 0;
-        case 'MoMPercent': return (hasPM && preMonth !== 0) ? (mtd - preMonth) / Math.abs(preMonth) : NaN;
-        default: return 0;
-      }
+      if (!selectedMonth || !selectedMonth.includes('-')) return 0;
+      return getMetricValue(dataSlice as EnrichedRecord[], activeIndicator, selectedMetric, year, month);
     };
 
     const rowData = dimValues.map(dv => {
