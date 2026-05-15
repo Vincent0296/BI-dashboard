@@ -556,16 +556,14 @@ export const Dashboard: React.FC = () => {
     const formula = meta.formula || '';
     if (formula.startsWith('=') || formula.startsWith('‘=')) {
       const cleanFormula = formula.replace(/^‘?=/, '').trim();
-      const allMetricNames = Object.keys(metricMetadata);
-      if (allMetricNames.includes(cleanFormula)) {
+      if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
         return getMetricValue(data, cleanFormula, timeGroupName, year, month);
       }
       if (cleanFormula.includes('ABS(')) {
+        // Handle Budget Profit Completion Rate formula: (1+(利润YTD-Budget)/ABS(Budget))
         const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
         const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
-        // Extract current metric from (1+(CURRENT-BUDGET)/...)
-        const currentMatch = cleanFormula.match(/\(1\+\(([^)-]+)-/);
-        const currentName = currentMatch ? currentMatch[1].trim() : (cleanFormula.includes('利润YTD') ? '利润YTD' : '');
+        const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
         
         if (budgetName && currentName) {
           const current = getMetricValue(data, currentName, timeGroupName, year, month);
@@ -575,26 +573,30 @@ export const Dashboard: React.FC = () => {
         }
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && cleanFormula.split('/').length === 2) {
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
         const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
-        const num = getMetricValue(data, parts[0], timeGroupName, year, month);
-        const den = getMetricValue(data, parts[1], timeGroupName, year, month);
-        const val = den !== 0 ? num / den : NaN;
-        return val;
+        if (parts.length === 2) {
+          const num = getMetricValue(data, parts[0], timeGroupName, year, month);
+          const den = getMetricValue(data, parts[1], timeGroupName, year, month);
+          const val = den !== 0 ? num / den : NaN;
+          // Only scale by 100 if the formula explicitly has *100 AND we want to return the raw scaled number
+          // But our formatNumber handles scaling, so we generally want to return the ratio.
+          return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
+        }
       }
 
-      if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
-        const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
-        const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
-        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
+      if (cleanFormula.includes('15\u7528\u5de5\u85aa\u916c\u6210\u672c') || cleanFormula.includes('\u7528\u5de5\u85aa\u916c\u6210\u672c')) {
+        const s1 = getMetricValue(data, '15\u7528\u5de5\u85aa\u916c\u6210\u672c', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '16\u5916\u5305\u52b3\u52a1\u652f\u51fa', timeGroupName, year, month);
+        const den = getMetricValue(data, '\u6536\u5165YTD', timeGroupName, year, month);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
 
-      if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
-        const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
-        const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
-        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
+      if (cleanFormula.includes('8\u5916\u8d2d\u71c3\u6599') || cleanFormula.includes('\u5916\u8d2d\u71c3\u6599')) {
+        const s1 = getMetricValue(data, '8\u5916\u8d2d\u71c3\u6599', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '9\u5916\u8d2d\u52a8\u529b', timeGroupName, year, month);
+        const den = getMetricValue(data, '\u6536\u5165YTD', timeGroupName, year, month);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
