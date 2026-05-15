@@ -585,18 +585,18 @@ export const Dashboard: React.FC = () => {
         }
       }
 
-      if (cleanFormula.includes('15\u7528\u5de5\u85aa\u916c\u6210\u672c') || cleanFormula.includes('\u7528\u5de5\u85aa\u916c\u6210\u672c')) {
-        const s1 = getMetricValue(data, '15\u7528\u5de5\u85aa\u916c\u6210\u672c', timeGroupName, year, month);
-        const s2 = getMetricValue(data, '16\u5916\u5305\u52b3\u52a1\u652f\u51fa', timeGroupName, year, month);
-        const den = getMetricValue(data, '\u6536\u5165YTD', timeGroupName, year, month);
+      if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
+        const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
+        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
 
-      if (cleanFormula.includes('8\u5916\u8d2d\u71c3\u6599') || cleanFormula.includes('\u5916\u8d2d\u71c3\u6599')) {
-        const s1 = getMetricValue(data, '8\u5916\u8d2d\u71c3\u6599', timeGroupName, year, month);
-        const s2 = getMetricValue(data, '9\u5916\u8d2d\u52a8\u529b', timeGroupName, year, month);
-        const den = getMetricValue(data, '\u6536\u5165YTD', timeGroupName, year, month);
+      if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
+        const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
+        const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
+        const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
@@ -633,9 +633,7 @@ export const Dashboard: React.FC = () => {
         const val = calcForCategory(cat, selectedMetric);
         const finalVal = (val === null || isNaN(val as number)) ? NaN : val;
         // Determine if this specific combination should be treated as a rate
-        const isIndicatorRate = cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
-        const isGroupRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
-        const isFinalRate = isIndicatorRate || isGroupRate;
+        const isFinalRate = isRateMetric(cat) || isRateMetric(selectedMetric);
 
         return {
           id: cat,
@@ -707,7 +705,7 @@ export const Dashboard: React.FC = () => {
           }
 
           const value = calculateForExport(cat, key);
-          const isRate = key.includes('率') || key.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+          const isRate = isRateMetric(key) || isRateMetric(cat);
           const isMoney = isMoneyMetric(cat);
           if (isNaN(value) || value === 0) {
             row[metricNames[index]] = '-';
@@ -797,7 +795,7 @@ export const Dashboard: React.FC = () => {
     }).sort((a, b) => a.val - b.val);
     const totalVal = calculateForSlice(filteredData);
 
-    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent') || activeIndicator.includes('率') || activeIndicator.includes('Percent') || activeIndicator.includes('百元');
+    const isRate = isRateMetric(selectedMetric) || isRateMetric(activeIndicator);
     const isWanYuan = isMoneyMetric(activeIndicator);
 
     const exportTableToExcel = () => {
@@ -1559,7 +1557,7 @@ export const Dashboard: React.FC = () => {
                   isIntegerMode={isIntegerMode}
                   setIsIntegerMode={setIsIntegerMode}
                   onLineClick={setClickedIndicator}
-                  isRate={false}
+                  isRate={selectedIndicators.length > 0 && isRateMetric(selectedIndicators[0])}
                 />
               )}
               {chartType === 'pie' && (

@@ -393,20 +393,20 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         }
       }
       
-      if (cleanFormula.includes('15\u7528\u5de5\u85aa\u916c\u6210\u672c') || cleanFormula.includes('\u7528\u5de5\u85aa\u916c\u6210\u672c')) {
-        const s1 = getMetricAggregatedValue(dataSlice, '15\u7528\u5de5\u85aa\u916c\u6210\u672c', timeGroupName);
-        const s2 = getMetricAggregatedValue(dataSlice, '16\u5916\u5305\u52b3\u52a1\u652f\u51fa', timeGroupName);
-        const den = getMetricAggregatedValue(dataSlice, '\u6536\u5165YTD', timeGroupName);
+      if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
+        const s1 = getMetricAggregatedValue(dataSlice, '15用工薪酬成本', timeGroupName);
+        const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
-        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
+        return val;
       }
 
-      if (cleanFormula.includes('8\u5916\u8d2d\u71c3\u6599') || cleanFormula.includes('\u5916\u8d2d\u71c3\u6599')) {
-        const s1 = getMetricAggregatedValue(dataSlice, '8\u5916\u8d2d\u71c3\u6599', timeGroupName);
-        const s2 = getMetricAggregatedValue(dataSlice, '9\u5916\u8d2d\u52a8\u529b', timeGroupName);
-        const den = getMetricAggregatedValue(dataSlice, '\u6536\u5165YTD', timeGroupName);
+      if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
+        const s1 = getMetricAggregatedValue(dataSlice, '8外购燃料', timeGroupName);
+        const s2 = getMetricAggregatedValue(dataSlice, '9外购动力', timeGroupName);
+        const den = getMetricAggregatedValue(dataSlice, '收入YTD', timeGroupName);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
-        return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
+        return val;
       }
     }
 
@@ -541,7 +541,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         ? selectedMetricGroups.flatMap(g =>
           categories.map(cat => {
             const val = row.metrics[`${g}_${cat}`];
-            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            const isRate = isRateMetric(g) || isRateMetric(cat);
             if (isNaN(val) || val === 0) return '-';
             return isRate ? (val * 100).toFixed(2) + '%' : val;
           })
@@ -549,7 +549,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         : categories.flatMap(cat =>
           selectedMetricGroups.map(g => {
             const val = row.metrics[`${g}_${cat}`];
-            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            const isRate = isRateMetric(g) || isRateMetric(cat);
             if (isNaN(val) || val === 0) return '-';
             return isRate ? (val * 100).toFixed(2) + '%' : val;
           })
@@ -564,7 +564,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         ? selectedMetricGroups.flatMap(g =>
           categories.map(cat => {
             const val = totalRow[`${g}_${cat}`];
-            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            const isRate = isRateMetric(g) || isRateMetric(cat);
             if (isNaN(val) || val === 0) return '-';
             return isRate ? (val * 100).toFixed(2) + '%' : val;
           })
@@ -572,7 +572,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         : categories.flatMap(cat =>
           selectedMetricGroups.map(g => {
             const val = totalRow[`${g}_${cat}`];
-            const isRate = g.includes('率') || g.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+            const isRate = isRateMetric(g) || isRateMetric(cat);
             if (isNaN(val) || val === 0) return '-';
             return isRate ? (val * 100).toFixed(2) + '%' : val;
           })
@@ -750,7 +750,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                               ).map(cat => {
                                 const val = row.metrics[`${group}_${cat}`];
-                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+                                const isRate = isRateMetric(group) || isRateMetric(cat);
                                 return (
                                   <td
                                     key={`${group}_${cat}`}
@@ -773,7 +773,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               );
                               return groupsForCat.map(group => {
                                 const val = row.metrics[`${group}_${cat}`];
-                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+                                const isRate = isRateMetric(group) || isRateMetric(cat);
                                 return (
                                   <td
                                     key={`${group}_${cat}`}
@@ -803,7 +803,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => {
                             const val = totalRow[`${group}_${cat}`];
-                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+                            const isRate = isRateMetric(group) || isRateMetric(cat);
                             return (
                               <td
                                 key={`${group}_${cat}`}
@@ -826,7 +826,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           );
                           return groupsForCat.map(group => {
                             const val = totalRow[`${group}_${cat}`];
-                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                            const isRate = isRateMetric(group) || isRateMetric(cat);
                             return (
                               <td
                                 key={`${group}_${cat}`}
@@ -1331,7 +1331,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       selectedMetricGroups.map(group => (
                         getGroupIndicators(group).map(cat => {
                           const val = row.metrics[`${group}_${cat}`];
-                          const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                          const isRate = isRateMetric(group) || isRateMetric(cat);
                           const isWanYuan = !isRate && isMoneyMetric(cat);
                           return (
                             <td
@@ -1355,7 +1355,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         );
                         return groupsForCat.map(group => {
                           const val = row.metrics[`${group}_${cat}`];
-                          const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                          const isRate = isRateMetric(group) || isRateMetric(cat);
                           const isWanYuan = !isRate && isMoneyMetric(cat);
                           return (
                             <td
@@ -1388,7 +1388,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   selectedMetricGroups.map(group => (
                     getGroupIndicators(group).map(cat => {
                       const val = totalRow[`${group}_${cat}`];
-                      const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                      const isRate = isRateMetric(group) || isRateMetric(cat);
                       const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
                         <td
@@ -1412,7 +1412,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     );
                     return groupsForCat.map(group => {
                       const val = totalRow[`${group}_${cat}`];
-                      const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                      const isRate = isRateMetric(group) || isRateMetric(cat);
                       const isWanYuan = !isRate && isMoneyMetric(cat);
                       return (
                         <td
