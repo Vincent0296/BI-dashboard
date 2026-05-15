@@ -752,7 +752,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                               ).map(cat => {
                                 const val = row.metrics[`${group}_${cat}`];
-                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                                 return (
                                   <td 
                                     key={`${group}_${cat}`} 
@@ -775,7 +775,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               );
                               return groupsForCat.map(group => {
                                 const val = row.metrics[`${group}_${cat}`];
-                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                                const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                                 return (
                                   <td 
                                     key={`${group}_${cat}`} 
@@ -805,7 +805,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             group === '本年累计' || TIME_SERIES_ALLOWED_METRICS.includes(cat)
                           ).map(cat => {
                             const val = totalRow[`${group}_${cat}`];
-                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent');
+                            const isRate = group.includes('率') || group.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
                             return (
                               <td 
                                 key={`${group}_${cat}`} 

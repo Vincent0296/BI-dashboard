@@ -559,12 +559,32 @@ export const Dashboard: React.FC = () => {
       if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
         return getMetricValue(data, cleanFormula, timeGroupName, year, month);
       }
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('*100')) {
-        const [numName, denName] = cleanFormula.split('/').map(s => s.trim());
-        const num = getMetricValue(data, numName, timeGroupName, year, month);
-        const den = getMetricValue(data, denName, timeGroupName, year, month);
-        return den !== 0 ? num / den : NaN;
+      if (cleanFormula.includes('ABS(')) {
+        // Handle Budget Profit Completion Rate formula: (1+(利润YTD-Budget)/ABS(Budget))
+        const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
+        const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
+        const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
+        
+        if (budgetName && currentName) {
+          const current = getMetricValue(data, currentName, timeGroupName, year, month);
+          const budget = getMetricValue(data, budgetName, timeGroupName, year, month);
+          if (budget === 0 || isNaN(budget)) return NaN;
+          return 1 + (current - budget) / Math.abs(budget);
+        }
       }
+
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+        const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
+        if (parts.length === 2) {
+          const num = getMetricValue(data, parts[0], timeGroupName, year, month);
+          const den = getMetricValue(data, parts[1], timeGroupName, year, month);
+          const val = den !== 0 ? num / den : NaN;
+          // Only scale by 100 if the formula explicitly has *100 AND we want to return the raw scaled number
+          // But our formatNumber handles scaling, so we generally want to return the ratio.
+          return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
+        }
+      }
+
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
         const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
         const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
@@ -572,22 +592,13 @@ export const Dashboard: React.FC = () => {
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
       }
+
       if (cleanFormula.includes('8外购燃料') || cleanFormula.includes('外购燃料')) {
         const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
         const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
         const den = getMetricValue(data, '收入YTD', timeGroupName, year, month);
         const val = den !== 0 ? (s1 + s2) / den : NaN;
         return cleanFormula.includes('*100') ? (isNaN(val) ? NaN : val * 100) : val;
-      }
-      if (cleanFormula.includes('*100')) {
-        const base = cleanFormula.replace('*100', '').trim();
-        if (base.includes('/')) {
-          const [numName, denName] = base.split('/').map(s => s.trim());
-          const num = getMetricValue(data, numName, timeGroupName, year, month);
-          const den = getMetricValue(data, denName, timeGroupName, year, month);
-          const val = den !== 0 ? num / den : NaN;
-          return isNaN(val) ? NaN : val * 100;
-        }
       }
     }
     return getSumWithFuzzyInternal(data, metricName, timeGroupName, year, month, prevYear, pm);
@@ -610,27 +621,29 @@ export const Dashboard: React.FC = () => {
     const [year, month] = selectedMonth.split('-').map(Number);
 
     const calcForCategory = (cat: string, timeGroupName: string): number | null => {
-      // 限制逻辑：只有38个核心指标和6个经营指标适用计算组筛选
       if (timeGroupName !== '本年累计' && !TIME_SERIES_ALLOWED_METRICS.includes(cat)) {
         return 0;
       }
       return getMetricValue(filteredData, cat, timeGroupName, year, month);
     };
 
-    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
-
     return categories
       .filter(cat => selectedIndicators.includes(cat))
       .map(cat => {
         const val = calcForCategory(cat, selectedMetric);
         const finalVal = (val === null || isNaN(val as number)) ? NaN : val;
+        // Determine if this specific combination should be treated as a rate
+        const isIndicatorRate = cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
+        const isGroupRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
+        const isFinalRate = isIndicatorRate || isGroupRate;
+
         return {
           id: cat,
           category: cat,
           value: finalVal as number,
           displayValue: '',
-          isPercent: isRate,
-          isWanYuan: !isRate && isMoneyMetric(cat)
+          isPercent: isFinalRate,
+          isWanYuan: !isFinalRate && isMoneyMetric(cat)
         };
       });
   }, [selectedMonth, selectedMetric, filteredData, categories, selectedIndicators, metricMetadata, timeGroupMetadata]);
@@ -694,7 +707,7 @@ export const Dashboard: React.FC = () => {
           }
 
           const value = calculateForExport(cat, key);
-          const isRate = key.includes('率') || key.includes('Percent');
+          const isRate = key.includes('率') || key.includes('Percent') || cat.includes('率') || cat.includes('Percent') || cat.includes('百元');
           const isMoney = isMoneyMetric(cat);
           if (isNaN(value) || value === 0) {
             row[metricNames[index]] = '-';
@@ -807,7 +820,7 @@ export const Dashboard: React.FC = () => {
     }).sort((a, b) => a.val - b.val);
     const totalVal = calculateForSlice(filteredData);
 
-    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent');
+    const isRate = selectedMetric.includes('率') || selectedMetric.includes('Percent') || activeIndicator.includes('率') || activeIndicator.includes('Percent') || activeIndicator.includes('百元');
     const isWanYuan = isMoneyMetric(activeIndicator);
 
     const exportTableToExcel = () => {
