@@ -108,7 +108,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
               为保证财务报表的专业性，系统对增长率/完成率进行了特殊处理：
               <br />• <strong className="text-slate-800">1位小数精度</strong>：默认显示 1 位小数，确保微小变动可见。
               <br />• <strong className="text-slate-800">趋势纠偏</strong>：若计算结果极小但非零（如 0.02%），将显示为 <strong className="text-slate-800">0.1%</strong>。
-              <br />• <strong className="text-slate-800">极值封顶</strong>：极端离群值（>10000%）将显示为 <strong className="text-slate-800">10000%+</strong>。
+              <br />• <strong className="text-slate-800">极值封顶</strong>：极端离群值（&gt;10000%）将显示为 <strong className="text-slate-800">10000%+</strong>。
             </p>
           </section>
 
