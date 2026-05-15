@@ -520,6 +520,9 @@ export const Dashboard: React.FC = () => {
       return total;
     };
 
+    const isStatic = BUDGET_METRICS.includes(name) || THREE_YEAR_BENEFIT_METRICS.includes(name) || BUSINESS_METRICS.includes(name);
+    if (isStatic) return getSumWithFuzzy(items, name);
+
     if (timeGroupName === '本年累计') return getSumWithFuzzy(items.filter(d => isYTD(d, year, month)), name);
     if (timeGroupName === '去年同期') return getSumWithFuzzy(items.filter(d => isYTD(d, prevYear, month)), name);
     if (timeGroupName === '当月发生额') return getSumWithFuzzy(items.filter(d => isMTD(d, year, month)), name);
@@ -573,7 +576,7 @@ export const Dashboard: React.FC = () => {
         }
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+')) {
         const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
         if (parts.length === 2) {
           const num = getMetricValue(data, parts[0], timeGroupName, year, month);

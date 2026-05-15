@@ -383,7 +383,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         }
       }
 
-      if (cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-')) {
+      if (cleanFormula.includes('/') && !cleanFormula.includes('+')) {
         const parts = cleanFormula.replace(/\*100/g, '').split('/').map(s => s.trim());
         if (parts.length === 2) {
           const num = getMetricAggregatedValue(dataSlice, parts[0], timeGroupName);
@@ -453,6 +453,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       if (cleanName !== targetName) total = calculateSum(cleanName);
       return total;
     };
+
+    const isStatic = BUDGET_METRICS.includes(name) || THREE_YEAR_BENEFIT_METRICS.includes(name) || BUSINESS_METRICS.includes(name);
+    if (isStatic) return getSumWithFuzzy(items, name);
 
     const ytdData = items.filter(d => isYTD(d, year, month));
     const lyData = items.filter(d => isYTD(d, prevYear, month));
