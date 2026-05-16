@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BI Dashboard | 使用说明</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0d11;
+            --surface: #161a1f;
+            --surface-accent: #1e252b;
+            --accent: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.4);
+            --success: #10b981;
+            --error: #f87171;
+            --text: #f1f5f9;
+            --text-dim: #94a3b8;
+            --border: #2d3748;
+            --grid: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            background-image:
+                radial-gradient(var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        /* 顶部导航指示器 */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #1e252b;
+            z-index: 1000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            transition: width 0.1s;
+        }
+
+        header {
+            margin-bottom: 80px;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border: 1px solid var(--accent);
+        }
+
+        h1 {
+            font-family: 'Lexend', sans-serif;
+            font-size: 3.5rem;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 20px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 40px;
+            border-radius: 12px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        section:hover {
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .step-num {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: var(--accent);
+            color: var(--bg);
+            padding: 2px 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transform: skew(-10deg);
+        }
+
+        h2 {
+            font-family: 'Lexend', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: #fff;
+        }
+
+        /* 交互式模拟器样式 */
+        .simulator {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .sim-btn {
+            background: var(--surface-accent);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin: 5px;
+            font-size: 0.8rem;
+        }
+
+        .sim-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .sim-btn:hover:not(.active) {
+            border-color: var(--text-dim);
+        }
+
+        /* 数据展示模拟 */
+        .table-preview {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            margin-top: 15px;
+        }
+
+        .table-preview th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-dim);
+        }
+
+        .table-preview td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tag {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            background: var(--border);
+            margin-right: 5px;
+        }
+
+        /* PDF 打印预览模拟 */
+        .pdf-demo {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .pdf-page {
+            width: 120px;
+            height: 160px;
+            background: #fff;
+            border-radius: 2px;
+            position: relative;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.5s;
+        }
+
+        .pdf-page::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 80%;
+            height: 5px;
+            background: #e2e8f0;
+        }
+
+        .pdf-page::after {
+            content: "合计行";
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.4rem;
+            color: #10b981;
+            border-top: 1px solid #10b981;
+        }
+
+        /* 侧边说明 */
+        .pro-tip {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 4px solid var(--success);
+            font-size: 0.85rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 100px;
+            justify-content: center;
+        }
+
+        .tech-item {
+            border: 1px solid var(--border);
+            padding: 5px 15px;
+            font-size: 0.75rem;
+            border-radius: 20px;
+            color: var(--text-dim);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
+
+        .glow-hint {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="p-fill"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <span class="badge">FINANCIAL BI v2.0 - SUPABASE POWERED</span>
+            <h1>财务多维分析<br>实操手册</h1>
+            <p style="color: var(--text-dim); max-width: 600px; margin: 0 auto;">基于 React 19
+                的企业级数据分析系统。掌握以下四个核心要点，即可开启高效财务洞察之旅。</p>
+        </header>
+
+        <div class="grid-layout">
+
+            <!-- 模块 01: 多维交叉表与切片逻辑 -->
+            <section class="full-width">
+                <div class="step-num">STEP 01</div>
+                <h2>精通多维交叉表与切片逻辑</h2>
+                <p>系统内置 5 大类指标与 8 大计算组维度，通过智能逻辑确保分析口径严谨。</p>
+
+                <div class="grid-layout" style="grid-template-columns: 1.2fr 0.8fr;">
+                    <div class="simulator">
+                        <div
+                            style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <button class="sim-btn glow-hint" id="swap-btn" onclick="toggleSwap()">X-AXIS
+                                    SWAP</button>
+                                <button class="sim-btn" id="mode-btn" onclick="toggleMode()">整数模式</button>
+                            </div>
+                            <span style="font-size: 0.7rem; color: var(--accent);">[ 8 计算组维度已激活 ]</span>
+                        </div>
+                        <table class="table-preview" id="preview-table">
+                            <thead>
+                                <tr id="t-head">
+                                    <th>指标大类 (5类)</th>
+                                    <th>利润表/经营指标</th>
+                                    <th>预算类指标等</th>
+                                </tr>
+                            </thead>
+                            <tbody id="t-body">
+                                <tr>
+                                    <td><span class="tag">计算适配</span></td>
+                                    <td style="color: var(--success);">√ 支持 8 个维度切换</td>
+                                    <td style="color: var(--text-dim);">仅支持 [本年累计]</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="tag">数据示例</span></td>
+                                    <td class="val">1,230.5</td>
+                                    <td class="val">5,600.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pro-tip" style="border-left: 4px solid var(--accent);">
+                        <strong>📏 切片器使用守则：</strong><br>
+                        1. <b>利润表项目/经营指标</b>：适配全量 8 个计算维度（如本年累计，去年累计 等）。<br>
+                        2. <b>其他指标</b>：为确保数据含义准确，系统强制锁定为“本年累计”视图。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 模块 04: 趋势图避坑指南 (新增) -->
+            <section class="full-width">
+                <div class="step-num">STEP 02</div>
+                <h2>趋势图绘制建议</h2>
+                <p>科学的可视化比例能避免误导决策。</p>
+
+                <div class="grid-layout">
+                    <div class="pro-tip" style="border-left-color: var(--error); background: rgba(248,113,113,0.05);">
+                        <strong>🚫 禁忌事项：</strong><br>
+                        不要将 <b>“比例类指标”</b> (如利润率 %) 与 <b>“数值类指标”</b> (如收入金额) 同时列示在同一坐标系内。这会导致比例线趋于平直，失去分析意义。
+                    </div>
+                    <div class="simulator"
+                        style="display: flex; align-items: center; justify-content: center; min-height: 150px; background: linear-gradient(45deg, #161a1f, #0b0d11);">
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">[ 错误示范：金额 vs
+                                百分比 ]</div>
+                            <div style="display: flex; align-items: flex-end; gap: 5px; height: 60px;">
+                                <div style="width: 20px; height: 100%; background: var(--accent); opacity: 0.5;"></div>
+                                <div style="width: 20px; height: 80%; background: var(--accent); opacity: 0.5;"></div>
+                                <div
+                                    style="width: 100px; height: 2px; background: var(--error); transform: translateY(-5px);">
+                                </div>
+                            </div>
+                            <div style="color: var(--error); font-size: 0.6rem; margin-top: 5px;">比例线失去波动特征 ↑</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 模块 02: 方案保存 -->
+            <section>
+                <div class="step-num">STEP 03</div>
+                <h2>方案云端保存</h2>
+                <p>利用 Supabase 实现一键状态固化，下次登录自动恢复。</p>
+
+                <div class="simulator" style="text-align: center; padding: 40px;">
+                    <div id="sync-icon" style="font-size: 2rem; margin-bottom: 15px; color: var(--text-dim);">☁️</div>
+                    <button class="sim-btn"
+                        style="background: var(--accent); color: var(--bg); font-weight: bold; width: 100%;"
+                        onclick="simulateSave()">保存当前方案</button>
+                    <div id="save-msg" style="margin-top: 10px; font-size: 0.7rem; color: var(--success); opacity: 0;">
+                        状态已同步至 SUPABASE</div>
+                </div>
+            </section>
+
+            <!-- 模块 03: 打印与导出差异 -->
+            <section>
+                <div class="step-num">STEP 04</div>
+                <h2>报表输出规范</h2>
+                <p>PDF 追求“美观”，Excel 追求“全量”。</p>
+
+                <table class="table-preview" style="margin-bottom: 20px;">
+                    <tr>
+                        <th style="width: 30%;">场景</th>
+                        <th>输出规范</th>
+                    </tr>
+                    <tr>
+                        <td><b style="color: var(--accent)">PRINT PDF</b></td>
+                        <td>建议 X 轴指标<b>不宜过多</b>；请在预览中确认是否拥挤。</td>
+                    </tr>
+                    <tr>
+                        <td><b style="color: var(--success)">EXPORT EXCEL</b></td>
+                        <td><b>无指标数量限制</b>；导出金额单位统一为：<b>元</b>。</td>
+                    </tr>
+                </table>
+
+                <div class="pdf-demo" id="pdf-view">
+                    <div class="pdf-page" style="transform: rotateY(-10deg);"></div>
+                    <div class="pdf-page" style="transform: rotateY(-10deg) translate(-20px, 10px);"></div>
+                </div>
+                <button class="sim-btn" style="width: 100%; margin-top: 15px; border-color: var(--accent);"
+                    onclick="animatePDF()">模拟 PRINT PDF 预览</button>
+            </section>
+        </div>
+
+        <div class="tech-stack">
+            <div class="tech-item">REACT 19</div>
+            <div class="tech-item">SUPABASE</div>
+            <div class="tech-item">EXCELJS</div>
+            <div class="tech-item">RECHARTS</div>
+            <div class="tech-item">TAILWIND</div>
+        </div>
+    </div>
+
+    <script>
+        // 进度条逻辑
+        window.onscroll = function () {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("p-fill").style.width = scrolled + "%";
+        };
+
+        // 视图切换逻辑
+        let isSwapped = false;
+        function toggleSwap() {
+            isSwapped = !isSwapped;
+            const head = document.getElementById('t-head');
+            const btn = document.getElementById('swap-btn');
+
+            if (isSwapped) {
+                head.innerHTML = '<th>时间/指标</th><th>住宅物业</th><th>商业运营</th>';
+                btn.classList.add('active');
+            } else {
+                head.innerHTML = '<th>指标大类 (5类)</th><th>利润表/经营指标</th><th>其他资产类指标</th>';
+                btn.classList.remove('active');
+            }
+        }
+
+        // 精度切换逻辑
+        let isInteger = false;
+        function toggleMode() {
+            isInteger = !isInteger;
+            const vals = document.querySelectorAll('.val');
+            const btn = document.getElementById('mode-btn');
+
+            vals.forEach(v => {
+                let current = parseFloat(v.innerText.replace(/,/g, ''));
+                v.innerText = isInteger ? Math.round(current).toLocaleString() : (current + 0.1).toFixed(1);
+            });
+
+            btn.innerText = isInteger ? "整数模式: ON" : "整数模式: OFF";
+            btn.classList.toggle('active');
+        }
+
+        // 保存模拟
+        function simulateSave() {
+            const icon = document.getElementById('sync-icon');
+            const msg = document.getElementById('save-msg');
+            icon.innerText = "🔄";
+            icon.style.color = "var(--accent)";
+
+            setTimeout(() => {
+                icon.innerText = "✅";
+                icon.style.color = "var(--success)";
+                msg.style.opacity = 1;
+                setTimeout(() => {
+                    icon.innerText = "☁️";
+                    icon.style.color = "var(--text-dim)";
+                    msg.style.opacity = 0;
+                }, 2000);
+            }, 1000);
+        }
+
+        // PDF 动画
+        function animatePDF() {
+            const pages = document.querySelectorAll('.pdf-page');
+            pages.forEach((p, i) => {
+                p.style.transform = `scale(1.1) translateY(${-20 * i}px) rotateX(20deg)`;
+                setTimeout(() => {
+                    p.style.transform = `rotateY(-10deg) translate(${-20 * i}px, ${10 * i}px)`;
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+
+</html>

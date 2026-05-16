@@ -21,7 +21,6 @@ import { PieChartWidget } from './PieChartWidget';
 import { CommentsSection } from './CommentsSection';
 import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
-import { HelpModal } from './HelpModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
 import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
@@ -48,7 +47,6 @@ export const Dashboard: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'admin'>('dashboard');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   const [isIntegerMode, setIsIntegerMode] = useState(false);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
@@ -992,7 +990,7 @@ export const Dashboard: React.FC = () => {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setIsHelpModalOpen(true)}
+            onClick={() => window.open('guide.html', '_blank')}
             className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black transition-all hover:bg-slate-100 active:scale-95 border border-transparent hover:border-slate-200"
           >
             <HelpCircle className="w-4 h-4" />
@@ -1723,7 +1721,6 @@ export const Dashboard: React.FC = () => {
       {/* Modals */}
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => { setIsAuthModalOpen(false); setPendingAction(null); }} onLoginSuccess={handleLoginSuccess} />}
       {isFeedbackModalOpen && <FeedbackModal isOpen={isFeedbackModalOpen} onClose={() => setIsFeedbackModalOpen(false)} />}
-      {isHelpModalOpen && <HelpModal onClose={() => setIsHelpModalOpen(false)} />}
     </div>
   );
 };
