@@ -600,7 +600,7 @@
                     <!-- 左侧：指标勾选与微调交互面板 -->
                     <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
                         <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
-                            ⚙️ 模拟控制台：指标多选与排序微调
+                            ⚙️ 模拟控制台：指标多选与拖拽排序
                         </h4>
                         
                         <!-- 1. 勾选指标 (方案一: 动态顺序插入) -->
@@ -631,7 +631,7 @@
                         <div>
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                                 <label style="font-size: 0.8rem; color: var(--text-dim); font-weight: bold;">
-                                    ② 已选指标顺序微调面板：
+                                    ② 已选指标顺序拖拽与微调面板：
                                 </label>
                                 <button onclick="resetSimDefaultOrder()" style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--indigo); color: var(--indigo); font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; gap: 4px;" class="sim-btn-restore" title="恢复为系统财务科目的默认顺序">
                                     🔄 恢复系统默认
@@ -647,7 +647,7 @@
                     <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
                         <div>
                             <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
-                                📊 表格列顺序实时预览 (以“住宅物业”为例)
+                                📊 表格列顺序实时预览 (以“住宅物业”为例，可直接在左侧拖拽排序)
                             </h4>
                             <div style="overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
                                 <table id="sim-preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 320px;">
@@ -666,8 +666,8 @@
 
                         <div class="pro-tip" style="margin-top: 20px; border-left-color: var(--success); background: rgba(16, 185, 129, 0.03); padding: 12px 16px; font-size: 0.75rem; border-radius: 8px; line-height: 1.5;">
                             <strong>💡 完美的财务列排序机制：</strong><br>
-                            - <b>方案一（动态顺序插入）</b>：勾选指标时直接按您勾选时的思维顺序进行<b>追加排序</b>，不强制采用系统内置的默认逻辑。<br>
-                            - <b>方案二（左右微调面板）</b>：随时进行微小的向左、向右移动，瞬间同步调整宽表中的展示顺序。配合<b>方案预设</b>功能，将您的专属指标顺序同步上传云端，终结重复配置！
+                            - <b>方案一（动态顺序插入）</b>：勾选指标时直接按您勾选时的思维顺序进行<b>追加排序</b>，不强制采用系统内置 of 默认逻辑。<br>
+                            - <b>方案二（拖拽与微调面板）</b>：<b>支持拖拽指标卡片</b>实时调整排列顺序，也可点击左右微调箭头进行细微移动，瞬间同步调整宽表中的展示顺序。配合<b>方案预设</b>功能，将您的专属指标顺序同步上传云端，终结重复配置！
                         </div>
                     </div>
                 </div>
@@ -852,6 +852,7 @@
         // STEP 07: 自定义指标排序与微调模拟逻辑
         // ==========================================
         let simSelectedIndicators = ['收入YTD', '利润YTD'];
+        let simDraggedIndex = null;
         const simDefaultOrder = ['收入YTD', '利润YTD', '同比增速', '预算达成率', '目标利润'];
         const mockData = {
             '收入YTD': { ytd: '12,305,000', yoy: '+9.86%' },
@@ -932,21 +933,64 @@
                 const isLast = index === simSelectedIndicators.length - 1;
 
                 const item = document.createElement('div');
+                item.draggable = true;
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
                 item.style.justifyContent = 'space-between';
-                item.style.background = 'rgba(255, 255, 255, 0.02)';
-                item.style.border = '1px solid var(--border)';
+                item.style.background = simDraggedIndex === index ? 'rgba(99, 102, 241, 0.05)' : 'rgba(255, 255, 255, 0.02)';
+                item.style.border = simDraggedIndex === index ? '1px dashed var(--indigo)' : '1px solid var(--border)';
+                item.style.opacity = simDraggedIndex === index ? '0.4' : '1';
                 item.style.padding = '8px 12px';
                 item.style.borderRadius = '8px';
                 item.style.transition = 'all 0.2s';
+                item.style.cursor = 'grab';
+                item.style.userSelect = 'none';
+
+                // Drag and Drop event listeners for simulated pills
+                item.addEventListener('dragstart', (e) => {
+                    simDraggedIndex = index;
+                    item.style.opacity = '0.4';
+                    item.style.borderStyle = 'dashed';
+                    item.style.borderColor = 'var(--indigo)';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragenter', (e) => {
+                    if (simDraggedIndex === null || simDraggedIndex === index) return;
+                    
+                    // Live swap index reordering
+                    const temp = simSelectedIndicators[simDraggedIndex];
+                    simSelectedIndicators.splice(simDraggedIndex, 1);
+                    simSelectedIndicators.splice(index, 0, temp);
+                    
+                    simDraggedIndex = index; // Keep track of drag index on swap
+                    renderSimOrderPanel();
+                    renderSimPreviewTable();
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                });
+
+                item.addEventListener('dragend', () => {
+                    simDraggedIndex = null;
+                    renderSimOrderPanel();
+                });
                 
                 item.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="sim-grip-handle" style="display: grid; grid-template-columns: repeat(2, 3px); gap: 2px; cursor: grab; opacity: 0.4; padding-right: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=0.4">
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                            <div style="width: 2.5px; height: 2.5px; border-radius: 50%; background-color: #fff;"></div>
+                        </div>
                         <span style="font-size: 0.7rem; color: var(--indigo); font-family: monospace; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: bold;">COL ${index + 1}</span>
                         <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">${indicator}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="display: flex; align-items: center; gap: 6px;" ondragstart="event.stopPropagation()">
                         <button onclick="moveSimIndicator(${index}, -1)" ${isFirst ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} class="sim-pill-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" title="左移一列 (前移)">←</button>
                         <button onclick="moveSimIndicator(${index}, 1)" ${isLast ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} class="sim-pill-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" title="右移一列 (后移)">→</button>
                         <button onclick="removeSimIndicator('${indicator}')" class="sim-pill-btn-remove" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgb(248, 113, 113); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-weight: bold;" title="取消选择">×</button>

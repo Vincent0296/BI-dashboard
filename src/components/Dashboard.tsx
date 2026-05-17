@@ -23,7 +23,7 @@ import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon, GripVertical } from 'lucide-react';
 import { cn, formatNumber, isMoneyMetric, isRateMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
@@ -41,6 +41,7 @@ export const Dashboard: React.FC = () => {
   const [selectedMetric, setSelectedMetric] = useState<string>('本年累计');
   const [isImporting, setIsImporting] = useState(false);
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>(['收入YTD', '利润YTD']);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isSlicerVisible, setIsSlicerVisible] = useState(true);
   const [isIndicatorVisible, setIsIndicatorVisible] = useState(true);
   const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, user: null });
@@ -54,6 +55,29 @@ export const Dashboard: React.FC = () => {
   const [chartType, setChartType] = useState<'bar' | 'line' | 'pie' | 'table'>('bar');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isMultiDimTableVisible, setIsMultiDimTableVisible] = useState(true);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnter = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    const updated = [...selectedIndicators];
+    const [draggedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, draggedItem);
+    setSelectedIndicators(updated);
+    setDraggedIndex(index);
+    setActivePresetId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
 
   const getMetricLabel = (key: string) => {
     const group = timeGroupMetadata.find(g => g.name === key);
@@ -1755,12 +1779,24 @@ export const Dashboard: React.FC = () => {
                   {selectedIndicators.map((indicator, index) => (
                     <div
                       key={indicator}
-                      className="group flex items-center gap-2 bg-white hover:bg-indigo-50/10 border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded-xl shadow-xs hover:shadow-sm transition-all duration-200"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragEnter={() => handleDragEnter(index)}
+                      onDragOver={handleDragOver}
+                      onDragEnd={handleDragEnd}
+                      className={cn(
+                        "group flex items-center gap-2 bg-white hover:bg-indigo-50/10 border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded-xl shadow-xs hover:shadow-sm transition-all duration-200 select-none cursor-grab active:cursor-grabbing",
+                        draggedIndex === index && "opacity-40 border-dashed border-indigo-400 bg-indigo-50/30 scale-95"
+                      )}
                     >
+                      <GripVertical className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-400 transition-colors pointer-events-none" />
                       <span className="text-xs font-bold text-slate-700 select-none">
                         {indicator}
                       </span>
-                      <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1.5 ml-1">
+                      <div 
+                        className="flex items-center gap-0.5 border-l border-slate-200 pl-1.5 ml-1"
+                        onDragStart={(e) => e.stopPropagation()}
+                      >
                         <button
                           onClick={() => {
                             if (index > 0) {
