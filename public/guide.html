@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BI Dashboard | 使用说明</title>
+    <title>BI Dashboard | 财务多维分析实操手册</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Space+Mono:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -21,6 +21,8 @@
             --text-dim: #94a3b8;
             --border: #2d3748;
             --grid: rgba(255, 255, 255, 0.03);
+            --indigo: #6366f1;
+            --indigo-glow: rgba(99, 102, 241, 0.15);
         }
 
         * {
@@ -84,9 +86,9 @@
 
         h1 {
             font-family: 'Lexend', sans-serif;
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             letter-spacing: -2px;
-            line-height: 1;
+            line-height: 1.1;
             margin-bottom: 20px;
             background: linear-gradient(to bottom, #fff, #94a3b8);
             -webkit-background-clip: text;
@@ -110,11 +112,11 @@
             padding: 40px;
             border-radius: 12px;
             position: relative;
-            transition: transform 0.3s;
+            transition: transform 0.3s, border-color 0.3s;
         }
 
         section:hover {
-            border-color: var(--accent);
+            border-color: var(--indigo);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
@@ -122,18 +124,19 @@
             position: absolute;
             top: -15px;
             left: 20px;
-            background: var(--accent);
-            color: var(--bg);
+            background: var(--indigo);
+            color: #fff;
             padding: 2px 15px;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             transform: skew(-10deg);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
         }
 
         h2 {
             font-family: 'Lexend', sans-serif;
             font-size: 1.8rem;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             color: #fff;
         }
 
@@ -195,54 +198,87 @@
             border-radius: 3px;
             background: var(--border);
             margin-right: 5px;
+            color: var(--accent);
         }
 
         /* PDF 打印预览模拟 */
         .pdf-demo {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             justify-content: center;
+            align-items: center;
             perspective: 1000px;
+            min-height: 180px;
+            padding: 15px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            flex-wrap: wrap;
         }
 
         .pdf-page {
-            width: 120px;
-            height: 160px;
+            width: 90px;
+            height: 120px;
             background: #fff;
-            border-radius: 2px;
+            border-radius: 4px;
             position: relative;
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.5s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
         }
 
-        .pdf-page::before {
-            content: "";
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 80%;
-            height: 5px;
+        .pdf-page-title {
+            font-size: 0.45rem;
+            font-weight: bold;
+            color: #1e293b;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 2px;
+        }
+
+        .pdf-page-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 4px;
+        }
+
+        .pdf-page-line {
+            height: 3px;
             background: #e2e8f0;
+            border-radius: 1px;
+            width: 100%;
         }
 
-        .pdf-page::after {
-            content: "合计行";
-            position: absolute;
-            bottom: 5px;
-            width: 100%;
+        .pdf-page-line.short {
+            width: 60%;
+        }
+
+        .pdf-page-footer {
+            border-top: 1px solid var(--success);
+            padding-top: 2px;
             text-align: center;
-            font-size: 0.4rem;
-            color: #10b981;
-            border-top: 1px solid #10b981;
+            font-size: 0.35rem;
+            font-weight: bold;
+            color: var(--success);
         }
 
         /* 侧边说明 */
         .pro-tip {
             margin-top: 20px;
-            padding: 15px;
-            background: rgba(16, 185, 129, 0.05);
-            border-left: 4px solid var(--success);
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.05);
+            border-left: 4px solid var(--indigo);
             font-size: 0.85rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .pro-tip strong {
+            color: #fff;
         }
 
         .tech-stack {
@@ -263,20 +299,80 @@
 
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
             }
 
             70% {
-                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
             }
 
             100% {
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
             }
         }
 
         .glow-hint {
             animation: pulse 2s infinite;
+        }
+
+        .badge-new {
+            background: var(--success);
+            color: var(--bg);
+            font-size: 0.6rem;
+            font-weight: 900;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            vertical-align: middle;
+            text-transform: uppercase;
+        }
+
+        /* 聚焦模拟全屏样式 */
+        .sim-focused-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 13, 17, 0.97);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sim-focused-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .sim-focused-content {
+            background: var(--surface);
+            border: 1px solid var(--indigo);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 960px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            padding: 28px;
+            box-shadow: 0 25px 60px rgba(99, 102, 241, 0.3);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sim-focused-overlay.active .sim-focused-content {
+            transform: scale(1);
+        }
+        .sim-focus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
         }
     </style>
 </head>
@@ -289,144 +385,219 @@
 
     <div class="container">
         <header>
-            <span class="badge">FINANCIAL BI v2.0 - SUPABASE POWERED</span>
-            <h1>财务多维分析<br>实操手册</h1>
-            <p style="color: var(--text-dim); max-width: 600px; margin: 0 auto;">基于 React 19
-                的企业级数据分析系统。掌握以下四个核心要点，即可开启高效财务洞察之旅。</p>
+            <span class="badge">FINANCIAL BI v3.0 - ENTERPRISE EDITION</span>
+            <h1>财务多维分析中心<br>用户实操手册</h1>
+            <p style="color: var(--text-dim); max-width: 600px; margin: 0 auto; font-size: 0.9rem;">
+                掌握全新升级的交互控制、三维指标洞察、动态页面分页与专业输出规范，助您开启全场景的极速财务洞察。
+            </p>
         </header>
 
         <div class="grid-layout">
 
-            <!-- 模块 01: 多维交叉表与切片逻辑 -->
+            <!-- STEP 01: 多维交叉表与切片逻辑 -->
             <section class="full-width">
                 <div class="step-num">STEP 01</div>
-                <h2>精通多维交叉表与切片逻辑</h2>
-                <p>系统内置 5 大类指标与 8 大计算组维度，通过智能逻辑确保分析口径严谨。</p>
+                <h2>精通多维交叉表与智能矩阵</h2>
+                <p>系统支持主、次二级维度嵌套，自动进行行跨度合并，并内置行业级商业排序逻辑。</p>
 
                 <div class="grid-layout" style="grid-template-columns: 1.2fr 0.8fr;">
                     <div class="simulator">
                         <div
                             style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <button class="sim-btn glow-hint" id="swap-btn" onclick="toggleSwap()">X-AXIS
-                                    SWAP</button>
-                                <button class="sim-btn" id="mode-btn" onclick="toggleMode()">整数模式</button>
+                                <button class="sim-btn glow-hint" id="swap-btn" onclick="toggleSwap()">X-AXIS SWAP</button>
+                                <button class="sim-btn" id="mode-btn" onclick="toggleMode()">取整模式</button>
                             </div>
-                            <span style="font-size: 0.7rem; color: var(--accent);">[ 8 计算组维度已激活 ]</span>
+                            <span style="font-size: 0.7rem; color: var(--accent);">[ 维度及小计高亮已激活 ]</span>
                         </div>
                         <table class="table-preview" id="preview-table">
                             <thead>
                                 <tr id="t-head">
-                                    <th>指标大类 (5类)</th>
-                                    <th>利润表/经营指标</th>
-                                    <th>预算类指标等</th>
+                                    <th>业态 (主轴)</th>
+                                    <th>管理口径 (次轴)</th>
+                                    <th>本年累计</th>
+                                    <th>去年同期</th>
                                 </tr>
                             </thead>
                             <tbody id="t-body">
                                 <tr>
-                                    <td><span class="tag">计算适配</span></td>
-                                    <td style="color: var(--success);">√ 支持 8 个维度切换</td>
-                                    <td style="color: var(--text-dim);">仅支持 [本年累计]</td>
+                                    <td rowspan="2" style="background: rgba(99, 102, 241, 0.05); font-weight: bold; vertical-align: middle;">住宅物业</td>
+                                    <td>管理口径一</td>
+                                    <td class="val">1,230.5</td>
+                                    <td>1,120.0</td>
                                 </tr>
                                 <tr>
-                                    <td><span class="tag">数据示例</span></td>
-                                    <td class="val">1,230.5</td>
-                                    <td class="val">5,600.0</td>
+                                    <td>管理口径二</td>
+                                    <td class="val">840.2</td>
+                                    <td>890.5</td>
+                                </tr>
+                                <tr id="subtotal-row" style="background: rgba(99, 102, 241, 0.1); font-weight: bold; border-left: 3px solid var(--indigo);">
+                                    <td colspan="2">小计 (住宅物业)</td>
+                                    <td class="val">2,070.7</td>
+                                    <td>2,010.5</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="pro-tip" style="border-left: 4px solid var(--accent);">
-                        <strong>📏 切片器设置规则：</strong><br>
-                        1. <b>利润表项目/经营指标</b>：适配全量 8 个计算维度（如本年累计，去年累计 等）。<br>
-                        2. <b>其他指标</b>：为确保数据含义准确，系统强制锁定为“本年累计”视图。
-                        3. <b>其他</b>：点击标题行，可展开或折叠切片器设置。
+                    <div class="pro-tip">
+                        <strong>📏 矩阵布局与小计一致性：</strong><br>
+                        1. <b>内置商业自定排序</b>：系统针对“业态”、“管理口径”、“产权口径”等维度，强制锁定了符合商业惯例的内置排序顺序，确保无论数据源顺序如何，展示均逻辑严谨。<br>
+                        2. <b>X轴行列互换 (X-Axis Swap)</b>：支持一键在“指标优先”与“时间组优先”间无缝切换。<br>
+                        3. <b>小计行一致性高亮 <span class="badge-new">NEW</span></b>：修正了行列互换后“小计”行丢失高亮的问题。无论X轴层级如何互换，“小计”与合计行均能应用一致的雅致背景高亮，财务层级清晰易读。
                     </div>
                 </div>
             </section>
 
-            <!-- 模块 04: 趋势图避坑指南 (新增) -->
+            <!-- STEP 02: 三年效益达标分析与项目数规则 -->
             <section class="full-width">
                 <div class="step-num">STEP 02</div>
-                <h2>趋势图绘制建议</h2>
-                <p>科学的可视化比例能避免误导决策。</p>
+                <h2>三年效益达标分析与项目数逻辑 <span class="badge-new">NEW</span></h2>
+                <p>新增了效益分析的核心下钻指标，并重构了“项目个数”的底层过滤机制，杜绝脏数据干扰。</p>
+
+                <div class="grid-layout" style="grid-template-columns: 0.9fr 1.1fr;">
+                    <div class="simulator" style="background: rgba(16, 185, 129, 0.02); border-color: rgba(16, 185, 129, 0.2);">
+                        <div style="font-size: 0.75rem; color: var(--success); font-weight: bold; margin-bottom: 10px;">[ 三年效益达标切片器 ]</div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">利润率下降项目数</span>
+                                <span style="font-size: 0.8rem; font-weight: bold; color: var(--success);">12 个</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">效益下降项目数</span>
+                                <span style="font-size: 0.8rem; font-weight: bold; color: var(--success);">8 个</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding-bottom: 4px;">
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">项目个数 (清洗后)</span>
+                                <span style="font-size: 0.8rem; font-weight: bold; color: var(--accent);">45 个</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pro-tip" style="border-left-color: var(--success); background: rgba(16, 185, 129, 0.03);">
+                        <strong>💡 三年效益达标切片机制：</strong><br>
+                        1. <b>利润率下降项目数</b>：定义为“经营利润率本年累计数”小于“去年同期数”的项目个数。以<b>整数格式</b>直观呈现，纠正了误用百分比的错误。<br>
+                        2. <b>效益下降项目数</b>：定义为“利润YTD本年累计数”小于“去年同期数”的项目个数，整数格式显示。<br>
+                        3. <b>仅从属于本年累计</b>：这两个指标与其它效益指标一样，<b>仅适用于 [本年累计]</b> 筛选。若切换至其他 7 个计算组（如同比差额、去年同期等），系统智能显示为 `-`（不适用）。<br>
+                        4. <b>项目个数过滤新规</b>：全新逻辑定义为 “收入YTD或利润YTD不全为0” 且 “项目名称” 中<b>不含“代理”和“抵消”</b>的数量，自动滤除内部往来抵消项。
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 03: 趋势图避坑指南 -->
+            <section class="full-width">
+                <div class="step-num">STEP 03</div>
+                <h2>科学趋势图绘制建议与智能筛选</h2>
+                <p>科学的可视化配置能避免数据失真误导决策，系统内置指标管控防止错选。</p>
 
                 <div class="grid-layout">
-                    <div class="pro-tip" style="border-left-color: var(--error); background: rgba(248,113,113,0.05);">
-                        <strong>🚫 禁忌事项：</strong><br>
-                        不要将 <b>“比例类指标”</b> (如利润率 %) 与 <b>“数值类指标”</b> (如收入金额) 同时列示在同一坐标系内。这会导致比例线趋于平直，失去分析意义。
+                    <div class="pro-tip" style="border-left-color: var(--error); background: rgba(248,113,113,0.03);">
+                        <strong>🚫 禁忌事项与智能限制：</strong><br>
+                        不要将 <b>“比例类指标”</b> (如利润率 %) 与 <b>“数值类指标”</b> (如收入金额) 同时勾选并在同一坐标系内列示，这会导致比例线趋于平直而失去波动意义。<br>
+                        <b>智能图表管控机制：</b><br>
+                        * 切换到<b>趋势图</b>时，系统强制锁定指标为单月值（非YTD），自动重置不合理选项。<br>
+                        * 切换到<b>饼图</b>时，系统自动过滤不可累加或非占比类指标，规避无效分析。
                     </div>
                     <div class="simulator"
-                        style="display: flex; align-items: center; justify-content: center; min-height: 150px; background: linear-gradient(45deg, #161a1f, #0b0d11);">
+                        style="display: flex; align-items: center; justify-content: center; min-height: 180px; background: linear-gradient(45deg, #161a1f, #0b0d11);">
                         <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">[ 错误示范：金额 vs
-                                百分比 ]</div>
-                            <div style="display: flex; align-items: flex-end; gap: 5px; height: 60px;">
+                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">[ 错误示范：金额 vs 百分比 ]</div>
+                            <div style="display: flex; align-items: flex-end; gap: 5px; height: 60px; justify-content: center;">
                                 <div style="width: 20px; height: 100%; background: var(--accent); opacity: 0.5;"></div>
                                 <div style="width: 20px; height: 80%; background: var(--accent); opacity: 0.5;"></div>
-                                <div
-                                    style="width: 100px; height: 2px; background: var(--error); transform: translateY(-5px);">
-                                </div>
+                                <div style="width: 100px; height: 2px; background: var(--error); transform: translateY(-5px);"></div>
                             </div>
-                            <div style="color: var(--error); font-size: 0.6rem; margin-top: 5px;">比例线失去波动特征 ↑</div>
+                            <div style="color: var(--error); font-size: 0.6rem; margin-top: 8px;">比例线波动被金额尺度稀释而变平坦 ↑</div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 模块 02: 方案保存 -->
+            <!-- STEP 04: 动态指标显示与打印分页同步 -->
             <section>
-                <div class="step-num">STEP 03</div>
-                <h2>方案云端保存</h2>
-                <p>利用 Supabase 实现一键状态固化，下次登录自动恢复。</p>
+                <div class="step-num">STEP 04</div>
+                <h2>动态指标与打印分页同步 <span class="badge-new">NEW</span></h2>
+                <p>支持屏幕浏览页宽与PDF打印分页的动态联动，轻松应对超宽大表。</p>
 
-                <div class="simulator" style="text-align: center; padding: 40px;">
-                    <div id="sync-icon" style="font-size: 2rem; margin-bottom: 15px; color: var(--text-dim);">☁️</div>
-                    <button class="sim-btn"
-                        style="background: var(--accent); color: var(--bg); font-weight: bold; width: 100%;"
-                        onclick="simulateSave()">保存当前方案</button>
-                    <div id="save-msg" style="margin-top: 10px; font-size: 0.7rem; color: var(--success); opacity: 0;">
-                        状态已同步至 SUPABASE</div>
+                <div class="simulator" style="padding: 20px 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold;">调节打印及屏幕每页指标数:</span>
+                        <div style="display: flex; align-items: center; gap: 6px; background: var(--surface-accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;">
+                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;" onclick="adjustSimLimit(-1)">-</button>
+                            <span id="sim-limit-val" style="width: 16px; text-align: center; font-size: 0.8rem; color: var(--indigo); font-weight: bold;">4</span>
+                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;" onclick="adjustSimLimit(1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="pdf-demo" id="pdf-container">
+                        <!-- 由JS动态渲染页面卡片 -->
+                    </div>
+                </div>
+
+                <div class="pro-tip" style="margin-top: 15px;">
+                    <strong>🎛️ 同步联动控制优势：</strong><br>
+                    * <b>完全同步机制</b>：通过调节面板上的“打印每页指标数”微调步进器（范围 1-20，默认 4），<b>数据表在屏幕浏览时的分页大小将与PDF打印分页完全同步</b>。<br>
+                    * <b>防溢出横向分页</b>：在“打印 PDF”时，系统基于设定的限制指标数，自动横向分割成独立纸张页面，确保在打印时<b>不溢出、不重叠</b>。<br>
+                    * <b>表头与合计行自动固化</b>：各分页自动复制维度主轴表头，并在底部自动固化“合计行”以便对齐比照。
                 </div>
             </section>
 
-            <!-- 模块 03: 打印与导出差异 -->
+            <!-- STEP 05: 方案保存与云端同步 -->
             <section>
-                <div class="step-num">STEP 04</div>
-                <h2>报表输出规范</h2>
-                <p>PDF 追求“美观”，Excel 追求“全量”。</p>
+                <div class="step-num">STEP 05</div>
+                <h2>方案保存与云端同步</h2>
+                <p>基于 Supabase 实现个人自定义筛选与布局方案的一键云端固化。</p>
 
-                <table class="table-preview" style="margin-bottom: 20px;">
-                    <tr>
-                        <th style="width: 30%;">场景</th>
-                        <th>输出规范</th>
-                    </tr>
-                    <tr>
-                        <td><b style="color: var(--accent)">PRINT PDF</b></td>
-                        <td>建议 X 轴指标<b>不宜过多</b>；请在预览中确认是否拥挤。</td>
-                    </tr>
-                    <tr>
-                        <td><b style="color: var(--success)">EXPORT EXCEL</b></td>
-                        <td><b>无指标数量限制</b>；导出金额单位统一为：<b>元</b>。</td>
-                    </tr>
-                </table>
-
-                <div class="pdf-demo" id="pdf-view">
-                    <div class="pdf-page" style="transform: rotateY(-10deg);"></div>
-                    <div class="pdf-page" style="transform: rotateY(-10deg) translate(-20px, 10px);"></div>
+                <div class="simulator" style="text-align: center; padding: 30px 20px;">
+                    <div id="sync-icon" style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-dim); transition: transform 0.5s;">☁️</div>
+                    <button class="sim-btn"
+                        style="background: var(--indigo); color: #fff; font-weight: bold; width: 100%; border-color: var(--indigo);"
+                        onclick="simulateSave()">保存当前配置方案</button>
+                    <div id="save-msg" style="margin-top: 12px; font-size: 0.75rem; color: var(--success); opacity: 0; transition: opacity 0.3s;">
+                        当前筛选、排序及分页方案已同步至云端数据库
+                    </div>
                 </div>
-                <button class="sim-btn" style="width: 100%; margin-top: 15px; border-color: var(--accent);"
-                    onclick="animatePDF()">模拟 PRINT PDF 预览</button>
+
+                <div class="pro-tip" style="margin-top: 15px;">
+                    <strong>☁️ 状态全量固化范围：</strong><br>
+                    一键保存会将您当前的“指标勾选状态”、“维度层级选择”、“X轴互换状态”、“取整模式”以及全新的“<b>每页指标数配置</b>”一并持久化保存。下次进入系统自动拉取，秒级恢复您的专属分析视角。
+                </div>
+            </section>
+
+            <!-- STEP 06: 沉浸式聚焦模式与双轴锁定 -->
+            <section class="full-width">
+                <div class="step-num">STEP 06</div>
+                <h2>沉浸式聚焦模式与双轴锁定 <span class="badge-new">NEW</span></h2>
+                <p>为财务人员打造的大屏沉浸式分析利器，排除噪音干扰，确保在超宽大表横向/纵向滑动时，表头、合计行与控制列始终清晰可见。</p>
+
+                <div class="grid-layout" style="grid-template-columns: 1.2fr 0.8fr;">
+                    <div class="simulator" style="background: rgba(99, 102, 241, 0.02); border-color: rgba(99, 102, 241, 0.2); text-align: center; padding: 30px 20px;">
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">📺</div>
+                        <button class="sim-btn glow-hint"
+                            style="background: var(--indigo); color: #fff; font-weight: bold; width: 100%; border-color: var(--indigo);"
+                            onclick="toggleSimFocus(true)">一键进入聚焦演示模式</button>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--accent);">
+                            [ 点击即可体验表头吸顶、合计吸底与维度锁列 ]
+                        </div>
+                    </div>
+
+                    <div class="pro-tip" style="border-left-color: var(--indigo); background: rgba(99, 102, 241, 0.03);">
+                        <strong>📺 聚焦模式与双轴定位法则：</strong><br>
+                        1. <b>一键进入全屏/聚焦模式</b>：点击表格顶部的“聚焦模式”按钮，表格将以优雅的平滑动画占满全屏，背景自动暗化，完全遮蔽外部信息流干扰，按 <b>ESC</b> 或点击退出按钮可安全退出。<br>
+                        2. <b>表头吸顶 & 合计吸底</b>：无论纵向滚动到哪，表头 `thead` 始终保持吸顶（`sticky top-0`），合计行 `tfoot` 始终吸底呈现（`sticky bottom-0`），防止迷失数据层级。<br>
+                        3. <b>Y轴标题固定（锁定列）</b>：横向向右拖动滚动条时，最左侧的主次两个维度列始终固定在左侧不动（`sticky left-0`），实现类似 Excel 冻结窗口的高阶分析体验。
+                    </div>
+                </div>
             </section>
         </div>
 
         <div class="tech-stack">
             <div class="tech-item">REACT 19</div>
+            <div class="tech-item">TYPESCRIPT</div>
             <div class="tech-item">SUPABASE</div>
             <div class="tech-item">EXCELJS</div>
             <div class="tech-item">RECHARTS</div>
-            <div class="tech-item">TAILWIND</div>
+            <div class="tech-item">TAILWIND CSS</div>
         </div>
     </div>
 
@@ -444,13 +615,46 @@
         function toggleSwap() {
             isSwapped = !isSwapped;
             const head = document.getElementById('t-head');
+            const tbody = document.getElementById('t-body');
             const btn = document.getElementById('swap-btn');
 
             if (isSwapped) {
-                head.innerHTML = '<th>时间/指标</th><th>住宅物业</th><th>商业运营</th>';
+                head.innerHTML = '<th>时间/指标</th><th>住宅物业 (口径一)</th><th>住宅物业 (口径二)</th><th>住宅物业 (小计)</th>';
+                tbody.innerHTML = `
+                    <tr style="background: rgba(99, 102, 241, 0.03);">
+                        <td style="font-weight: bold;">本年累计</td>
+                        <td class="val">1,230.5</td>
+                        <td class="val">840.2</td>
+                        <td style="font-weight: bold; color: var(--indigo);">2,070.7</td>
+                    </tr>
+                    <tr>
+                        <td>去年同期</td>
+                        <td>1,120.0</td>
+                        <td>890.5</td>
+                        <td style="font-weight: bold; color: var(--indigo);">2,010.5</td>
+                    </tr>
+                `;
                 btn.classList.add('active');
             } else {
-                head.innerHTML = '<th>指标大类 (5类)</th><th>利润表/经营指标</th><th>其他资产类指标</th>';
+                head.innerHTML = '<th>业态 (主轴)</th><th>管理口径 (次轴)</th><th>本年累计</th><th>去年同期</th>';
+                tbody.innerHTML = `
+                    <tr>
+                        <td rowspan="2" style="background: rgba(99, 102, 241, 0.05); font-weight: bold; vertical-align: middle;">住宅物业</td>
+                        <td>管理口径一</td>
+                        <td class="val">1,230.5</td>
+                        <td>1,120.0</td>
+                    </tr>
+                    <tr>
+                        <td>管理口径二</td>
+                        <td class="val">840.2</td>
+                        <td>890.5</td>
+                    </tr>
+                    <tr id="subtotal-row" style="background: rgba(99, 102, 241, 0.1); font-weight: bold; border-left: 3px solid var(--indigo);">
+                        <td colspan="2">小计 (住宅物业)</td>
+                        <td class="val">2,070.7</td>
+                        <td>2,010.5</td>
+                    </tr>
+                `;
                 btn.classList.remove('active');
             }
         }
@@ -467,7 +671,7 @@
                 v.innerText = isInteger ? Math.round(current).toLocaleString() : (current + 0.1).toFixed(1);
             });
 
-            btn.innerText = isInteger ? "整数模式: ON" : "整数模式: OFF";
+            btn.innerText = isInteger ? "模式: 取整" : "模式: 小数";
             btn.classList.toggle('active');
         }
 
@@ -476,31 +680,200 @@
             const icon = document.getElementById('sync-icon');
             const msg = document.getElementById('save-msg');
             icon.innerText = "🔄";
-            icon.style.color = "var(--accent)";
+            icon.style.transform = "rotate(360deg)";
+            icon.style.color = "var(--indigo)";
 
             setTimeout(() => {
                 icon.innerText = "✅";
+                icon.style.transform = "scale(1.2)";
                 icon.style.color = "var(--success)";
                 msg.style.opacity = 1;
                 setTimeout(() => {
                     icon.innerText = "☁️";
+                    icon.style.transform = "scale(1.0)";
                     icon.style.color = "var(--text-dim)";
                     msg.style.opacity = 0;
-                }, 2000);
+                }, 2500);
             }, 1000);
         }
 
-        // PDF 动画
-        function animatePDF() {
-            const pages = document.querySelectorAll('.pdf-page');
-            pages.forEach((p, i) => {
-                p.style.transform = `scale(1.1) translateY(${-20 * i}px) rotateX(20deg)`;
-                setTimeout(() => {
-                    p.style.transform = `rotateY(-10deg) translate(${-20 * i}px, ${10 * i}px)`;
-                }, 1000);
-            });
-        }
-    </script>
-</body>
+        // 模拟打印分页渲染
+        let currentLimit = 4;
+        const totalIndicators = 10;
 
+        function adjustSimLimit(delta) {
+            const newVal = currentLimit + delta;
+            if (newVal >= 1 && newVal <= 10) {
+                currentLimit = newVal;
+                document.getElementById('sim-limit-val').innerText = currentLimit;
+                renderSimPages();
+            }
+        }
+
+        function renderSimPages() {
+            const container = document.getElementById('pdf-container');
+            container.innerHTML = '';
+            
+            const pageCount = Math.ceil(totalIndicators / currentLimit);
+            
+            for (let i = 0; i < pageCount; i++) {
+                const pageEl = document.createElement('div');
+                pageEl.className = 'pdf-page';
+                
+                const indicatorsInThisPage = Math.min(currentLimit, totalIndicators - i * currentLimit);
+                
+                // 构造页面内容以体现分页效果
+                pageEl.innerHTML = `
+                    <div class="pdf-page-title">PAGE ${i + 1} (包含 ${indicatorsInThisPage} 个指标)</div>
+                    <div class="pdf-page-body">
+                        ${Array(indicatorsInThisPage).fill(0).map(() => `
+                            <div class="pdf-page-line"></div>
+                        `).join('')}
+                        <div class="pdf-page-line short"></div>
+                    </div>
+                    <div class="pdf-page-footer">合计页脚</div>
+                `;
+                
+                // 3D 浮动动画倾斜度
+                pageEl.style.transform = `rotateY(-10deg) translate(${-5 * i}px, ${2 * i}px)`;
+                
+                container.appendChild(pageEl);
+            }
+        }
+
+        // 页面初始化加载
+        renderSimPages();
+
+        // 聚焦模式模拟逻辑
+        function toggleSimFocus(show) {
+            const overlay = document.getElementById('focus-overlay');
+            if (show) {
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            } else {
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // 键盘 Esc 监听
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                toggleSimFocus(false);
+            }
+        });
+    </script>
+
+    <!-- 聚焦模式模拟全屏遮罩 -->
+    <div class="sim-focused-overlay" id="focus-overlay">
+        <div class="sim-focused-content">
+            <div class="sim-focus-header">
+                <h3 style="font-family: 'Lexend', sans-serif; font-size: 1.4rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    📺 沉浸式聚焦模式 (Simulated Focus Mode)
+                </h3>
+                <button class="sim-btn" style="background: var(--error); color: #fff; border-color: var(--error); font-weight: bold; margin: 0;" onclick="toggleSimFocus(false)">退出聚焦模式 (ESC)</button>
+            </div>
+            
+            <p style="color: var(--text-dim); font-size: 0.80rem; margin-bottom: 15px; background: rgba(99, 102, 241, 0.05); padding: 10px; border-left: 3px solid var(--indigo); border-radius: 0 6px 6px 0;">
+                💡 <b>横向滚动与纵向滚动演示</b>：请在下方数据表中尝试<b>向右滚动</b>与<b>向下滚动</b>。您会看到：左侧的“业态”与“管理口径”两列牢牢固定在左侧，表头和合计行始终固定在顶部和底部，完美防止迷失数据上下文！
+            </p>
+
+            <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; overflow: auto; background: var(--bg); position: relative;">
+                <table style="width: 1200px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                    <thead style="position: sticky; top: 0; background: var(--surface-accent); z-index: 100;">
+                        <tr>
+                            <th style="position: sticky; left: 0; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">业态 (主轴锁定)</th>
+                            <th style="position: sticky; left: 140px; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">管理口径 (次轴锁定)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">本年累计 (收入YTD)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">去年同期 (收入YTD)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">同比增速 (%)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">预算达成率 (%)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润YTD (本年累计)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润YTD (去年同期)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润同比增速 (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="3" style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">住宅物业</td>
+                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径一</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">12,305,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">11,200,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">+9.86%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">104.2%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,845,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,680,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">+9.8%</td>
+                        </tr>
+                        <tr>
+                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径二</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">8,402,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">8,905,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">-5.65%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">94.5%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,092,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,157,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">-5.6%</td>
+                        </tr>
+                        <tr style="background: rgba(99, 102, 241, 0.08); font-weight: bold;">
+                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">小计 (住宅物业)</td>
+                            <td style="padding: 12px;">20,707,000</td>
+                            <td style="padding: 12px;">20,105,000</td>
+                            <td style="padding: 12px; color: var(--success);">+2.99%</td>
+                            <td style="padding: 12px;">100.1%</td>
+                            <td style="padding: 12px;">2,937,000</td>
+                            <td style="padding: 12px;">2,837,000</td>
+                            <td style="padding: 12px; color: var(--success);">+3.5%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td rowspan="3" style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">商业物业</td>
+                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径一</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">18,450,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">17,200,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">+7.27%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">105.8%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">3,136,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,924,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">+7.2%</td>
+                        </tr>
+                        <tr>
+                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径二</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">14,200,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">15,100,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">-5.96%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">96.2%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,414,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,567,000</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">-6.0%</td>
+                        </tr>
+                        <tr style="background: rgba(99, 102, 241, 0.08); font-weight: bold;">
+                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">小计 (商业物业)</td>
+                            <td style="padding: 12px;">32,650,000</td>
+                            <td style="padding: 12px;">32,300,000</td>
+                            <td style="padding: 12px; color: var(--success);">+1.08%</td>
+                            <td style="padding: 12px;">101.4%</td>
+                            <td style="padding: 12px;">5,550,000</td>
+                            <td style="padding: 12px;">5,491,000</td>
+                            <td style="padding: 12px; color: var(--success);">+1.1%</td>
+                        </tr>
+                    </tbody>
+                    <tfoot style="position: sticky; bottom: 0; background: rgba(99, 102, 241, 0.2); z-index: 90; font-weight: bold; border-top: 2px solid var(--indigo);">
+                        <tr>
+                            <td style="position: sticky; left: 0; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">总合计 (吸底固定)</td>
+                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">-</td>
+                            <td style="padding: 12px;">53,357,000</td>
+                            <td style="padding: 12px;">52,405,000</td>
+                            <td style="padding: 12px; color: var(--success);">+1.82%</td>
+                            <td style="padding: 12px;">100.9%</td>
+                            <td style="padding: 12px;">8,487,000</td>
+                            <td style="padding: 12px;">8,328,000</td>
+                            <td style="padding: 12px; color: var(--success);">+1.9%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
 </html>

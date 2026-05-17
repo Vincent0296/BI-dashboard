@@ -17,7 +17,9 @@ import {
   Printer,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { EnrichedRecord, AuthState, TablePreset, MetricMetadata, TimeGroupMetadata, MetricKey } from '../types';
 import { supabase } from '../lib/supabase';
@@ -94,6 +96,25 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   });
   const [printIndicatorsPerPage, setPrintIndicatorsPerPage] = useState<number>(4); // 每页打印指标数限制，默认4
   const itemsPerPage = printIndicatorsPerPage; // 数据表每页显示的指标数与打印每页指标数同步
+
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showConfig, setShowConfig] = useState(true);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFocusMode(false);
+    };
+    if (isFocusMode) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isFocusMode]);
 
   const totalPages = Math.ceil(categories.length / itemsPerPage);
 
@@ -1093,7 +1114,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
   return (
     <>
-      <div className={cn("flex flex-col space-y-6", isPrinting && "hidden")}>
+      <div className={cn(
+        "flex flex-col transition-all duration-300", 
+        isFocusMode 
+          ? "fixed inset-0 z-50 bg-slate-950 text-slate-100 p-8 overflow-hidden flex flex-col h-screen space-y-4" 
+          : "w-full space-y-6", 
+        isPrinting && "hidden"
+      )}>
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1101,7 +1128,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               <TableIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-800">多维交叉数据分析表</h3>
+              <h3 className={cn("text-lg font-black", isFocusMode ? "text-white" : "text-slate-800")}>多维交叉数据分析表</h3>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">多维性能分析矩阵</p>
             </div>
           </div>
@@ -1111,32 +1138,46 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               onClick={() => setIsIntegerMode(!isIntegerMode)}
               className={cn(
                 "px-4 py-2 text-[10px] font-black rounded-xl border transition-all hover-lift active:scale-95 uppercase tracking-wider",
-                isIntegerMode ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" : "bg-white text-slate-500 border-slate-200"
+                isIntegerMode 
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" 
+                  : (isFocusMode ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800" : "bg-white text-slate-500 border-slate-200")
               )}
             >
               {isIntegerMode ? '取整模式' : '默认视图'}
             </button>
             {/* 打印每页指标数配置 */}
-            <div className="flex items-center gap-2 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl text-slate-600 shadow-sm transition-all hover:border-indigo-100">
+            <div className={cn(
+              "flex items-center gap-2 px-3.5 py-1.5 rounded-xl shadow-sm transition-all border",
+              isFocusMode ? "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-100"
+            )}>
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <Printer className="w-3.5 h-3.5 text-indigo-500" />
                 打印每页指标数:
               </span>
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+              <div className={cn(
+                "flex items-center gap-1 border rounded-lg p-0.5",
+                isFocusMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
+              )}>
                 <button
                   type="button"
                   onClick={() => setPrintIndicatorsPerPage(prev => Math.max(1, prev - 1))}
-                  className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm active:scale-95 transition-all text-xs font-bold"
+                  className={cn(
+                    "w-5 h-5 flex items-center justify-center rounded active:scale-95 transition-all text-xs font-bold",
+                    isFocusMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm"
+                  )}
                 >
                   -
                 </button>
-                <span className="w-6 text-center text-xs font-black text-indigo-600">
+                <span className="w-6 text-center text-xs font-black text-indigo-400">
                   {printIndicatorsPerPage}
                 </span>
                 <button
                   type="button"
                   onClick={() => setPrintIndicatorsPerPage(prev => Math.min(20, prev + 1))}
-                  className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm active:scale-95 transition-all text-xs font-bold"
+                  className={cn(
+                    "w-5 h-5 flex items-center justify-center rounded active:scale-95 transition-all text-xs font-bold",
+                    isFocusMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm"
+                  )}
                 >
                   +
                 </button>
@@ -1144,287 +1185,368 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             </div>
             <button
               onClick={() => checkAuth(exportToPDF)}
-              className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
+              className={cn(
+                "flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border shadow-sm",
+                isFocusMode ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+              )}
             >
               <Printer className="w-3.5 h-3.5 text-indigo-500" />
               打印 PDF
             </button>
             <button
               onClick={() => checkAuth(exportToExcel)}
-              className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-600 transition-all active:scale-95 shadow-lg shadow-slate-200"
+              className={cn(
+                "flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg border",
+                isFocusMode ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 shadow-slate-950" : "bg-slate-900 border-slate-900 text-white hover:bg-indigo-600 shadow-slate-200"
+              )}
             >
               <Download className="w-3.5 h-3.5" />
               导出 EXCEL
             </button>
+            <button
+              onClick={() => setShowConfig(!showConfig)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border shadow-sm",
+                isFocusMode 
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800" 
+                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              <Filter className="w-3.5 h-3.5 text-purple-500" />
+              {showConfig ? '隐藏配置' : '展开配置'}
+            </button>
+            <button
+              onClick={() => setIsFocusMode(!isFocusMode)}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border shadow-sm",
+                isFocusMode 
+                  ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/20" 
+                  : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
+              )}
+            >
+              {isFocusMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              {isFocusMode ? '退出聚焦' : '聚焦模式'}
+            </button>
           </div>
         </div>
 
-        {/* Separate Preset Management for Table */}
-        <div className="bg-white/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-200/60 shadow-sm print:hidden">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2 text-slate-400 mr-2">
-              <Bookmark className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">表格方案预设</span>
-            </div>
-
-            {tablePresets.map(preset => (
-              <div
-                key={preset.id}
-                onClick={() => applyPreset(preset)}
-                className={cn(
-                  "group flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-xl cursor-pointer transition-all hover-lift",
-                  editingPresetId === preset.id && "bg-white border-indigo-500 ring-2 ring-indigo-100",
-                  activePresetId === preset.id && "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200 shadow-sm"
-                )}
-              >
-                {editingPresetId === preset.id ? (
-                  <input
-                    autoFocus
-                    className="text-[10px] font-bold bg-transparent outline-none w-24"
-                    defaultValue={preset.name}
-                    onBlur={(e) => handleRenamePreset(preset.id, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRenamePreset(preset.id, (e.target as HTMLInputElement).value);
-                      if (e.key === 'Escape') setEditingPresetId(null);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <>
-                    <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600">{preset.name}</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <button
-                        onClick={(e) => handleUpdatePreset(preset, e)}
-                        title="更新为当前配置"
-                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-emerald-500 transition-all"
-                      >
-                        <RefreshCcw className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
-                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeletePreset(preset.id, e)}
-                        className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-rose-500 transition-all"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-
-            {isSavingPreset ? (
-              <div className="flex items-center gap-2 animate-in zoom-in-95 duration-200">
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="新方案名称..."
-                  value={newPresetName}
-                  onChange={(e) => setNewPresetName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
-                  className="text-[11px] font-bold px-4 py-2 bg-white border-2 border-indigo-500 rounded-xl outline-none w-40 shadow-xl shadow-indigo-100"
-                />
-                <button onClick={handleSavePreset} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg active:scale-95">
-                  <Plus className="w-4 h-4" />
-                </button>
-                <button onClick={() => setIsSavingPreset(false)} className="p-2 bg-white text-slate-500 rounded-xl hover:bg-slate-50 border border-slate-200 active:scale-95">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  if (!authState.isLoggedIn) {
-                    alert('请先登录');
-                    return;
-                  }
-                  setIsSavingPreset(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 text-indigo-600 font-black text-[10px] hover:bg-indigo-50 rounded-xl border border-dashed border-indigo-200 transition-all active:scale-95 uppercase tracking-wider"
-              >
-                <Save className="w-3.5 h-3.5" />
-                保存布局
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Controls Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm premium-shadow print:hidden">
-          {/* Y-Axis Selection */}
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-indigo-50 p-2 rounded-lg">
-                <Filter className="w-4 h-4 text-indigo-600" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">主要维度 (Y1)</h4>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {DIMENSIONS.map(dim => (
-                <button
-                  key={dim.key}
-                  onClick={() => {
-                    setSelectedYDim(dim.key);
-                    setActivePresetId(null);
-                  }}
-                  className={cn(
-                    "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                    selectedYDim === dim.key
-                      ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100"
-                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
-                  )}
-                >
-                  {dim.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-50 p-2 rounded-lg">
-                <Filter className="w-4 h-4 text-purple-600" />
-              </div>
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">次级维度 (Y2)</h4>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  setSelectedYDim2('none');
-                  setActivePresetId(null);
-                }}
-                className={cn(
-                  "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                  selectedYDim2 === 'none'
-                    ? "bg-purple-600 text-white shadow-xl shadow-purple-100"
-                    : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
-                )}
-              >
-                无
-              </button>
-              {DIMENSIONS.filter(d => d.key !== selectedYDim).map(dim => (
-                <button
-                  key={dim.key}
-                  onClick={() => {
-                    setSelectedYDim2(dim.key);
-                    setActivePresetId(null);
-                  }}
-                  className={cn(
-                    "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
-                    selectedYDim2 === dim.key
-                      ? "bg-purple-600 text-white shadow-xl shadow-purple-100"
-                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60"
-                  )}
-                >
-                  {dim.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* X-Axis Metric Group Selection */}
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-50 p-2 rounded-lg">
-                  <Filter className="w-4 h-4 text-indigo-600" />
+        {showConfig && (
+          <>
+            {/* Separate Preset Management for Table */}
+            <div className={cn(
+              "backdrop-blur-sm p-5 rounded-2xl border shadow-sm print:hidden",
+              isFocusMode 
+                ? "bg-slate-900/50 border-slate-800/80 text-slate-200" 
+                : "bg-white/50 border-slate-200/60"
+            )}>
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2 text-slate-400 mr-2">
+                  <Bookmark className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">表格方案预设</span>
                 </div>
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">指标计算组</h4>
-              </div>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setIsXAxisSwapped(!isXAxisSwapped)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
-                    isXAxisSwapped ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-500 border-slate-200"
-                  )}
-                >
-                  <RefreshCcw className="w-3 h-3" />
-                  交换 X 轴层级
-                </button>
-                <button
-                  onClick={() => setShowSubtotals(!showSubtotals)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
-                    showSubtotals ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200"
-                  )}
-                >
-                  <Plus className="w-3 h-3" />
-                  显示小计
-                </button>
-                <button
-                  onClick={() => {
-                    const allNames = timeGroupMetadata.map(g => g.name);
-                    setSelectedMetricGroups(allNames);
-                    setActivePresetId(null);
-                  }}
-                  className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-wider"
-                >
-                  全选
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedMetricGroups([]);
-                    setActivePresetId(null);
-                  }}
-                  className="text-[10px] font-black text-slate-400 hover:underline uppercase tracking-wider"
-                >
-                  清空
-                </button>
+
+                {tablePresets.map(preset => (
+                  <div
+                    key={preset.id}
+                    onClick={() => applyPreset(preset)}
+                    className={cn(
+                      "group flex items-center gap-2 px-4 py-2 border rounded-xl cursor-pointer transition-all hover-lift",
+                      isFocusMode
+                        ? (activePresetId === preset.id
+                            ? "bg-indigo-950 border-indigo-700 ring-1 ring-indigo-800 shadow-sm"
+                            : "bg-slate-900/80 hover:bg-slate-800 border-slate-850 hover:border-slate-700")
+                        : (activePresetId === preset.id
+                            ? "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200 shadow-sm"
+                            : "bg-white/80 hover:bg-indigo-50 border-slate-200 hover:border-indigo-200")
+                    )}
+                  >
+                    {editingPresetId === preset.id ? (
+                      <input
+                        autoFocus
+                        className="text-[10px] font-bold bg-transparent outline-none w-24 text-slate-800 dark:text-white"
+                        defaultValue={preset.name}
+                        onBlur={(e) => handleRenamePreset(preset.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenamePreset(preset.id, (e.target as HTMLInputElement).value);
+                          if (e.key === 'Escape') setEditingPresetId(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <>
+                        <span className={cn("text-[11px] font-bold", isFocusMode ? "text-slate-300 group-hover:text-indigo-400" : "text-slate-700 group-hover:text-indigo-600")}>{preset.name}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                          <button
+                            onClick={(e) => handleUpdatePreset(preset, e)}
+                            title="更新为当前配置"
+                            className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-emerald-500 transition-all dark:hover:bg-slate-800"
+                          >
+                            <RefreshCcw className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingPresetId(preset.id); }}
+                            className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all dark:hover:bg-slate-800"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeletePreset(preset.id, e)}
+                            className="p-1 hover:bg-white rounded-lg text-slate-400 hover:text-rose-500 transition-all dark:hover:bg-slate-800"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+
+                {isSavingPreset ? (
+                  <div className="flex items-center gap-2 animate-in zoom-in-95 duration-200">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="新方案名称..."
+                      value={newPresetName}
+                      onChange={(e) => setNewPresetName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
+                      className={cn(
+                        "text-[11px] font-bold px-4 py-2 border rounded-xl outline-none w-40 shadow-xl",
+                        isFocusMode 
+                          ? "bg-slate-900 border-indigo-700 text-white shadow-indigo-950/20" 
+                          : "bg-white border-indigo-500 shadow-indigo-100"
+                      )}
+                    />
+                    <button onClick={handleSavePreset} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg active:scale-95">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setIsSavingPreset(false)} className={cn("p-2 rounded-xl border active:scale-95", isFocusMode ? "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50")}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (!authState.isLoggedIn) {
+                        alert('请先登录');
+                        return;
+                      }
+                      setIsSavingPreset(true);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 font-black text-[10px] rounded-xl border border-dashed transition-all active:scale-95 uppercase tracking-wider",
+                      isFocusMode 
+                        ? "text-indigo-400 hover:bg-indigo-950/30 border-indigo-900/60" 
+                        : "text-indigo-600 hover:bg-indigo-50 border-indigo-200"
+                    )}
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    保存布局
+                  </button>
+                )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {timeGroupMetadata.map(group => (
-                <label
-                  key={group.name}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border hover-lift",
-                    selectedMetricGroups.includes(group.name)
-                      ? "bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm"
-                      : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white"
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={selectedMetricGroups.includes(group.name)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedMetricGroups([...selectedMetricGroups, group.name]);
-                      } else {
-                        setSelectedMetricGroups(selectedMetricGroups.filter(k => k !== group.name));
-                      }
+
+            {/* Controls Section */}
+            <div className={cn(
+              "grid grid-cols-1 xl:grid-cols-2 gap-8 p-8 rounded-[2rem] border shadow-sm premium-shadow print:hidden",
+              isFocusMode 
+                ? "bg-slate-900 border-slate-800 text-slate-200" 
+                : "bg-white border-slate-200/60"
+            )}>
+              {/* Y-Axis Selection */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className={cn("p-2 rounded-lg", isFocusMode ? "bg-indigo-950/40" : "bg-indigo-50")}>
+                    <Filter className={cn("w-4 h-4", isFocusMode ? "text-indigo-400" : "text-indigo-600")} />
+                  </div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">主要维度 (Y1)</h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DIMENSIONS.map(dim => (
+                    <button
+                      key={dim.key}
+                      onClick={() => {
+                        setSelectedYDim(dim.key);
+                        setActivePresetId(null);
+                      }}
+                      className={cn(
+                        "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                        selectedYDim === dim.key
+                          ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-950/30"
+                          : (isFocusMode 
+                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
+                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                      )}
+                    >
+                      {dim.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className={cn("p-2 rounded-lg", isFocusMode ? "bg-purple-950/40" : "bg-purple-50")}>
+                    <Filter className={cn("w-4 h-4", isFocusMode ? "text-purple-400" : "text-purple-600")} />
+                  </div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">次级维度 (Y2)</h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedYDim2('none');
                       setActivePresetId(null);
                     }}
-                  />
-                  <div className={cn(
-                    "w-4 h-4 rounded-lg border-2 flex items-center justify-center transition-all",
-                    selectedMetricGroups.includes(group.name) ? "bg-indigo-500 border-indigo-500 shadow-sm" : "bg-white border-slate-300"
-                  )}>
-                    {selectedMetricGroups.includes(group.name) && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                    className={cn(
+                      "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                      selectedYDim2 === 'none'
+                        ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
+                        : (isFocusMode 
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                    )}
+                  >
+                    无
+                  </button>
+                  {DIMENSIONS.filter(d => d.key !== selectedYDim).map(dim => (
+                    <button
+                      key={dim.key}
+                      onClick={() => {
+                        setSelectedYDim2(dim.key);
+                        setActivePresetId(null);
+                      }}
+                      className={cn(
+                        "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                        selectedYDim2 === dim.key
+                          ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
+                          : (isFocusMode 
+                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
+                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                      )}
+                    >
+                      {dim.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* X-Axis Metric Group Selection */}
+              <div className="space-y-5 xl:col-span-2">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-lg", isFocusMode ? "bg-indigo-950/40" : "bg-indigo-50")}>
+                      <Filter className={cn("w-4 h-4", isFocusMode ? "text-indigo-400" : "text-indigo-600")} />
+                    </div>
+                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">指标计算组</h4>
                   </div>
-                  {group.name}
-                </label>
-              ))}
+                  <div className="flex gap-4 flex-wrap">
+                    <button
+                      onClick={() => setIsXAxisSwapped(!isXAxisSwapped)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
+                        isXAxisSwapped 
+                          ? "bg-amber-500 text-white border-amber-500" 
+                          : (isFocusMode ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750" : "bg-white text-slate-500 border-slate-200")
+                      )}
+                    >
+                      <RefreshCcw className="w-3 h-3" />
+                      交换 X 轴层级
+                    </button>
+                    <button
+                      onClick={() => setShowSubtotals(!showSubtotals)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
+                        showSubtotals 
+                          ? "bg-emerald-500 text-white border-emerald-500" 
+                          : (isFocusMode ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750" : "bg-white text-slate-500 border-slate-200")
+                      )}
+                    >
+                      <Plus className="w-3 h-3" />
+                      显示小计
+                    </button>
+                    <button
+                      onClick={() => {
+                        const allNames = timeGroupMetadata.map(g => g.name);
+                        setSelectedMetricGroups(allNames);
+                        setActivePresetId(null);
+                      }}
+                      className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 hover:underline uppercase tracking-wider"
+                    >
+                      全选
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedMetricGroups([]);
+                        setActivePresetId(null);
+                      }}
+                      className="text-[10px] font-black text-slate-400 hover:underline uppercase tracking-wider"
+                    >
+                      清空
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {timeGroupMetadata.map(group => (
+                    <label
+                      key={group.name}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border hover-lift",
+                        selectedMetricGroups.includes(group.name)
+                          ? (isFocusMode 
+                              ? "bg-indigo-950/40 border-indigo-800 text-indigo-300 shadow-sm" 
+                              : "bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm")
+                          : (isFocusMode 
+                              ? "bg-slate-800 border-slate-700 text-slate-450 hover:bg-slate-700" 
+                              : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white")
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={selectedMetricGroups.includes(group.name)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMetricGroups([...selectedMetricGroups, group.name]);
+                          } else {
+                            setSelectedMetricGroups(selectedMetricGroups.filter(k => k !== group.name));
+                          }
+                          setActivePresetId(null);
+                        }}
+                      />
+                      <div className={cn(
+                        "w-4 h-4 rounded-lg border-2 flex items-center justify-center transition-all",
+                        selectedMetricGroups.includes(group.name) 
+                          ? "bg-indigo-500 border-indigo-500 shadow-sm" 
+                          : (isFocusMode ? "bg-slate-900 border-slate-750" : "bg-white border-slate-300")
+                      )}>
+                        {selectedMetricGroups.includes(group.name) && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                      </div>
+                      {group.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between bg-white px-2 py-1 print:hidden">
+        <div className={cn(
+          "flex items-center justify-between px-2 py-1 print:hidden rounded-xl",
+          isFocusMode ? "bg-slate-950 text-slate-300" : "bg-white"
+        )}>
           <div className="text-xs font-bold text-slate-400">
-            指标分页: <span className="text-indigo-600">{currentPage + 1}</span> / {totalPages} (共 {categories.length} 个指标)
+            指标分页: <span className="text-indigo-500">{currentPage + 1}</span> / {totalPages} (共 {categories.length} 个指标)
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
               disabled={currentPage === 0}
-              className="p-2 rounded-lg bg-slate-50 text-slate-600 disabled:opacity-30 hover:bg-slate-100 transition-colors"
+              className={cn(
+                "p-2 rounded-lg transition-colors disabled:opacity-30",
+                isFocusMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              )}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -1435,7 +1557,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   onClick={() => setCurrentPage(i)}
                   className={cn(
                     "w-6 h-6 rounded-md text-[10px] font-bold transition-all",
-                    currentPage === i ? "bg-indigo-600 text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                    currentPage === i 
+                      ? "bg-indigo-600 text-white" 
+                      : (isFocusMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-50 text-slate-400 hover:bg-slate-100")
                   )}
                 >
                   {i + 1}
@@ -1445,7 +1569,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
               disabled={currentPage === totalPages - 1}
-              className="p-2 rounded-lg bg-slate-50 text-slate-600 disabled:opacity-30 hover:bg-slate-100 transition-colors"
+              className={cn(
+                "p-2 rounded-lg transition-colors disabled:opacity-30",
+                isFocusMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              )}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -1453,13 +1580,24 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         </div>
 
         {/* Table Container */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-inner">
+        <div className={cn(
+          "overflow-auto rounded-2xl border shadow-inner transition-all duration-300",
+          isFocusMode 
+            ? "flex-1 border-slate-800 bg-slate-900" 
+            : "max-h-[600px] border-slate-100 bg-white"
+        )}>
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
               {/* Level 1 Header */}
-              <tr className="bg-slate-800 text-white">
+              <tr className={isFocusMode ? "bg-slate-900 text-white" : "bg-slate-800 text-white"}>
                 <th
-                  className="p-4 border-b border-r border-slate-700 font-black text-[11px] sticky left-0 bg-slate-800 z-30 w-[140px] shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
+                  className={cn(
+                    "p-4 border-b border-r font-black text-[11px] sticky top-0 left-0 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
+                    selectedYDim2 === 'none' 
+                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate" 
+                      : "w-[280px] min-w-[280px] max-w-[280px] truncate",
+                    isFocusMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-800 border-slate-700 text-white"
+                  )}
                   colSpan={selectedYDim2 === 'none' ? 1 : 2}
                 >
                   维度 \ {isXAxisSwapped ? '指标' : '计算组'}
@@ -1472,7 +1610,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <th
                         key={group}
                         colSpan={indicators.length}
-                        className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
+                        className={cn(
+                          "p-3 border-b border-r font-black text-[11px] text-center uppercase tracking-[0.2em] sticky top-0 z-30",
+                          isFocusMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-800 border-slate-700 text-white"
+                        )}
                       >
                         {group}
                       </th>
@@ -1488,7 +1629,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <th
                         key={cat}
                         colSpan={groupsForCat.length}
-                        className="p-3 border-b border-r border-slate-700 font-black text-[11px] text-center uppercase tracking-[0.2em] bg-slate-800"
+                        className={cn(
+                          "p-3 border-b border-r font-black text-[11px] text-center uppercase tracking-[0.2em] sticky top-0 z-30",
+                          isFocusMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-800 border-slate-700 text-white"
+                        )}
                       >
                         {cat}
                       </th>
@@ -1497,12 +1641,22 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 )}
               </tr>
               {/* Level 2 Header */}
-              <tr className="bg-slate-100">
-                <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px]">
+              <tr className={isFocusMode ? "bg-slate-800" : "bg-slate-100"}>
+                <th 
+                  className={cn(
+                    "p-4 border-b border-r font-black text-xs sticky top-[45px] left-0 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                    isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
+                  )}
+                >
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedYDim2 !== 'none' && (
-                  <th className="p-4 border-b border-r border-slate-200 text-slate-800 font-black text-xs sticky left-[140px] bg-slate-100 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px]">
+                  <th 
+                    className={cn(
+                      "p-4 border-b border-r font-black text-xs sticky top-[45px] left-[140px] z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                      isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
+                    )}
+                  >
                     {DIMENSIONS.find(d => d.key === selectedYDim2)?.label}
                   </th>
                 )}
@@ -1516,8 +1670,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           key={sortKey}
                           onClick={() => handleSort(sortKey)}
                           className={cn(
-                            "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
-                            isSorting && "bg-indigo-50 text-indigo-700"
+                            "p-3 border-b border-r text-[10px] font-black min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort sticky top-[45px] z-30",
+                            isFocusMode 
+                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700") 
+                              : (isSorting ? "bg-indigo-50 text-indigo-700 border-slate-200" : "bg-slate-100 text-slate-600 border-slate-200")
                           )}
                         >
                           <div className="flex items-center justify-center gap-1.5">
@@ -1550,8 +1706,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           key={sortKey}
                           onClick={() => handleSort(sortKey)}
                           className={cn(
-                            "p-3 border-b border-r border-slate-200 text-slate-600 font-black text-[10px] bg-slate-100 min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort",
-                            isSorting && "bg-indigo-50 text-indigo-700"
+                            "p-3 border-b border-r text-[10px] font-black min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort sticky top-[45px] z-30",
+                            isFocusMode 
+                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700") 
+                              : (isSorting ? "bg-indigo-50 text-indigo-700 border-slate-200" : "bg-slate-100 text-slate-600 border-slate-200")
                           )}
                         >
                           <div className="flex items-center justify-center gap-1.5">
@@ -1582,13 +1740,21 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
                 return (
                   <tr key={`${row.dimValue}-${row.dimValue2}-${idx}`} className={cn(
-                    "hover:bg-slate-50/50 transition-colors",
-                    row.isSubtotal ? "bg-indigo-50/30" : (idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")
+                    "transition-colors",
+                    isFocusMode 
+                      ? (row.isSubtotal ? "bg-indigo-950/20 hover:bg-indigo-900/30" : (idx % 2 === 0 ? "bg-slate-900 hover:bg-slate-800" : "bg-slate-900/50 hover:bg-slate-800/80"))
+                      : (row.isSubtotal ? "bg-indigo-50/30 hover:bg-indigo-100/40" : (idx % 2 === 0 ? "bg-white hover:bg-slate-50/50" : "bg-slate-50/20 hover:bg-slate-50/50"))
                   )}>
                     {selectedYDim2 === 'none' ? (
                       <td className={cn(
-                        "p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 z-10 text-center w-[140px]",
-                        row.isSubtotal ? "bg-indigo-50/30 text-indigo-600 font-black text-xs" : "bg-inherit"
+                        "p-4 border-b border-r text-sm font-bold sticky left-0 z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                        isFocusMode ? "border-slate-800" : "border-slate-100",
+                        row.isSubtotal 
+                          ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
+                          : (idx % 2 === 0 
+                              ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-700") 
+                              : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-700")
+                            )
                       )}>
                         {row.dimValue}
                       </td>
@@ -1597,14 +1763,25 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         {isFirstOfV1 && (
                           <td
                             rowSpan={v1Span}
-                            className="p-4 border-b border-r border-slate-100 text-slate-800 font-black text-sm sticky left-0 bg-white z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px]"
+                            className={cn(
+                              "p-4 border-b border-r text-sm font-black sticky left-0 z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px] min-w-[140px] max-w-[140px] truncate",
+                              isFocusMode 
+                                ? "bg-slate-900 text-slate-100 border-slate-800" 
+                                : "bg-white text-slate-800 border-slate-100"
+                            )}
                           >
                             {row.dimValue}
                           </td>
                         )}
                         <td className={cn(
-                          "p-4 border-b border-r border-slate-100 sticky left-[140px] z-10 text-center w-[140px]",
-                          row.isSubtotal ? "bg-indigo-50/30 text-indigo-600 font-black text-xs" : "bg-inherit text-slate-600 font-medium text-xs"
+                          "p-4 border-b border-r sticky left-[140px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                          isFocusMode ? "border-slate-800" : "border-slate-100",
+                          row.isSubtotal 
+                            ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
+                            : (idx % 2 === 0 
+                                ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs") 
+                                : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
+                              )
                         )}>
                           {row.dimValue2}
                         </td>
@@ -1621,11 +1798,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             <td
                               key={`${group}_${cat}`}
                               className={cn(
-                                "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                row.isSubtotal && "bg-indigo-50/30",
+                                "p-3 border-b border-r text-sm font-medium text-center",
+                                isFocusMode ? "border-slate-800" : "border-slate-50",
+                                row.isSubtotal && (isFocusMode ? "bg-indigo-950/20" : "bg-indigo-50/30"),
                                 group.includes('增减')
-                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                  : (row.isSubtotal ? "text-indigo-600 font-bold" : "text-slate-600")
+                                  ? (val >= 0 
+                                      ? (isFocusMode ? "text-emerald-400" : "text-emerald-600") 
+                                      : (isFocusMode ? "text-rose-400" : "text-rose-600")
+                                    )
+                                  : (row.isSubtotal 
+                                      ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold") 
+                                      : (isFocusMode ? "text-slate-300" : "text-slate-600")
+                                    )
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -1646,11 +1830,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             <td
                               key={`${group}_${cat}`}
                               className={cn(
-                                "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                row.isSubtotal && "bg-indigo-50/30",
+                                "p-3 border-b border-r text-sm font-medium text-center",
+                                isFocusMode ? "border-slate-800" : "border-slate-50",
+                                row.isSubtotal && (isFocusMode ? "bg-indigo-950/20" : "bg-indigo-50/30"),
                                 group.includes('增减')
-                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                  : (row.isSubtotal ? "text-indigo-600 font-bold" : "text-slate-600")
+                                  ? (val >= 0 
+                                      ? (isFocusMode ? "text-emerald-400" : "text-emerald-600") 
+                                      : (isFocusMode ? "text-rose-400" : "text-rose-600")
+                                    )
+                                  : (row.isSubtotal 
+                                      ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold") 
+                                      : (isFocusMode ? "text-slate-300" : "text-slate-600")
+                                    )
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -1662,10 +1853,18 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </tr>
                 );
               })}
+            </tbody>
+            <tfoot>
               {/* Total Row */}
               <tr className="bg-indigo-900 text-white font-black">
                 <td
-                  className="p-4 border-b border-r border-indigo-800 text-white text-sm sticky left-0 bg-indigo-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center"
+                  className={cn(
+                    "p-4 border-b border-r text-white text-sm sticky bottom-0 left-0 z-45 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
+                    selectedYDim2 === 'none' 
+                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate" 
+                      : "w-[280px] min-w-[280px] max-w-[280px] truncate",
+                    isFocusMode ? "bg-indigo-950 border-indigo-900" : "bg-indigo-900 border-indigo-800"
+                  )}
                   colSpan={selectedYDim2 === 'none' ? 1 : 2}
                 >
                   合计
@@ -1680,8 +1879,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         <td
                           key={`${group}_${cat}`}
                           className={cn(
-                            "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            group.includes('\u589e\u51cf')
+                            "p-3 border-b border-r text-sm text-center sticky bottom-0 z-35",
+                            isFocusMode ? "bg-indigo-950 border-indigo-900" : "bg-indigo-900 border-indigo-800",
+                            group.includes('增减')
                               ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
@@ -1704,8 +1904,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         <td
                           key={`${group}_${cat}`}
                           className={cn(
-                            "p-3 border-b border-r border-indigo-800 text-sm text-center",
-                            group.includes('\u589e\u51cf')
+                            "p-3 border-b border-r text-sm text-center sticky bottom-0 z-35",
+                            isFocusMode ? "bg-indigo-950 border-indigo-900" : "bg-indigo-900 border-indigo-800",
+                            group.includes('增减')
                               ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                               : "text-white"
                           )}
@@ -1717,12 +1918,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   })
                 )}
               </tr>
-            </tbody>
+            </tfoot>
           </table>
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+        <div className={cn(
+          "flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em]",
+          isFocusMode ? "text-slate-500" : "text-slate-400"
+        )}>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
             正值 / 增长

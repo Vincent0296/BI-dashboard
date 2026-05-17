@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, BookOpen, Filter, MousePointerClick, Download, Settings2, BarChart2, MessageSquareText } from 'lucide-react';
+import { X, BookOpen, Filter, MousePointerClick, Download, Settings2, BarChart2, MessageSquareText, Maximize2 } from 'lucide-react';
 
 interface HelpModalProps {
   onClose: () => void;
@@ -83,6 +83,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
             <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
               <li><strong className="text-slate-800">二级维度钻取</strong>：在 Y 轴维度选择器中开启“二级维度”，即可实现嵌套钻取展示（如：业态 + 产权口径），系统会自动合并单元格。</li>
               <li><strong className="text-slate-800">行列一键互换 (Axis Swap)</strong>：点击按钮可一键切换“指标优先”或“计算项优先”视图，满足不同汇报需求。</li>
+              <li><strong className="text-slate-800">小计高亮一贯性</strong>：完美修复行列层级互换后“小计”行数据高亮格式失效的缺陷，无论哪种视图下“小计”行均以靛蓝色优雅呈现。</li>
               <li><strong className="text-slate-800">指标全量管控</strong>：支持跨计算组多选指标，并配备一键“全选”与“清空”按钮。</li>
             </ul>
           </section>
@@ -90,10 +91,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <section>
             <div className="flex items-center gap-2 mb-3 text-blue-600">
               <Download className="w-5 h-5" />
-              <h3 className="font-bold text-lg">6. 专家级 PDF 报告导出</h3>
+              <h3 className="font-bold text-lg">6. 专家级 PDF 报告与动态分页</h3>
             </div>
             <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
-              <li><strong className="text-slate-800">智能横向分页</strong>：针对指标过多的“超宽表”，系统会自动切片分页导出 PDF，彻底告别文字模糊。</li>
+              <li><strong className="text-slate-800">动态指标数限制调节</strong>：支持通过界面加减控件，在 1 至 20 个之间动态调节每页限制显示的指标数（默认 4 个）。</li>
+              <li><strong className="text-slate-800">显示与打印同步联动</strong>：数据表界面每页显示的指标数会自动与打印限制的指标数保持绝对同步，真正实现“所见即所得”。</li>
+              <li><strong className="text-slate-800">智能横向分页</strong>：针对指标过多的“超宽表”，系统会自动按您配置的限制数切片分页导出 PDF，彻底告别文字模糊。</li>
               <li><strong className="text-slate-800">页脚合计行固定</strong>：打印出的每一页 PDF 底部都会自动重复显示“合计行”，方便跨页查看汇总。</li>
               <li><strong className="text-slate-800">纯净模式</strong>：自动隐去所有交互按钮，仅保留专业的报表视图。</li>
             </ul>
@@ -102,14 +105,30 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           <section className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
             <div className="flex items-center gap-2 mb-3 text-indigo-600">
               <Settings2 className="w-5 h-5" />
-              <h3 className="font-bold text-lg">7. 指标精度与趋势纠偏</h3>
+              <h3 className="font-bold text-lg">7. 指标计算与口径优化</h3>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed ml-7">
-              为保证财务报表的专业性，系统对增长率/完成率进行了特殊处理：
-              <br />• <strong className="text-slate-800">1位小数精度</strong>：默认显示 1 位小数，确保微小变动可见。
-              <br />• <strong className="text-slate-800">趋势纠偏</strong>：若计算结果极小但非零（如 0.02%），将显示为 <strong className="text-slate-800">0.1%</strong>。
-              <br />• <strong className="text-slate-800">极值封顶</strong>：极端离群值（&gt;10000%）将显示为 <strong className="text-slate-800">10000%+</strong>。
+              为保证财务报表的专业性，系统对核心指标与项目数计算逻辑进行了多重精细优化：
+              <br />• <strong className="text-slate-800">三年效益新增指标</strong>：切片器中新增了<strong className="text-indigo-600">“利润率下降项目数”</strong>与<strong className="text-indigo-600">“效益下降项目数”</strong>（均以<strong className="text-slate-800">整型格式</strong>展示，且遵循财务严谨同比原则，仅服从“本年累计”筛选，不适用其他 7 个计算组）。
+              <br />• <strong className="text-slate-800">项目数口径优化</strong>：项目个数计算逻辑精细化为“收入YTD或利润YTD不全为0”且“项目名称不含‘代理’和‘抵消’”的数量，自动排除过渡及抵消项目。
+              <br />• <strong className="text-slate-800">1位小数精度</strong>：默认显示 1 位小数，确保微小变动可见（利润率下降项目数等数量类指标除外，已强制转化为整数）。
+              <br />• <strong className="text-slate-800">趋势与极值</strong>：若计算结果极小但非零（如 0.02%），将显示为 0.1%；极端离群值（&gt;10000%）将显示为 10000%+。
             </p>
+          </section>
+
+          <section>
+            <div className="flex items-center gap-2 mb-3 text-indigo-600">
+              <Maximize2 className="w-5 h-5" />
+              <h3 className="font-bold text-lg">8. 聚焦模式 (Focus / Fullscreen Mode)</h3>
+            </div>
+            <p className="text-slate-600 text-sm leading-relaxed ml-7 mb-3">
+              为方便深入、不受干扰地探索庞大的多维财务报表，系统配备了强大的聚焦全屏功能：
+            </p>
+            <ul className="list-disc text-slate-600 text-sm ml-12 space-y-2">
+              <li><strong className="text-slate-800">全屏沉浸体验</strong>：点击数据表右上角的<strong className="text-slate-800">“聚焦模式”</strong>按钮即可进入全屏模式，自动屏蔽外部多余元素与信息干扰，提供极致开阔的数据探索空间（支持按 `ESC` 键快捷退出）。</li>
+              <li><strong className="text-slate-800">锁定双向行列首尾</strong>：在聚焦模式下，数据表的表头与底部的合计数（合计行）将始终固定呈现于视窗的首尾，不会随纵向滚动而移动。</li>
+              <li><strong className="text-slate-800">Y 轴标题固定</strong>：当横向向右滑动查看更多列时，左侧的 Y 轴标题列（维度字段名）将始终固定不动，方便随时锁定数据归属，杜绝看错行的问题。</li>
+            </ul>
           </section>
 
         </div>
