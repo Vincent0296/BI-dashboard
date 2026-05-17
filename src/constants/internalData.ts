@@ -47,7 +47,11 @@ export const OPERATING_METRICS = [
   "食材成本率",
   "百元收入人工成本",
   "百元收入能源成本",
-  "百元收入材料成本"
+  "百元收入材料成本",
+  "人工成本",
+  "能源成本",
+  "项目个数",
+  "亏损个数"
 ];
 
 export const TIME_SERIES_ALLOWED_METRICS = [...MAIN_INDICATORS, ...OPERATING_METRICS];
@@ -518,6 +522,30 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "name": "重点项目未达标数",
     "formula": "重点项目且对标利润率 < 目标利润率的项数",
     "source": "calculated",
+    "unit": "个"
+  },
+  {
+    "name": "人工成本",
+    "formula": "=15用工薪酬成本+16外包劳务支出",
+    "source": "operating",
+    "unit": "元"
+  },
+  {
+    "name": "能源成本",
+    "formula": "=8外购燃料+9外购动力",
+    "source": "operating",
+    "unit": "元"
+  },
+  {
+    "name": "项目个数",
+    "formula": "收入YTD和利润YTD均不为0且”项目名称“不含“代理”和“抵消”的数量",
+    "source": "operating",
+    "unit": "个"
+  },
+  {
+    "name": "亏损个数",
+    "formula": "利润YTD小于0，且”项目名称“不含“代理”和“抵消”的数量",
+    "source": "operating",
     "unit": "个"
   }
 ];

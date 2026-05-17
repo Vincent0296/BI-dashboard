@@ -575,6 +575,53 @@ export const Dashboard: React.FC = () => {
     if (['重点项目个数', '未达标个数', '重点项目未达标数'].includes(metricName)) {
       return NaN;
     }
+    if (['项目个数', '亏损个数'].includes(metricName)) {
+      if (timeGroupName !== '本年累计') {
+        return NaN;
+      }
+      const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+        const [dy, dm] = d.month.split('-').map(Number);
+        return dy === y && dm <= m;
+      };
+      const ytdSlice = data.filter(d => isYTD(d, year, month));
+      const projectsMap: Record<string, EnrichedRecord[]> = {};
+      ytdSlice.forEach(r => {
+        if (!projectsMap[r.projectNo]) {
+          projectsMap[r.projectNo] = [];
+        }
+        projectsMap[r.projectNo].push(r);
+      });
+      let projectCount = 0;
+      let lossCount = 0;
+      Object.entries(projectsMap).forEach(([projectNo, records]) => {
+        const pName = records[0]?.projectName || '';
+        if (pName.includes('代理') || pName.includes('抵消')) {
+          return;
+        }
+        const projectRevenueYTD = records.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+        const projectProfitYTD = records.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+        if (metricName === '项目个数') {
+          if (projectRevenueYTD !== 0 && projectProfitYTD !== 0) {
+            projectCount++;
+          }
+        } else if (metricName === '亏损个数') {
+          if (projectProfitYTD < 0) {
+            lossCount++;
+          }
+        }
+      });
+      return metricName === '项目个数' ? projectCount : lossCount;
+    }
+    if (metricName === '人工成本') {
+      const s1 = getMetricValue(data, '15用工薪酬成本', timeGroupName, year, month);
+      const s2 = getMetricValue(data, '16外包劳务支出', timeGroupName, year, month);
+      return s1 + s2;
+    }
+    if (metricName === '能源成本') {
+      const s1 = getMetricValue(data, '8外购燃料', timeGroupName, year, month);
+      const s2 = getMetricValue(data, '9外购动力', timeGroupName, year, month);
+      return s1 + s2;
+    }
     const prevYear = year - 1;
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 

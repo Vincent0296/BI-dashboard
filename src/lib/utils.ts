@@ -63,7 +63,8 @@ export function isMoneyMetric(metricName: string): boolean {
   if (!metricName) return false;
   const nonMoneyMetrics = [
     '重点项目个数', '未达标个数', '重点项目未达标数',
-    '项目人数', '用餐人数', '实际服务面积', '总服务面积'
+    '项目人数', '用餐人数', '实际服务面积', '总服务面积',
+    '项目个数', '亏损个数'
   ];
   if (nonMoneyMetrics.includes(metricName)) return false;
   return !isRateMetric(metricName);
