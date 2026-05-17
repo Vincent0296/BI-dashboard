@@ -572,6 +572,9 @@ export const Dashboard: React.FC = () => {
   }
 
   function getMetricValue(data: EnrichedRecord[], metricName: string, timeGroupName: string, year: number, month: number): number {
+    if (['重点项目个数', '未达标个数', '重点项目未达标数'].includes(metricName)) {
+      return NaN;
+    }
     const prevYear = year - 1;
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 

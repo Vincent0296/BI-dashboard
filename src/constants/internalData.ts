@@ -63,8 +63,12 @@ export const THREE_YEAR_BENEFIT_METRICS = [
   "目标利润率",
   "目标百元收入人工成本",
   "目标百元收入能源成本",
-  "目标百元收入材料成本"
+  "目标百元收入材料成本",
+  "重点项目个数",
+  "未达标个数",
+  "重点项目未达标数"
 ];
+
 
 export const BUDGET_METRICS = [
   "2026全年预算收入-内部",
@@ -497,6 +501,24 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "formula": "=利润YTD/收入YTD",
     "source": "operating",
     "unit": "元"
+  },
+  {
+    "name": "重点项目个数",
+    "formula": "重点项目数合计",
+    "source": "calculated",
+    "unit": "个"
+  },
+  {
+    "name": "未达标个数",
+    "formula": "对标利润率 < 目标利润率的项数",
+    "source": "calculated",
+    "unit": "个"
+  },
+  {
+    "name": "重点项目未达标数",
+    "formula": "重点项目且对标利润率 < 目标利润率的项数",
+    "source": "calculated",
+    "unit": "个"
   }
 ];
 

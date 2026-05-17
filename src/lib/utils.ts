@@ -61,5 +61,10 @@ export function isRateMetric(metricName: string): boolean {
 /** Returns true if the metric should be displayed in 万元 (i.e. it's a money amount, not a rate or ratio) */
 export function isMoneyMetric(metricName: string): boolean {
   if (!metricName) return false;
+  const nonMoneyMetrics = [
+    '重点项目个数', '未达标个数', '重点项目未达标数',
+    '项目人数', '用餐人数', '实际服务面积', '总服务面积'
+  ];
+  if (nonMoneyMetrics.includes(metricName)) return false;
   return !isRateMetric(metricName);
 }

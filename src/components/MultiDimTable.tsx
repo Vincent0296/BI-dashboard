@@ -353,6 +353,60 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const prevYear = year - 1;
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 
+    if (['重点项目个数', '未达标个数', '重点项目未达标数'].includes(metricName)) {
+      if (timeGroupName !== '本年累计') {
+        return NaN;
+      }
+
+      if (metricName === '重点项目个数') {
+        const uniqueProjects = new Set<string>();
+        dataSlice.forEach(r => {
+          if (r.isKeyProject === '是') {
+            uniqueProjects.add(r.projectNo);
+          }
+        });
+        return uniqueProjects.size;
+      }
+
+      // For "未达标个数" and "重点项目未达标数"
+      const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+        const [dy, dm] = d.month.split('-').map(Number);
+        return dy === y && dm <= m;
+      };
+
+      const ytdSlice = dataSlice.filter(d => isYTD(d, year, month));
+      const projectsMap: Record<string, EnrichedRecord[]> = {};
+      ytdSlice.forEach(r => {
+        if (!projectsMap[r.projectNo]) {
+          projectsMap[r.projectNo] = [];
+        }
+        projectsMap[r.projectNo].push(r);
+      });
+
+      let nonCompliantCount = 0;
+      let keyNonCompliantCount = 0;
+
+      Object.entries(projectsMap).forEach(([projectNo, records]) => {
+        const ytdProfit = records.reduce((sum, r) => sum + (r.metrics['对标利润'] || 0), 0);
+        const ytdRevenue = records.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+        const projectYtdProfitRate = ytdRevenue !== 0 ? ytdProfit / ytdRevenue : 0;
+
+        const targetProfit = records[0].metrics['目标利润'] || 0;
+        const targetRevenue = records[0].metrics['目标收入'] || 0;
+        const projectTargetProfitRate = targetRevenue !== 0 ? targetProfit / targetRevenue : 0;
+
+        if (projectYtdProfitRate < projectTargetProfitRate) {
+          nonCompliantCount++;
+          if (records[0].isKeyProject === '是') {
+            keyNonCompliantCount++;
+          }
+        }
+      });
+
+      return metricName === '未达标个数' ? nonCompliantCount : keyNonCompliantCount;
+    }
+
+
     // 1. 处理计算类时间组（同比/环比）
     // 对于率类指标，增减额应等于“结果之差”，例如 (当月率 - 上月率)
     if (timeGroupName === '同比增减额') {
