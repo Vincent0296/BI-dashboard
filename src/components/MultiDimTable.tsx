@@ -93,7 +93,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     key: '',
     direction: null,
   });
-  const PRINT_INDICATORS_PER_PAGE = 4; // 每页打印 4 个指标，确保列宽充足、易于阅读
+  const [printIndicatorsPerPage, setPrintIndicatorsPerPage] = useState<number>(4); // 每页打印指标数限制，默认4
 
   const totalPages = Math.ceil(categories.length / itemsPerPage);
 
@@ -820,11 +820,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   // 核心逻辑：横向切分指标
   const indicatorChunks = useMemo(() => {
     const chunks: string[][] = [];
-    for (let i = 0; i < categories.length; i += PRINT_INDICATORS_PER_PAGE) {
-      chunks.push(categories.slice(i, i + PRINT_INDICATORS_PER_PAGE));
+    for (let i = 0; i < categories.length; i += printIndicatorsPerPage) {
+      chunks.push(categories.slice(i, i + printIndicatorsPerPage));
     }
     return chunks;
-  }, [categories]);
+  }, [categories, printIndicatorsPerPage]);
 
   if (isPrinting) {
     // 预计算 span 以优化性能
@@ -1116,6 +1116,32 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             >
               {isIntegerMode ? '取整模式' : '默认视图'}
             </button>
+            {/* 打印每页指标数配置 */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl text-slate-600 shadow-sm transition-all hover:border-indigo-100">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Printer className="w-3.5 h-3.5 text-indigo-500" />
+                打印每页指标数:
+              </span>
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setPrintIndicatorsPerPage(prev => Math.max(1, prev - 1))}
+                  className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm active:scale-95 transition-all text-xs font-bold"
+                >
+                  -
+                </button>
+                <span className="w-6 text-center text-xs font-black text-indigo-600">
+                  {printIndicatorsPerPage}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPrintIndicatorsPerPage(prev => Math.min(20, prev + 1))}
+                  className="w-5 h-5 flex items-center justify-center rounded text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm active:scale-95 transition-all text-xs font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
             <button
               onClick={() => checkAuth(exportToPDF)}
               className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2 rounded-xl text-xs font-black hover:bg-slate-50 transition-all active:scale-95 border border-slate-200 shadow-sm"
