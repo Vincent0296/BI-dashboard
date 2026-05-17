@@ -570,10 +570,65 @@ export const Dashboard: React.FC = () => {
     if (timeGroupName === '上月发生额') return getSumWithFuzzy(items.filter(d => isMTD(d, pm.y, pm.m)), name);
     return getSumWithFuzzy(items.filter(d => isMTD(d, year, month)), name);
   }
-
   function getMetricValue(data: EnrichedRecord[], metricName: string, timeGroupName: string, year: number, month: number): number {
     if (['重点项目个数', '未达标个数', '重点项目未达标数'].includes(metricName)) {
       return NaN;
+    }
+    if (['利润率下降项目数', '效益下降项目数'].includes(metricName)) {
+      if (timeGroupName !== '本年累计') {
+        return NaN;
+      }
+      const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+        const [dy, dm] = d.month.split('-').map(Number);
+        return dy === y && dm <= m;
+      };
+
+      const curSlice = data.filter(d => isYTD(d, year, month));
+      const prevSlice = data.filter(d => isYTD(d, year - 1, month));
+
+      const curProjects: Record<string, EnrichedRecord[]> = {};
+      curSlice.forEach(r => {
+        if (!curProjects[r.projectNo]) curProjects[r.projectNo] = [];
+        curProjects[r.projectNo].push(r);
+      });
+
+      const prevProjects: Record<string, EnrichedRecord[]> = {};
+      prevSlice.forEach(r => {
+        if (!prevProjects[r.projectNo]) prevProjects[r.projectNo] = [];
+        prevProjects[r.projectNo].push(r);
+      });
+
+      let count = 0;
+      Object.entries(curProjects).forEach(([projectNo, currentRecords]) => {
+        const pName = currentRecords[0]?.projectName || '';
+        if (pName.includes('代理') || pName.includes('抵消')) {
+          return;
+        }
+
+        const prevRecords = prevProjects[projectNo] || [];
+
+        if (metricName === '利润率下降项目数') {
+          const curRevenue = currentRecords.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const curProfit = currentRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const curRate = curRevenue !== 0 ? curProfit / curRevenue : 0;
+
+          const prevRevenue = prevRecords.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const prevProfit = prevRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const prevRate = prevRevenue !== 0 ? prevProfit / prevRevenue : 0;
+
+          if (curRate < prevRate) {
+            count++;
+          }
+        } else if (metricName === '效益下降项目数') {
+          const curProfit = currentRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const prevProfit = prevRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+
+          if (curProfit < prevProfit) {
+            count++;
+          }
+        }
+      });
+      return count;
     }
     if (['项目个数', '亏损个数'].includes(metricName)) {
       if (['本年累计', '去年同期', '当月发生额', '上月发生额'].includes(timeGroupName)) {

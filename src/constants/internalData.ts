@@ -70,7 +70,9 @@ export const THREE_YEAR_BENEFIT_METRICS = [
   "目标百元收入材料成本",
   "重点项目个数",
   "未达标个数",
-  "重点项目未达标数"
+  "重点项目未达标数",
+  "利润率下降项目数",
+  "效益下降项目数"
 ];
 
 
@@ -545,6 +547,18 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
   {
     "name": "亏损个数",
     "formula": "利润YTD小于0，且”项目名称“不含“代理”和“抵消”的数量",
+    "source": "operating",
+    "unit": "个"
+  },
+  {
+    "name": "利润率下降项目数",
+    "formula": "经营利润率的本年累计数小于去年同期的个数",
+    "source": "operating",
+    "unit": "个"
+  },
+  {
+    "name": "效益下降项目数",
+    "formula": "利润YTD的本年累计数小于去年同期的个数",
     "source": "operating",
     "unit": "个"
   }

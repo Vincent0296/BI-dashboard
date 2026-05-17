@@ -406,6 +406,63 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       }
     }
 
+    if (['利润率下降项目数', '效益下降项目数'].includes(metricName)) {
+      if (timeGroupName !== '本年累计') {
+        return NaN;
+      }
+      const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+        const [dy, dm] = d.month.split('-').map(Number);
+        return dy === y && dm <= m;
+      };
+
+      const curSlice = dataSlice.filter(d => isYTD(d, year, month));
+      const prevSlice = dataSlice.filter(d => isYTD(d, year - 1, month));
+
+      const curProjects: Record<string, EnrichedRecord[]> = {};
+      curSlice.forEach(r => {
+        if (!curProjects[r.projectNo]) curProjects[r.projectNo] = [];
+        curProjects[r.projectNo].push(r);
+      });
+
+      const prevProjects: Record<string, EnrichedRecord[]> = {};
+      prevSlice.forEach(r => {
+        if (!prevProjects[r.projectNo]) prevProjects[r.projectNo] = [];
+        prevProjects[r.projectNo].push(r);
+      });
+
+      let count = 0;
+      Object.entries(curProjects).forEach(([projectNo, currentRecords]) => {
+        const pName = currentRecords[0]?.projectName || '';
+        if (pName.includes('代理') || pName.includes('抵消')) {
+          return;
+        }
+
+        const prevRecords = prevProjects[projectNo] || [];
+
+        if (metricName === '利润率下降项目数') {
+          const curRevenue = currentRecords.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const curProfit = currentRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const curRate = curRevenue !== 0 ? curProfit / curRevenue : 0;
+
+          const prevRevenue = prevRecords.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const prevProfit = prevRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const prevRate = prevRevenue !== 0 ? prevProfit / prevRevenue : 0;
+
+          if (curRate < prevRate) {
+            count++;
+          }
+        } else if (metricName === '效益下降项目数') {
+          const curProfit = currentRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          const prevProfit = prevRecords.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+
+          if (curProfit < prevProfit) {
+            count++;
+          }
+        }
+      });
+      return count;
+    }
+
     if (metricName === '人工成本') {
       const s1 = getMetricAggregatedValue(dataSlice, '15用工薪酬成本', timeGroupName);
       const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
