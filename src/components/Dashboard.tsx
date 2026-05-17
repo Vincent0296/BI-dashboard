@@ -23,7 +23,7 @@ import { AuthModal } from './AuthModal';
 import { FeedbackModal } from './FeedbackModal';
 import { AdminPanel } from './AdminPanel';
 import { MultiDimTable } from './MultiDimTable';
-import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
+import { Search, Filter, Calendar, Upload, FileSpreadsheet, AlertCircle, HelpCircle, RotateCcw, Check, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Download, Camera, LogIn, User as UserIcon, LogOut, MessageSquareMore, ShieldCheck, Save, Bookmark, Trash2, Plus, X, Edit2, RefreshCcw, BookOpen, BarChart2, TrendingUp, PieChart as PieChartIcon, Table as TableIcon } from 'lucide-react';
 import { cn, formatNumber, isMoneyMetric, isRateMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
@@ -796,8 +796,8 @@ export const Dashboard: React.FC = () => {
       return getMetricValue(filteredData, cat, timeGroupName, year, month);
     };
 
-    return categories
-      .filter(cat => selectedIndicators.includes(cat))
+    return selectedIndicators
+      .filter(cat => categories.includes(cat))
       .map(cat => {
         const val = calcForCategory(cat, selectedMetric);
         const finalVal = (val === null || isNaN(val as number)) ? NaN : val;
@@ -861,8 +861,8 @@ export const Dashboard: React.FC = () => {
     const metricKeys: MetricKey[] = ['YTD', 'LY', 'YoYDiff', 'YoYPercent', 'MTD', 'PreMonth', 'MoMDiff', 'MoMPercent'];
     const metricNames = ['本年累计', '去年同期', '同比增减额', '同比增减率', '当月发生额', '上月发生额', '环比增减额', '环比增减率'];
 
-    const exportData = categories
-      .filter(cat => selectedIndicators.includes(cat))
+    const exportData = selectedIndicators
+      .filter(cat => categories.includes(cat))
       .map(cat => {
         const row: Record<string, string | number> = { '指标名称': cat };
         metricKeys.forEach((key, index) => {
@@ -1725,6 +1725,93 @@ export const Dashboard: React.FC = () => {
               )}
             </section>
 
+            {/* 已选指标排序微调面板 (Option 2) */}
+            {selectedIndicators.length > 0 && (
+              <section className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm print:hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-3.5 bg-indigo-500 rounded-full" />
+                    <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
+                      已选指标顺序微调
+                      <span className="text-xs text-slate-400 font-normal">
+                        (共 {selectedIndicators.length} 个, 可通过左右箭头调整表格和图表中的显示位置)
+                      </span>
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const resetOrder = categories.filter(c => selectedIndicators.includes(c));
+                      setSelectedIndicators(resetOrder);
+                      setActivePresetId(null);
+                    }}
+                    className="self-end sm:self-auto text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 px-3 py-1.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
+                    title="将指标顺序恢复为系统财务科目的默认顺序"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    恢复系统默认排序
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3.5 bg-slate-50/50 rounded-2xl border border-slate-100 scrollbar-thin">
+                  {selectedIndicators.map((indicator, index) => (
+                    <div
+                      key={indicator}
+                      className="group flex items-center gap-2 bg-white hover:bg-indigo-50/10 border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded-xl shadow-xs hover:shadow-sm transition-all duration-200"
+                    >
+                      <span className="text-xs font-bold text-slate-700 select-none">
+                        {indicator}
+                      </span>
+                      <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1.5 ml-1">
+                        <button
+                          onClick={() => {
+                            if (index > 0) {
+                              const newOrder = [...selectedIndicators];
+                              [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                              setSelectedIndicators(newOrder);
+                              setActivePresetId(null);
+                            }
+                          }}
+                          disabled={index === 0}
+                          className={`p-1 rounded-lg hover:bg-slate-100 active:scale-90 transition-all ${
+                            index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-500 hover:text-indigo-600'
+                          }`}
+                          title="前移/左移一列"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (index < selectedIndicators.length - 1) {
+                              const newOrder = [...selectedIndicators];
+                              [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                              setSelectedIndicators(newOrder);
+                              setActivePresetId(null);
+                            }
+                          }}
+                          disabled={index === selectedIndicators.length - 1}
+                          className={`p-1 rounded-lg hover:bg-slate-100 active:scale-90 transition-all ${
+                            index === selectedIndicators.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-500 hover:text-indigo-600'
+                          }`}
+                          title="后移/右移一列"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedIndicators(selectedIndicators.filter(i => i !== indicator));
+                            setActivePresetId(null);
+                          }}
+                          className="p-1 ml-0.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 active:scale-90 transition-all"
+                          title="取消选择该指标"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {(chartType === 'bar' || chartType === 'pie') && (
               <div className="print:hidden">
                 <MetricSelector
@@ -1770,7 +1857,7 @@ export const Dashboard: React.FC = () => {
               {chartType === 'table' && (
                 <MultiDimTable
                   data={filteredData}
-                  categories={categories.filter(cat => selectedIndicators.includes(cat))}
+                  categories={selectedIndicators.filter(cat => categories.includes(cat))}
                   selectedMonth={selectedMonth}
                   isIntegerMode={isIntegerMode}
                   setIsIntegerMode={setIsIntegerMode}

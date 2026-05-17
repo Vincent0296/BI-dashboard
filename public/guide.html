@@ -589,6 +589,89 @@
                     </div>
                 </div>
             </section>
+
+            <!-- STEP 07: 自定义指标排序与微调逻辑 -->
+            <section class="full-width">
+                <div class="step-num">STEP 07</div>
+                <h2>自定义指标排序与微调逻辑 <span class="badge-new">NEW</span></h2>
+                <p>为财务人员量身打造的宽表列排序利器。巧妙融合<b>动态选择顺序（方案一）</b>与<b>已选指标微调面板（方案二）</b>，随时按需自定义列展示结构，并能一键同步保存至云端方案库。</p>
+
+                <div class="grid-layout" style="grid-template-columns: 1.1fr 0.9fr; gap: 25px; margin-top: 20px;">
+                    <!-- 左侧：指标勾选与微调交互面板 -->
+                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
+                        <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
+                            ⚙️ 模拟控制台：指标多选与排序微调
+                        </h4>
+                        
+                        <!-- 1. 勾选指标 (方案一: 动态顺序插入) -->
+                        <div style="margin-bottom: 22px;">
+                            <label style="display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px; font-weight: bold;">
+                                ① 指标池 (按点击先后顺序依次在末尾追加)：
+                            </label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="收入YTD" checked class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 收入YTD
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="利润YTD" checked class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 利润YTD
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="同比增速" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 同比增速
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="预算达成率" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 预算达成率
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="目标利润" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 目标利润
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 2. 微调面板 (方案二) -->
+                        <div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <label style="font-size: 0.8rem; color: var(--text-dim); font-weight: bold;">
+                                    ② 已选指标顺序微调面板：
+                                </label>
+                                <button onclick="resetSimDefaultOrder()" style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--indigo); color: var(--indigo); font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; gap: 4px;" class="sim-btn-restore" title="恢复为系统财务科目的默认顺序">
+                                    🔄 恢复系统默认
+                                </button>
+                            </div>
+                            <div id="sim-order-panel" style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border); min-height: 100px;">
+                                <!-- 动态渲染已选指标微调项 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：数据宽表列排序的实时模拟 -->
+                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
+                        <div>
+                            <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
+                                📊 表格列顺序实时预览 (以“住宅物业”为例)
+                            </h4>
+                            <div style="overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                                <table id="sim-preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 320px;">
+                                    <thead>
+                                        <tr style="background: var(--surface-accent);">
+                                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: #fff; font-weight: bold; min-width: 90px; text-align: left;">业态</th>
+                                            <!-- 动态渲染表头 -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 动态渲染数据行 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pro-tip" style="margin-top: 20px; border-left-color: var(--success); background: rgba(16, 185, 129, 0.03); padding: 12px 16px; font-size: 0.75rem; border-radius: 8px; line-height: 1.5;">
+                            <strong>💡 完美的财务列排序机制：</strong><br>
+                            - <b>方案一（动态顺序插入）</b>：勾选指标时直接按您勾选时的思维顺序进行<b>追加排序</b>，不强制采用系统内置的默认逻辑。<br>
+                            - <b>方案二（左右微调面板）</b>：随时进行微小的向左、向右移动，瞬间同步调整宽表中的展示顺序。配合<b>方案预设</b>功能，将您的专属指标顺序同步上传云端，终结重复配置！
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <div class="tech-stack">
@@ -743,6 +826,8 @@
 
         // 页面初始化加载
         renderSimPages();
+        renderSimOrderPanel();
+        renderSimPreviewTable();
 
         // 聚焦模式模拟逻辑
         function toggleSimFocus(show) {
@@ -762,6 +847,190 @@
                 toggleSimFocus(false);
             }
         });
+
+        // ==========================================
+        // STEP 07: 自定义指标排序与微调模拟逻辑
+        // ==========================================
+        let simSelectedIndicators = ['收入YTD', '利润YTD'];
+        const simDefaultOrder = ['收入YTD', '利润YTD', '同比增速', '预算达成率', '目标利润'];
+        const mockData = {
+            '收入YTD': { ytd: '12,305,000', yoy: '+9.86%' },
+            '利润YTD': { ytd: '1,845,000', yoy: '+9.8%' },
+            '同比增速': { ytd: '+9.86%', yoy: '+0.5%' },
+            '预算达成率': { ytd: '104.2%', yoy: '+4.2%' },
+            '目标利润': { ytd: '1,770,000', yoy: '+5.0%' }
+        };
+
+        // 方案一：动态选择顺序追加/移除
+        function handleSimCheckboxChange(cb) {
+            const val = cb.value;
+            if (cb.checked) {
+                if (!simSelectedIndicators.includes(val)) {
+                    simSelectedIndicators.push(val);
+                }
+            } else {
+                simSelectedIndicators = simSelectedIndicators.filter(item => item !== val);
+            }
+            renderSimOrderPanel();
+            renderSimPreviewTable();
+        }
+
+        // 方案二：恢复系统财务默认排序
+        function resetSimDefaultOrder() {
+            simSelectedIndicators.sort((a, b) => {
+                return simDefaultOrder.indexOf(a) - simDefaultOrder.indexOf(b);
+            });
+            renderSimOrderPanel();
+            renderSimPreviewTable();
+        }
+
+        // 左右微调交换列位置
+        function moveSimIndicator(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex >= 0 && targetIndex < simSelectedIndicators.length) {
+                const temp = simSelectedIndicators[index];
+                simSelectedIndicators[index] = simSelectedIndicators[targetIndex];
+                simSelectedIndicators[targetIndex] = temp;
+                renderSimOrderPanel();
+                renderSimPreviewTable();
+            }
+        }
+
+        // 取消勾选并移除
+        function removeSimIndicator(indicator) {
+            simSelectedIndicators = simSelectedIndicators.filter(item => item !== indicator);
+            
+            // 同步更新指标池复选框的打勾状态
+            const checkboxes = document.querySelectorAll('.sim-metric-checkbox');
+            checkboxes.forEach(cb => {
+                if (cb.value === indicator) {
+                    cb.checked = false;
+                }
+            });
+            
+            renderSimOrderPanel();
+            renderSimPreviewTable();
+        }
+
+        // 渲染已选指标微调面板 pills
+        function renderSimOrderPanel() {
+            const panel = document.getElementById('sim-order-panel');
+            if (!panel) return;
+            panel.innerHTML = '';
+
+            if (simSelectedIndicators.length === 0) {
+                panel.innerHTML = `
+                    <div style="color: var(--text-dim); text-align: center; font-size: 0.8rem; padding: 20px 0; font-style: italic;">
+                        ⚠️ 指标池中无勾选，请在上方指标池中选择展示的指标。
+                    </div>
+                `;
+                return;
+            }
+
+            simSelectedIndicators.forEach((indicator, index) => {
+                const isFirst = index === 0;
+                const isLast = index === simSelectedIndicators.length - 1;
+
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.justifyContent = 'space-between';
+                item.style.background = 'rgba(255, 255, 255, 0.02)';
+                item.style.border = '1px solid var(--border)';
+                item.style.padding = '8px 12px';
+                item.style.borderRadius = '8px';
+                item.style.transition = 'all 0.2s';
+                
+                item.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.7rem; color: var(--indigo); font-family: monospace; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: bold;">COL ${index + 1}</span>
+                        <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">${indicator}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <button onclick="moveSimIndicator(${index}, -1)" ${isFirst ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} class="sim-pill-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" title="左移一列 (前移)">←</button>
+                        <button onclick="moveSimIndicator(${index}, 1)" ${isLast ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} class="sim-pill-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" title="右移一列 (后移)">→</button>
+                        <button onclick="removeSimIndicator('${indicator}')" class="sim-pill-btn-remove" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: rgb(248, 113, 113); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-weight: bold;" title="取消选择">×</button>
+                    </div>
+                `;
+                panel.appendChild(item);
+            });
+        }
+
+        // 渲染实时表格预览
+        function renderSimPreviewTable() {
+            const table = document.getElementById('sim-preview-table');
+            if (!table) return;
+
+            const theadRow = table.querySelector('thead tr');
+            const tbody = table.querySelector('tbody');
+
+            // 1. 动态生成表头
+            theadRow.innerHTML = '<th style="padding: 12px; border-bottom: 2px solid var(--border); color: #fff; font-weight: bold; min-width: 90px; text-align: left;">业态</th>';
+            
+            simSelectedIndicators.forEach(indicator => {
+                const th = document.createElement('th');
+                th.style.padding = '12px';
+                th.style.borderBottom = '2px solid var(--border)';
+                th.style.color = 'var(--text-dim)';
+                th.style.fontWeight = 'bold';
+                th.style.textAlign = 'right';
+                th.innerText = indicator;
+                theadRow.appendChild(th);
+            });
+
+            // 2. 动态生成数据行
+            tbody.innerHTML = '';
+            
+            const rows = [
+                { type: '住宅物业 (模拟)', data: mockData },
+                { type: '商业物业 (模拟)', data: mockData }
+            ];
+
+            rows.forEach((row, rIdx) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid var(--border)';
+                if (rIdx % 2 === 1) {
+                    tr.style.background = 'rgba(255,255,255,0.01)';
+                }
+                
+                // 第一列 业态主轴
+                const tdType = document.createElement('td');
+                tdType.style.padding = '12px';
+                tdType.style.fontWeight = 'bold';
+                tdType.style.color = '#fff';
+                tdType.innerText = row.type;
+                tr.appendChild(tdType);
+
+                // 后续动态列 (依据 simSelectedIndicators 的先后顺序)
+                simSelectedIndicators.forEach(indicator => {
+                    const tdVal = document.createElement('td');
+                    tdVal.style.padding = '12px';
+                    tdVal.style.textAlign = 'right';
+                    
+                    const itemData = row.data[indicator];
+                    let text = '-';
+                    if (itemData) {
+                        text = itemData.ytd;
+                    }
+                    tdVal.innerText = text;
+                    
+                    // 格式化红绿颜色
+                    if (text.startsWith('+')) {
+                        tdVal.style.color = 'var(--success)';
+                        tdVal.style.fontWeight = 'bold';
+                    } else if (text.startsWith('-')) {
+                        tdVal.style.color = 'var(--error)';
+                        tdVal.style.fontWeight = 'bold';
+                    } else {
+                        tdVal.style.color = 'var(--text)';
+                    }
+
+                    tr.appendChild(tdVal);
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
     </script>
 
     <!-- 聚焦模式模拟全屏遮罩 -->
