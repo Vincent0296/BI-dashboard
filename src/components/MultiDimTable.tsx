@@ -161,6 +161,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               selectedMetricGroups: groups,
               isXAxisSwapped: p.filters.isXAxisSwapped || false,
               showSubtotals: p.filters.showSubtotals || false,
+              printIndicatorsPerPage: p.filters.printIndicatorsPerPage || 4,
               timestamp: p.timestamp
             };
           });
@@ -193,7 +194,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedYDim2,
           selectedMetricGroups,
           isXAxisSwapped,
-          showSubtotals
+          showSubtotals,
+          printIndicatorsPerPage
         },
         selectedIndicators: [], // Not used for table presets but required by schema
         timestamp: new Date().toISOString()
@@ -211,6 +213,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedMetricGroups: newPresetObj.filters.selectedMetricGroups as string[],
           isXAxisSwapped: newPresetObj.filters.isXAxisSwapped,
           showSubtotals: newPresetObj.filters.showSubtotals,
+          printIndicatorsPerPage: newPresetObj.filters.printIndicatorsPerPage,
           timestamp: newPresetObj.timestamp
         };
         setTablePresets([mappedPreset, ...tablePresets]);
@@ -229,6 +232,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     setSelectedMetricGroups(preset.selectedMetricGroups);
     setIsXAxisSwapped(preset.isXAxisSwapped);
     setShowSubtotals(preset.showSubtotals || false);
+    if (preset.printIndicatorsPerPage !== undefined) {
+      setPrintIndicatorsPerPage(preset.printIndicatorsPerPage);
+    }
     setActivePresetId(preset.id);
   };
 
@@ -282,14 +288,15 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             selectedYDim2,
             selectedMetricGroups,
             isXAxisSwapped,
-            showSubtotals
+            showSubtotals,
+            printIndicatorsPerPage
           },
           timestamp: new Date().toISOString()
         })
         .eq('id', preset.id);
 
       if (!error) {
-        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedMetricGroups, isXAxisSwapped, showSubtotals } as TablePreset : p));
+        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedMetricGroups, isXAxisSwapped, showSubtotals, printIndicatorsPerPage } as TablePreset : p));
         alert('方案已成功更新');
       }
     } catch (err) {

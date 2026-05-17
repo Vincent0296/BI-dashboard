@@ -100,6 +100,7 @@ export interface TablePreset {
   selectedMetricGroups: string[];
   isXAxisSwapped: boolean;
   showSubtotals: boolean;
+  printIndicatorsPerPage?: number;
   timestamp: string;
 }
 
