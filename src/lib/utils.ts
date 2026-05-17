@@ -55,6 +55,7 @@ export function formatNumber(
 /** Returns true if the metric should be treated as a percentage/rate */
 export function isRateMetric(metricName: string): boolean {
   if (!metricName) return false;
+  if (metricName.includes('项目数')) return false;
   return metricName.includes('率') || metricName.includes('Percent') || metricName.includes('百元');
 }
 
