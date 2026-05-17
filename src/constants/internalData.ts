@@ -538,7 +538,7 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
   },
   {
     "name": "项目个数",
-    "formula": "收入YTD和利润YTD均不为0且”项目名称“不含“代理”和“抵消”的数量",
+    "formula": "收入YTD或利润YTD不全为0且”项目名称“不含“代理”和“抵消”的数量",
     "source": "operating",
     "unit": "个"
   },

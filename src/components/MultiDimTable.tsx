@@ -386,17 +386,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         let projectCount = 0;
         let lossCount = 0;
         Object.entries(projectsMap).forEach(([projectNo, records]) => {
-          // Sort records descending by month to get the latest record in the slice
-          records.sort((a, b) => b.month.localeCompare(a.month));
-          const latestRecord = records[0];
-          if (!latestRecord) return;
-
-          const pName = latestRecord.projectName || '';
+          const pName = records[0]?.projectName || '';
           if (pName.includes('代理') || pName.includes('抵消')) {
             return;
           }
-          const projectRevenueYTD = latestRecord.metrics['收入YTD'] || 0;
-          const projectProfitYTD = latestRecord.metrics['利润YTD'] || 0;
+          const projectRevenueYTD = records.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const projectProfitYTD = records.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
           if (metricName === '项目个数') {
             if (projectRevenueYTD !== 0 || projectProfitYTD !== 0) {
               projectCount++;
