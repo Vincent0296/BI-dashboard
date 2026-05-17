@@ -1560,7 +1560,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     row.isSubtotal ? "bg-indigo-50/30" : (idx % 2 === 0 ? "bg-white" : "bg-slate-50/20")
                   )}>
                     {selectedYDim2 === 'none' ? (
-                      <td className="p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 bg-inherit z-10 text-center w-[140px]">
+                      <td className={cn(
+                        "p-4 border-b border-r border-slate-100 text-slate-700 font-bold text-sm sticky left-0 z-10 text-center w-[140px]",
+                        row.isSubtotal ? "bg-indigo-50/30 text-indigo-600 font-black text-xs" : "bg-inherit"
+                      )}>
                         {row.dimValue}
                       </td>
                     ) : (
@@ -1574,8 +1577,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           </td>
                         )}
                         <td className={cn(
-                          "p-4 border-b border-r border-slate-100 sticky left-[140px] bg-inherit z-10 text-center w-[140px]",
-                          row.isSubtotal ? "text-indigo-600 font-black text-xs" : "text-slate-600 font-medium text-xs"
+                          "p-4 border-b border-r border-slate-100 sticky left-[140px] z-10 text-center w-[140px]",
+                          row.isSubtotal ? "bg-indigo-50/30 text-indigo-600 font-black text-xs" : "bg-inherit text-slate-600 font-medium text-xs"
                         )}>
                           {row.dimValue2}
                         </td>
@@ -1593,9 +1596,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                              group.includes('\u589e\u51cf')
-                                ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
-                                : "text-slate-600"
+                                row.isSubtotal && "bg-indigo-50/30",
+                                group.includes('增减')
+                                  ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
+                                  : (row.isSubtotal ? "text-indigo-600 font-bold" : "text-slate-600")
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -1617,7 +1621,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               key={`${group}_${cat}`}
                               className={cn(
                                 "p-3 border-b border-r border-slate-50 text-sm font-medium text-center",
-                                group.includes('\u589e\u51cf')
+                                row.isSubtotal && "bg-indigo-50/30",
+                                group.includes('增减')
                                   ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                   : (row.isSubtotal ? "text-indigo-600 font-bold" : "text-slate-600")
                               )}
