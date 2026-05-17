@@ -354,41 +354,56 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
 
     if (['项目个数', '亏损个数'].includes(metricName)) {
-      if (timeGroupName !== '本年累计') {
-        return NaN;
+      if (['本年累计', '去年同期', '当月发生额', '上月发生额'].includes(timeGroupName)) {
+        const isYTD = (d: EnrichedRecord, y: number, m: number) => {
+          const [dy, dm] = d.month.split('-').map(Number);
+          return dy === y && dm <= m;
+        };
+        const isMTD = (d: EnrichedRecord, y: number, m: number) => {
+          const [dy, dm] = d.month.split('-').map(Number);
+          return dy === y && dm === m;
+        };
+
+        let filteredSlice: EnrichedRecord[] = [];
+        if (timeGroupName === '本年累计') {
+          filteredSlice = dataSlice.filter(d => isYTD(d, year, month));
+        } else if (timeGroupName === '去年同期') {
+          filteredSlice = dataSlice.filter(d => isYTD(d, prevYear, month));
+        } else if (timeGroupName === '当月发生额') {
+          filteredSlice = dataSlice.filter(d => isMTD(d, year, month));
+        } else if (timeGroupName === '上月发生额') {
+          filteredSlice = dataSlice.filter(d => isMTD(d, pm.y, pm.m));
+        }
+
+        const projectsMap: Record<string, EnrichedRecord[]> = {};
+        filteredSlice.forEach(r => {
+          if (!projectsMap[r.projectNo]) {
+            projectsMap[r.projectNo] = [];
+          }
+          projectsMap[r.projectNo].push(r);
+        });
+
+        let projectCount = 0;
+        let lossCount = 0;
+        Object.entries(projectsMap).forEach(([projectNo, records]) => {
+          const pName = records[0]?.projectName || '';
+          if (pName.includes('代理') || pName.includes('抵消')) {
+            return;
+          }
+          const projectRevenueYTD = records.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
+          const projectProfitYTD = records.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
+          if (metricName === '项目个数') {
+            if (projectRevenueYTD !== 0 && projectProfitYTD !== 0) {
+              projectCount++;
+            }
+          } else if (metricName === '亏损个数') {
+            if (projectProfitYTD < 0) {
+              lossCount++;
+            }
+          }
+        });
+        return metricName === '项目个数' ? projectCount : lossCount;
       }
-      const isYTD = (d: EnrichedRecord, y: number, m: number) => {
-        const [dy, dm] = d.month.split('-').map(Number);
-        return dy === y && dm <= m;
-      };
-      const ytdSlice = dataSlice.filter(d => isYTD(d, year, month));
-      const projectsMap: Record<string, EnrichedRecord[]> = {};
-      ytdSlice.forEach(r => {
-        if (!projectsMap[r.projectNo]) {
-          projectsMap[r.projectNo] = [];
-        }
-        projectsMap[r.projectNo].push(r);
-      });
-      let projectCount = 0;
-      let lossCount = 0;
-      Object.entries(projectsMap).forEach(([projectNo, records]) => {
-        const pName = records[0]?.projectName || '';
-        if (pName.includes('代理') || pName.includes('抵消')) {
-          return;
-        }
-        const projectRevenueYTD = records.reduce((sum, r) => sum + (r.metrics['收入YTD'] || 0), 0);
-        const projectProfitYTD = records.reduce((sum, r) => sum + (r.metrics['利润YTD'] || 0), 0);
-        if (metricName === '项目个数') {
-          if (projectRevenueYTD !== 0 && projectProfitYTD !== 0) {
-            projectCount++;
-          }
-        } else if (metricName === '亏损个数') {
-          if (projectProfitYTD < 0) {
-            lossCount++;
-          }
-        }
-      });
-      return metricName === '项目个数' ? projectCount : lossCount;
     }
 
     if (metricName === '人工成本') {
