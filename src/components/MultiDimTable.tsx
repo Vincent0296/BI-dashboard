@@ -79,7 +79,6 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     return timeGroupMetadata.map(g => g.name);
   });
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 5;
 
   // --- Preset States ---
   const [tablePresets, setTablePresets] = useState<TablePreset[]>([]);
@@ -94,6 +93,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     direction: null,
   });
   const [printIndicatorsPerPage, setPrintIndicatorsPerPage] = useState<number>(4); // 每页打印指标数限制，默认4
+  const itemsPerPage = printIndicatorsPerPage; // 数据表每页显示的指标数与打印每页指标数同步
 
   const totalPages = Math.ceil(categories.length / itemsPerPage);
 
