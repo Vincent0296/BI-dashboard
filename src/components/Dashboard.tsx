@@ -1859,7 +1859,14 @@ export const Dashboard: React.FC = () => {
               </div>
             )}
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100" id="printable-chart" ref={chartRef}>
+            <div
+              className={cn(
+                "bg-white rounded-3xl p-6 shadow-sm border border-slate-100",
+                chartType !== 'table' && "print-area print-no-overflow"
+              )}
+              id="printable-chart"
+              ref={chartRef}
+            >
               {chartType === 'bar' && (
                 <PerformanceChart
                   data={chartData}
