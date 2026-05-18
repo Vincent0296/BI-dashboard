@@ -92,6 +92,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
     setLoading(true);
     setError('');
     try {
+      if (username.trim().toLowerCase() === 'admin') {
+        throw new Error('超级管理员账号不允许重置密码');
+      }
+
       const { data: existingUser, error: findError } = await supabase
         .from('users')
         .select('id')
