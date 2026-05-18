@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BI Dashboard | 财务多维分析实操手册</title>
+    <title>BI Dashboard | 财务多维分析使用说明</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
@@ -344,10 +344,12 @@
             pointer-events: none;
             transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .sim-focused-overlay.active {
             opacity: 1;
             pointer-events: auto;
         }
+
         .sim-focused-content {
             background: var(--surface);
             border: 1px solid var(--indigo);
@@ -363,9 +365,11 @@
             transform: scale(0.95);
             transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
         .sim-focused-overlay.active .sim-focused-content {
             transform: scale(1);
         }
+
         .sim-focus-header {
             display: flex;
             justify-content: space-between;
@@ -405,7 +409,8 @@
                         <div
                             style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <button class="sim-btn glow-hint" id="swap-btn" onclick="toggleSwap()">X-AXIS SWAP</button>
+                                <button class="sim-btn glow-hint" id="swap-btn" onclick="toggleSwap()">X-AXIS
+                                    SWAP</button>
                                 <button class="sim-btn" id="mode-btn" onclick="toggleMode()">取整模式</button>
                             </div>
                             <span style="font-size: 0.7rem; color: var(--accent);">[ 维度及小计高亮已激活 ]</span>
@@ -421,7 +426,9 @@
                             </thead>
                             <tbody id="t-body">
                                 <tr>
-                                    <td rowspan="2" style="background: rgba(99, 102, 241, 0.05); font-weight: bold; vertical-align: middle;">住宅物业</td>
+                                    <td rowspan="2"
+                                        style="background: rgba(99, 102, 241, 0.05); font-weight: bold; vertical-align: middle;">
+                                        住宅物业</td>
                                     <td>管理口径一</td>
                                     <td class="val">1,230.5</td>
                                     <td>1,120.0</td>
@@ -431,7 +438,8 @@
                                     <td class="val">840.2</td>
                                     <td>890.5</td>
                                 </tr>
-                                <tr id="subtotal-row" style="background: rgba(99, 102, 241, 0.1); font-weight: bold; border-left: 3px solid var(--indigo);">
+                                <tr id="subtotal-row"
+                                    style="background: rgba(99, 102, 241, 0.1); font-weight: bold; border-left: 3px solid var(--indigo);">
                                     <td colspan="2">小计 (住宅物业)</td>
                                     <td class="val">2,070.7</td>
                                     <td>2,010.5</td>
@@ -444,7 +452,8 @@
                         <strong>📏 矩阵布局与小计一致性：</strong><br>
                         1. <b>内置商业自定排序</b>：系统针对“业态”、“管理口径”、“产权口径”等维度，强制锁定了符合商业惯例的内置排序顺序，确保无论数据源顺序如何，展示均逻辑严谨。<br>
                         2. <b>X轴行列互换 (X-Axis Swap)</b>：支持一键在“指标优先”与“时间组优先”间无缝切换。<br>
-                        3. <b>小计行一致性高亮 <span class="badge-new">NEW</span></b>：修正了行列互换后“小计”行丢失高亮的问题。无论X轴层级如何互换，“小计”与合计行均能应用一致的雅致背景高亮，财务层级清晰易读。
+                        3. <b>小计行一致性高亮 <span
+                                class="badge-new">NEW</span></b>：修正了行列互换后“小计”行丢失高亮的问题。无论X轴层级如何互换，“小计”与合计行均能应用一致的雅致背景高亮，财务层级清晰易读。
                     </div>
                 </div>
             </section>
@@ -456,14 +465,18 @@
                 <p>新增了效益分析的核心下钻指标，并重构了“项目个数”的底层过滤机制，杜绝脏数据干扰。</p>
 
                 <div class="grid-layout" style="grid-template-columns: 0.9fr 1.1fr;">
-                    <div class="simulator" style="background: rgba(16, 185, 129, 0.02); border-color: rgba(16, 185, 129, 0.2);">
-                        <div style="font-size: 0.75rem; color: var(--success); font-weight: bold; margin-bottom: 10px;">[ 三年效益达标切片器 ]</div>
+                    <div class="simulator"
+                        style="background: rgba(16, 185, 129, 0.02); border-color: rgba(16, 185, 129, 0.2);">
+                        <div style="font-size: 0.75rem; color: var(--success); font-weight: bold; margin-bottom: 10px;">
+                            [ 三年效益达标切片器 ]</div>
                         <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                            <div
+                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
                                 <span style="font-size: 0.75rem; color: var(--text-dim);">利润率下降项目数</span>
                                 <span style="font-size: 0.8rem; font-weight: bold; color: var(--success);">12 个</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                            <div
+                                style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
                                 <span style="font-size: 0.75rem; color: var(--text-dim);">效益下降项目数</span>
                                 <span style="font-size: 0.8rem; font-weight: bold; color: var(--success);">8 个</span>
                             </div>
@@ -474,11 +487,13 @@
                         </div>
                     </div>
 
-                    <div class="pro-tip" style="border-left-color: var(--success); background: rgba(16, 185, 129, 0.03);">
+                    <div class="pro-tip"
+                        style="border-left-color: var(--success); background: rgba(16, 185, 129, 0.03);">
                         <strong>💡 三年效益达标切片机制：</strong><br>
                         1. <b>利润率下降项目数</b>：定义为“经营利润率本年累计数”小于“去年同期数”的项目个数。以<b>整数格式</b>直观呈现，纠正了误用百分比的错误。<br>
                         2. <b>效益下降项目数</b>：定义为“利润YTD本年累计数”小于“去年同期数”的项目个数，整数格式显示。<br>
-                        3. <b>仅从属于本年累计</b>：这两个指标与其它效益指标一样，<b>仅适用于 [本年累计]</b> 筛选。若切换至其他 7 个计算组（如同比差额、去年同期等），系统智能显示为 `-`（不适用）。<br>
+                        3. <b>仅从属于本年累计</b>：这两个指标与其它效益指标一样，<b>仅适用于 [本年累计]</b> 筛选。若切换至其他 7 个计算组（如同比差额、去年同期等），系统智能显示为
+                        `-`（不适用）。<br>
                         4. <b>项目个数过滤新规</b>：全新逻辑定义为 “收入YTD或利润YTD不全为0” 且 “项目名称” 中<b>不含“代理”和“抵消”</b>的数量，自动滤除内部往来抵消项。
                     </div>
                 </div>
@@ -501,13 +516,18 @@
                     <div class="simulator"
                         style="display: flex; align-items: center; justify-content: center; min-height: 180px; background: linear-gradient(45deg, #161a1f, #0b0d11);">
                         <div style="text-align: center;">
-                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">[ 错误示范：金额 vs 百分比 ]</div>
-                            <div style="display: flex; align-items: flex-end; gap: 5px; height: 60px; justify-content: center;">
+                            <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">[ 错误示范：金额 vs
+                                百分比 ]</div>
+                            <div
+                                style="display: flex; align-items: flex-end; gap: 5px; height: 60px; justify-content: center;">
                                 <div style="width: 20px; height: 100%; background: var(--accent); opacity: 0.5;"></div>
                                 <div style="width: 20px; height: 80%; background: var(--accent); opacity: 0.5;"></div>
-                                <div style="width: 100px; height: 2px; background: var(--error); transform: translateY(-5px);"></div>
+                                <div
+                                    style="width: 100px; height: 2px; background: var(--error); transform: translateY(-5px);">
+                                </div>
                             </div>
-                            <div style="color: var(--error); font-size: 0.6rem; margin-top: 8px;">比例线波动被金额尺度稀释而变平坦 ↑</div>
+                            <div style="color: var(--error); font-size: 0.6rem; margin-top: 8px;">比例线波动被金额尺度稀释而变平坦 ↑
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -520,12 +540,18 @@
                 <p>支持屏幕浏览页宽与PDF打印分页的动态联动，轻松应对超宽大表。</p>
 
                 <div class="simulator" style="padding: 20px 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold;">调节打印及屏幕每页指标数:</span>
-                        <div style="display: flex; align-items: center; gap: 6px; background: var(--surface-accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;">
-                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;" onclick="adjustSimLimit(-1)">-</button>
-                            <span id="sim-limit-val" style="width: 16px; text-align: center; font-size: 0.8rem; color: var(--indigo); font-weight: bold;">4</span>
-                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;" onclick="adjustSimLimit(1)">+</button>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span
+                            style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold;">调节打印及屏幕每页指标数:</span>
+                        <div
+                            style="display: flex; align-items: center; gap: 6px; background: var(--surface-accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;">
+                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;"
+                                onclick="adjustSimLimit(-1)">-</button>
+                            <span id="sim-limit-val"
+                                style="width: 16px; text-align: center; font-size: 0.8rem; color: var(--indigo); font-weight: bold;">4</span>
+                            <button class="sim-btn" style="padding: 1px 8px; margin: 0; min-width: 20px;"
+                                onclick="adjustSimLimit(1)">+</button>
                         </div>
                     </div>
 
@@ -549,11 +575,14 @@
                 <p>基于 Supabase 实现个人自定义筛选与布局方案的一键云端固化。</p>
 
                 <div class="simulator" style="text-align: center; padding: 30px 20px;">
-                    <div id="sync-icon" style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-dim); transition: transform 0.5s;">☁️</div>
+                    <div id="sync-icon"
+                        style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-dim); transition: transform 0.5s;">
+                        ☁️</div>
                     <button class="sim-btn"
                         style="background: var(--indigo); color: #fff; font-weight: bold; width: 100%; border-color: var(--indigo);"
                         onclick="simulateSave()">保存当前配置方案</button>
-                    <div id="save-msg" style="margin-top: 12px; font-size: 0.75rem; color: var(--success); opacity: 0; transition: opacity 0.3s;">
+                    <div id="save-msg"
+                        style="margin-top: 12px; font-size: 0.75rem; color: var(--success); opacity: 0; transition: opacity 0.3s;">
                         当前筛选、排序及分页方案已同步至云端数据库
                     </div>
                 </div>
@@ -571,7 +600,8 @@
                 <p>为财务人员打造的大屏沉浸式分析利器，排除噪音干扰，确保在超宽大表横向/纵向滑动时，表头、合计行与控制列始终清晰可见。</p>
 
                 <div class="grid-layout" style="grid-template-columns: 1.2fr 0.8fr;">
-                    <div class="simulator" style="background: rgba(99, 102, 241, 0.02); border-color: rgba(99, 102, 241, 0.2); text-align: center; padding: 30px 20px;">
+                    <div class="simulator"
+                        style="background: rgba(99, 102, 241, 0.02); border-color: rgba(99, 102, 241, 0.2); text-align: center; padding: 30px 20px;">
                         <div style="font-size: 2.5rem; margin-bottom: 12px;">📺</div>
                         <button class="sim-btn glow-hint"
                             style="background: var(--indigo); color: #fff; font-weight: bold; width: 100%; border-color: var(--indigo);"
@@ -581,10 +611,13 @@
                         </div>
                     </div>
 
-                    <div class="pro-tip" style="border-left-color: var(--indigo); background: rgba(99, 102, 241, 0.03);">
+                    <div class="pro-tip"
+                        style="border-left-color: var(--indigo); background: rgba(99, 102, 241, 0.03);">
                         <strong>📺 聚焦模式与双轴定位法则：</strong><br>
-                        1. <b>一键进入全屏/聚焦模式</b>：点击表格顶部的“聚焦模式”按钮，表格将以优雅的平滑动画占满全屏，背景自动暗化，完全遮蔽外部信息流干扰，按 <b>ESC</b> 或点击退出按钮可安全退出。<br>
-                        2. <b>表头吸顶 & 合计吸底</b>：无论纵向滚动到哪，表头 `thead` 始终保持吸顶（`sticky top-0`），合计行 `tfoot` 始终吸底呈现（`sticky bottom-0`），防止迷失数据层级。<br>
+                        1. <b>一键进入全屏/聚焦模式</b>：点击表格顶部的“聚焦模式”按钮，表格将以优雅的平滑动画占满全屏，背景自动暗化，完全遮蔽外部信息流干扰，按 <b>ESC</b>
+                        或点击退出按钮可安全退出。<br>
+                        2. <b>表头吸顶 & 合计吸底</b>：无论纵向滚动到哪，表头 `thead` 始终保持吸顶（`sticky top-0`），合计行 `tfoot` 始终吸底呈现（`sticky
+                        bottom-0`），防止迷失数据层级。<br>
                         3. <b>Y轴标题固定（锁定列）</b>：横向向右拖动滚动条时，最左侧的主次两个维度列始终固定在左侧不动（`sticky left-0`），实现类似 Excel 冻结窗口的高阶分析体验。
                     </div>
                 </div>
@@ -598,62 +631,91 @@
 
                 <div class="grid-layout" style="grid-template-columns: 1.1fr 0.9fr; gap: 25px; margin-top: 20px;">
                     <!-- 左侧：指标勾选与微调交互面板 -->
-                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
-                        <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
+                        <h4
+                            style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
                             ⚙️ 模拟控制台：指标多选与拖拽排序
                         </h4>
-                        
+
                         <!-- 1. 勾选指标 (方案一: 动态顺序插入) -->
                         <div style="margin-bottom: 22px;">
-                            <label style="display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px; font-weight: bold;">
+                            <label
+                                style="display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px; font-weight: bold;">
                                 ① 指标池 (按点击先后顺序依次在末尾追加)：
                             </label>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
-                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
-                                    <input type="checkbox" value="收入YTD" checked class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 收入YTD
+                            <div
+                                style="display: flex; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                                <label
+                                    style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="收入YTD" checked class="sim-metric-checkbox"
+                                        style="accent-color: var(--indigo); width: 14px; height: 14px;"
+                                        onchange="handleSimCheckboxChange(this)"> 收入YTD
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
-                                    <input type="checkbox" value="利润YTD" checked class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 利润YTD
+                                <label
+                                    style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="利润YTD" checked class="sim-metric-checkbox"
+                                        style="accent-color: var(--indigo); width: 14px; height: 14px;"
+                                        onchange="handleSimCheckboxChange(this)"> 利润YTD
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
-                                    <input type="checkbox" value="同比增速" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 同比增速
+                                <label
+                                    style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="同比增速" class="sim-metric-checkbox"
+                                        style="accent-color: var(--indigo); width: 14px; height: 14px;"
+                                        onchange="handleSimCheckboxChange(this)"> 同比增速
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
-                                    <input type="checkbox" value="预算达成率" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 预算达成率
+                                <label
+                                    style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="预算达成率" class="sim-metric-checkbox"
+                                        style="accent-color: var(--indigo); width: 14px; height: 14px;"
+                                        onchange="handleSimCheckboxChange(this)"> 预算达成率
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
-                                    <input type="checkbox" value="目标利润" class="sim-metric-checkbox" style="accent-color: var(--indigo); width: 14px; height: 14px;" onchange="handleSimCheckboxChange(this)"> 目标利润
+                                <label
+                                    style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text); user-select: none; transition: color 0.2s;">
+                                    <input type="checkbox" value="目标利润" class="sim-metric-checkbox"
+                                        style="accent-color: var(--indigo); width: 14px; height: 14px;"
+                                        onchange="handleSimCheckboxChange(this)"> 目标利润
                                 </label>
                             </div>
                         </div>
 
                         <!-- 2. 微调面板 (方案二) -->
                         <div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                                 <label style="font-size: 0.8rem; color: var(--text-dim); font-weight: bold;">
                                     ② 已选指标顺序拖拽与微调面板：
                                 </label>
-                                <button onclick="resetSimDefaultOrder()" style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--indigo); color: var(--indigo); font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; gap: 4px;" class="sim-btn-restore" title="恢复为系统财务科目的默认顺序">
+                                <button onclick="resetSimDefaultOrder()"
+                                    style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--indigo); color: var(--indigo); font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; gap: 4px;"
+                                    class="sim-btn-restore" title="恢复为系统财务科目的默认顺序">
                                     🔄 恢复系统默认
                                 </button>
                             </div>
-                            <div id="sim-order-panel" style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border); min-height: 100px;">
+                            <div id="sim-order-panel"
+                                style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid var(--border); min-height: 100px;">
                                 <!-- 动态渲染已选指标微调项 -->
                             </div>
                         </div>
                     </div>
 
                     <!-- 右侧：数据宽表列排序的实时模拟 -->
-                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);">
                         <div>
-                            <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
+                            <h4
+                                style="font-size: 0.95rem; font-weight: bold; margin-bottom: 18px; color: #fff; display: flex; align-items: center; gap: 8px; font-family: 'Lexend', sans-serif;">
                                 📊 表格列顺序实时预览 (以“住宅物业”为例，可直接在左侧拖拽排序)
                             </h4>
-                            <div style="overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-                                <table id="sim-preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 320px;">
+                            <div
+                                style="overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+                                <table id="sim-preview-table"
+                                    style="width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 320px;">
                                     <thead>
                                         <tr style="background: var(--surface-accent);">
-                                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: #fff; font-weight: bold; min-width: 90px; text-align: left;">业态</th>
+                                            <th
+                                                style="padding: 12px; border-bottom: 2px solid var(--border); color: #fff; font-weight: bold; min-width: 90px; text-align: left;">
+                                                业态</th>
                                             <!-- 动态渲染表头 -->
                                         </tr>
                                     </thead>
@@ -664,10 +726,12 @@
                             </div>
                         </div>
 
-                        <div class="pro-tip" style="margin-top: 20px; border-left-color: var(--success); background: rgba(16, 185, 129, 0.03); padding: 12px 16px; font-size: 0.75rem; border-radius: 8px; line-height: 1.5;">
+                        <div class="pro-tip"
+                            style="margin-top: 20px; border-left-color: var(--success); background: rgba(16, 185, 129, 0.03); padding: 12px 16px; font-size: 0.75rem; border-radius: 8px; line-height: 1.5;">
                             <strong>💡 完美的财务列排序机制：</strong><br>
                             - <b>方案一（动态顺序插入）</b>：勾选指标时直接按您勾选时的思维顺序进行<b>追加排序</b>，不强制采用系统内置 of 默认逻辑。<br>
-                            - <b>方案二（拖拽与微调面板）</b>：<b>支持拖拽指标卡片</b>实时调整排列顺序，也可点击左右微调箭头进行细微移动，瞬间同步调整宽表中的展示顺序。配合<b>方案预设</b>功能，将您的专属指标顺序同步上传云端，终结重复配置！
+                            -
+                            <b>方案二（拖拽与微调面板）</b>：<b>支持拖拽指标卡片</b>实时调整排列顺序，也可点击左右微调箭头进行细微移动，瞬间同步调整宽表中的展示顺序。配合<b>方案预设</b>功能，将您的专属指标顺序同步上传云端，终结重复配置！
                         </div>
                     </div>
                 </div>
@@ -796,15 +860,15 @@
         function renderSimPages() {
             const container = document.getElementById('pdf-container');
             container.innerHTML = '';
-            
+
             const pageCount = Math.ceil(totalIndicators / currentLimit);
-            
+
             for (let i = 0; i < pageCount; i++) {
                 const pageEl = document.createElement('div');
                 pageEl.className = 'pdf-page';
-                
+
                 const indicatorsInThisPage = Math.min(currentLimit, totalIndicators - i * currentLimit);
-                
+
                 // 构造页面内容以体现分页效果
                 pageEl.innerHTML = `
                     <div class="pdf-page-title">PAGE ${i + 1} (包含 ${indicatorsInThisPage} 个指标)</div>
@@ -816,10 +880,10 @@
                     </div>
                     <div class="pdf-page-footer">合计页脚</div>
                 `;
-                
+
                 // 3D 浮动动画倾斜度
                 pageEl.style.transform = `rotateY(-10deg) translate(${-5 * i}px, ${2 * i}px)`;
-                
+
                 container.appendChild(pageEl);
             }
         }
@@ -900,7 +964,7 @@
         // 取消勾选并移除
         function removeSimIndicator(indicator) {
             simSelectedIndicators = simSelectedIndicators.filter(item => item !== indicator);
-            
+
             // 同步更新指标池复选框的打勾状态
             const checkboxes = document.querySelectorAll('.sim-metric-checkbox');
             checkboxes.forEach(cb => {
@@ -908,7 +972,7 @@
                     cb.checked = false;
                 }
             });
-            
+
             renderSimOrderPanel();
             renderSimPreviewTable();
         }
@@ -957,12 +1021,12 @@
 
                 item.addEventListener('dragenter', (e) => {
                     if (simDraggedIndex === null || simDraggedIndex === index) return;
-                    
+
                     // Live swap index reordering
                     const temp = simSelectedIndicators[simDraggedIndex];
                     simSelectedIndicators.splice(simDraggedIndex, 1);
                     simSelectedIndicators.splice(index, 0, temp);
-                    
+
                     simDraggedIndex = index; // Keep track of drag index on swap
                     renderSimOrderPanel();
                     renderSimPreviewTable();
@@ -976,7 +1040,7 @@
                     simDraggedIndex = null;
                     renderSimOrderPanel();
                 });
-                
+
                 item.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div class="sim-grip-handle" style="display: grid; grid-template-columns: repeat(2, 3px); gap: 2px; cursor: grab; opacity: 0.4; padding-right: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=0.4">
@@ -1010,7 +1074,7 @@
 
             // 1. 动态生成表头
             theadRow.innerHTML = '<th style="padding: 12px; border-bottom: 2px solid var(--border); color: #fff; font-weight: bold; min-width: 90px; text-align: left;">业态</th>';
-            
+
             simSelectedIndicators.forEach(indicator => {
                 const th = document.createElement('th');
                 th.style.padding = '12px';
@@ -1024,7 +1088,7 @@
 
             // 2. 动态生成数据行
             tbody.innerHTML = '';
-            
+
             const rows = [
                 { type: '住宅物业 (模拟)', data: mockData },
                 { type: '商业物业 (模拟)', data: mockData }
@@ -1036,7 +1100,7 @@
                 if (rIdx % 2 === 1) {
                     tr.style.background = 'rgba(255,255,255,0.01)';
                 }
-                
+
                 // 第一列 业态主轴
                 const tdType = document.createElement('td');
                 tdType.style.padding = '12px';
@@ -1050,14 +1114,14 @@
                     const tdVal = document.createElement('td');
                     tdVal.style.padding = '12px';
                     tdVal.style.textAlign = 'right';
-                    
+
                     const itemData = row.data[indicator];
                     let text = '-';
                     if (itemData) {
                         text = itemData.ytd;
                     }
                     tdVal.innerText = text;
-                    
+
                     // 格式化红绿颜色
                     if (text.startsWith('+')) {
                         tdVal.style.color = 'var(--success)';
@@ -1081,55 +1145,86 @@
     <div class="sim-focused-overlay" id="focus-overlay">
         <div class="sim-focused-content">
             <div class="sim-focus-header">
-                <h3 style="font-family: 'Lexend', sans-serif; font-size: 1.4rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <h3
+                    style="font-family: 'Lexend', sans-serif; font-size: 1.4rem; color: #fff; display: flex; align-items: center; gap: 8px;">
                     📺 沉浸式聚焦模式 (Simulated Focus Mode)
                 </h3>
-                <button class="sim-btn" style="background: var(--error); color: #fff; border-color: var(--error); font-weight: bold; margin: 0;" onclick="toggleSimFocus(false)">退出聚焦模式 (ESC)</button>
+                <button class="sim-btn"
+                    style="background: var(--error); color: #fff; border-color: var(--error); font-weight: bold; margin: 0;"
+                    onclick="toggleSimFocus(false)">退出聚焦模式 (ESC)</button>
             </div>
-            
-            <p style="color: var(--text-dim); font-size: 0.80rem; margin-bottom: 15px; background: rgba(99, 102, 241, 0.05); padding: 10px; border-left: 3px solid var(--indigo); border-radius: 0 6px 6px 0;">
-                💡 <b>横向滚动与纵向滚动演示</b>：请在下方数据表中尝试<b>向右滚动</b>与<b>向下滚动</b>。您会看到：左侧的“业态”与“管理口径”两列牢牢固定在左侧，表头和合计行始终固定在顶部和底部，完美防止迷失数据上下文！
+
+            <p
+                style="color: var(--text-dim); font-size: 0.80rem; margin-bottom: 15px; background: rgba(99, 102, 241, 0.05); padding: 10px; border-left: 3px solid var(--indigo); border-radius: 0 6px 6px 0;">
+                💡
+                <b>横向滚动与纵向滚动演示</b>：请在下方数据表中尝试<b>向右滚动</b>与<b>向下滚动</b>。您会看到：左侧的“业态”与“管理口径”两列牢牢固定在左侧，表头和合计行始终固定在顶部和底部，完美防止迷失数据上下文！
             </p>
 
-            <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; overflow: auto; background: var(--bg); position: relative;">
+            <div
+                style="flex: 1; border: 1px solid var(--border); border-radius: 8px; overflow: auto; background: var(--bg); position: relative;">
                 <table style="width: 1200px; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
                     <thead style="position: sticky; top: 0; background: var(--surface-accent); z-index: 100;">
                         <tr>
-                            <th style="position: sticky; left: 0; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">业态 (主轴锁定)</th>
-                            <th style="position: sticky; left: 140px; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">管理口径 (次轴锁定)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">本年累计 (收入YTD)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">去年同期 (收入YTD)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">同比增速 (%)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">预算达成率 (%)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润YTD (本年累计)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润YTD (去年同期)</th>
-                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">利润同比增速 (%)</th>
+                            <th
+                                style="position: sticky; left: 0; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">
+                                业态 (主轴锁定)</th>
+                            <th
+                                style="position: sticky; left: 140px; background: var(--surface-accent); padding: 12px; border-bottom: 2px solid var(--border); z-index: 101; width: 140px; font-weight: bold; color: #fff;">
+                                管理口径 (次轴锁定)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                本年累计 (收入YTD)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                去年同期 (收入YTD)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                同比增速 (%)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                预算达成率 (%)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                利润YTD (本年累计)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                利润YTD (去年同期)</th>
+                            <th style="padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-dim);">
+                                利润同比增速 (%)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td rowspan="3" style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">住宅物业</td>
-                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径一</td>
+                            <td rowspan="3"
+                                style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">
+                                住宅物业</td>
+                            <td
+                                style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">
+                                管理口径一</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">12,305,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">11,200,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">+9.86%</td>
+                            <td
+                                style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">
+                                +9.86%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">104.2%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,845,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,680,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">+9.8%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">
+                                +9.8%</td>
                         </tr>
                         <tr>
-                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径二</td>
+                            <td
+                                style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">
+                                管理口径二</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">8,402,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">8,905,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">-5.65%</td>
+                            <td
+                                style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">
+                                -5.65%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">94.5%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,092,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">1,157,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">-5.6%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">
+                                -5.6%</td>
                         </tr>
                         <tr style="background: rgba(99, 102, 241, 0.08); font-weight: bold;">
-                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">小计 (住宅物业)</td>
+                            <td
+                                style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">
+                                小计 (住宅物业)</td>
                             <td style="padding: 12px;">20,707,000</td>
                             <td style="padding: 12px;">20,105,000</td>
                             <td style="padding: 12px; color: var(--success);">+2.99%</td>
@@ -1138,30 +1233,44 @@
                             <td style="padding: 12px;">2,837,000</td>
                             <td style="padding: 12px; color: var(--success);">+3.5%</td>
                         </tr>
-                        
+
                         <tr>
-                            <td rowspan="3" style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">商业物业</td>
-                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径一</td>
+                            <td rowspan="3"
+                                style="position: sticky; left: 0; background: #1a1f26; padding: 12px; border-bottom: 1px solid var(--border); font-weight: bold; color: #fff; vertical-align: middle; z-index: 20;">
+                                商业物业</td>
+                            <td
+                                style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">
+                                管理口径一</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">18,450,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">17,200,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">+7.27%</td>
+                            <td
+                                style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success); font-weight: bold;">
+                                +7.27%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">105.8%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">3,136,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,924,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">+7.2%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--success);">
+                                +7.2%</td>
                         </tr>
                         <tr>
-                            <td style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">管理口径二</td>
+                            <td
+                                style="position: sticky; left: 140px; background: #161a1f; padding: 12px; border-bottom: 1px solid var(--border); z-index: 20; color: var(--text);">
+                                管理口径二</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">14,200,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">15,100,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">-5.96%</td>
+                            <td
+                                style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error); font-weight: bold;">
+                                -5.96%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">96.2%</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,414,000</td>
                             <td style="padding: 12px; border-bottom: 1px solid var(--border);">2,567,000</td>
-                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">-6.0%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--error);">
+                                -6.0%</td>
                         </tr>
                         <tr style="background: rgba(99, 102, 241, 0.08); font-weight: bold;">
-                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">小计 (商业物业)</td>
+                            <td
+                                style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.12); padding: 12px; z-index: 20; color: var(--indigo);">
+                                小计 (商业物业)</td>
                             <td style="padding: 12px;">32,650,000</td>
                             <td style="padding: 12px;">32,300,000</td>
                             <td style="padding: 12px; color: var(--success);">+1.08%</td>
@@ -1171,10 +1280,15 @@
                             <td style="padding: 12px; color: var(--success);">+1.1%</td>
                         </tr>
                     </tbody>
-                    <tfoot style="position: sticky; bottom: 0; background: rgba(99, 102, 241, 0.2); z-index: 90; font-weight: bold; border-top: 2px solid var(--indigo);">
+                    <tfoot
+                        style="position: sticky; bottom: 0; background: rgba(99, 102, 241, 0.2); z-index: 90; font-weight: bold; border-top: 2px solid var(--indigo);">
                         <tr>
-                            <td style="position: sticky; left: 0; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">总合计 (吸底固定)</td>
-                            <td style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">-</td>
+                            <td
+                                style="position: sticky; left: 0; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">
+                                总合计 (吸底固定)</td>
+                            <td
+                                style="position: sticky; left: 140px; background: rgba(99, 102, 241, 0.25); padding: 12px; z-index: 91; color: #fff;">
+                                -</td>
                             <td style="padding: 12px;">53,357,000</td>
                             <td style="padding: 12px;">52,405,000</td>
                             <td style="padding: 12px; color: var(--success);">+1.82%</td>
@@ -1189,4 +1303,5 @@
         </div>
     </div>
 </body>
+
 </html>
