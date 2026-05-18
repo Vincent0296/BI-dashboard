@@ -645,7 +645,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     const formula = meta.formula || '';
     if (formula.startsWith('=') || formula.startsWith('‘=')) {
       const cleanFormula = formula.replace(/^‘?=/, '').trim();
-      
+
       if (!cleanFormula.includes('/') && !cleanFormula.includes('+') && !cleanFormula.includes('-') && !cleanFormula.includes('*')) {
         return getMetricAggregatedValue(dataSlice, cleanFormula, timeGroupName);
       }
@@ -655,7 +655,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         const budgetMatch = cleanFormula.match(/ABS\(([^)]+)\)/);
         const budgetName = budgetMatch ? budgetMatch[1].trim() : '';
         const currentName = cleanFormula.includes('利润YTD') ? '利润YTD' : '';
-        
+
         if (budgetName && currentName) {
           const current = getMetricAggregatedValue(dataSlice, currentName, timeGroupName);
           const budget = getMetricAggregatedValue(dataSlice, budgetName, timeGroupName);
@@ -673,7 +673,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           return val;
         }
       }
-      
+
       if (cleanFormula.includes('15用工薪酬成本') || cleanFormula.includes('用工薪酬成本')) {
         const s1 = getMetricAggregatedValue(dataSlice, '15用工薪酬成本', timeGroupName);
         const s2 = getMetricAggregatedValue(dataSlice, '16外包劳务支出', timeGroupName);
@@ -785,13 +785,13 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     if (showSubtotals && selectedYDim2 !== 'none') {
       const finalData: any[] = [];
       const dim1Values = Array.from(new Set(rawData.map(d => d.dimValue)));
-      
+
       dim1Values.forEach(v1 => {
         if (selectedYDim3 === 'none') {
           // Only Y1 and Y2 active
           const group = rawData.filter(d => d.dimValue === v1);
           finalData.push(...group);
-          
+
           // Calculate subtotal for this v1
           const slice = data.filter(d => String(d[selectedYDim]) === v1);
           const subtotalMetrics: Record<string, number> = {};
@@ -800,11 +800,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               subtotalMetrics[`${groupName}_${cat}`] = calculateValue(slice, cat, groupName);
             });
           });
-          finalData.push({ 
-            dimValue: v1, 
-            dimValue2: '小计', 
-            dimValue3: ' ', 
-            metrics: subtotalMetrics, 
+          finalData.push({
+            dimValue: v1,
+            dimValue2: '小计',
+            dimValue3: ' ',
+            metrics: subtotalMetrics,
             isSubtotal: true,
             subtotalLevel: 1
           });
@@ -1019,10 +1019,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <table className="w-full text-left border-collapse table-fixed">
                   <thead>
                     <tr className="bg-slate-800 text-white">
-                      <th 
+                      <th
                         className={cn(
                           "p-3 border border-slate-700 font-black text-[10px] text-center",
-                          selectedYDim2 === 'none' ? "w-[210px]" : (selectedYDim3 === 'none' ? "w-[260px]" : "w-[310px]")
+                          selectedYDim2 === 'none' ? "w-[150px]" : (selectedYDim3 === 'none' ? "w-[260px]" : "w-[330px]")
                         )}
                         colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
                       >
@@ -1282,10 +1282,10 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   return (
     <>
       <div className={cn(
-        "flex flex-col transition-all duration-300", 
-        isFocusMode 
-          ? "fixed inset-0 z-50 bg-slate-950 text-slate-100 p-8 overflow-hidden flex flex-col h-screen space-y-4" 
-          : "w-full space-y-6", 
+        "flex flex-col transition-all duration-300",
+        isFocusMode
+          ? "fixed inset-0 z-50 bg-slate-950 text-slate-100 p-8 overflow-hidden flex flex-col h-screen space-y-4"
+          : "w-full space-y-6",
         isPrinting && "hidden"
       )}>
         {/* Header Section */}
@@ -1305,8 +1305,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               onClick={() => setIsIntegerMode(!isIntegerMode)}
               className={cn(
                 "px-4 py-2 text-[10px] font-black rounded-xl border transition-all hover-lift active:scale-95 uppercase tracking-wider",
-                isIntegerMode 
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" 
+                isIntegerMode
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100"
                   : (isFocusMode ? "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800" : "bg-white text-slate-500 border-slate-200")
               )}
             >
@@ -1374,8 +1374,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               onClick={() => setShowConfig(!showConfig)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border shadow-sm",
-                isFocusMode 
-                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800" 
+                isFocusMode
+                  ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
                   : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
               )}
             >
@@ -1386,8 +1386,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               onClick={() => setIsFocusMode(!isFocusMode)}
               className={cn(
                 "flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border shadow-sm",
-                isFocusMode 
-                  ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/20" 
+                isFocusMode
+                  ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/20"
                   : "bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
               )}
             >
@@ -1402,8 +1402,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             {/* Separate Preset Management for Table */}
             <div className={cn(
               "backdrop-blur-sm p-5 rounded-2xl border shadow-sm print:hidden",
-              isFocusMode 
-                ? "bg-slate-900/50 border-slate-800/80 text-slate-200" 
+              isFocusMode
+                ? "bg-slate-900/50 border-slate-800/80 text-slate-200"
                 : "bg-white/50 border-slate-200/60"
             )}>
               <div className="flex items-center gap-4 flex-wrap">
@@ -1420,11 +1420,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       "group flex items-center gap-2 px-4 py-2 border rounded-xl cursor-pointer transition-all hover-lift",
                       isFocusMode
                         ? (activePresetId === preset.id
-                            ? "bg-indigo-950 border-indigo-700 ring-1 ring-indigo-800 shadow-sm"
-                            : "bg-slate-900/80 hover:bg-slate-800 border-slate-850 hover:border-slate-700")
+                          ? "bg-indigo-950 border-indigo-700 ring-1 ring-indigo-800 shadow-sm"
+                          : "bg-slate-900/80 hover:bg-slate-800 border-slate-850 hover:border-slate-700")
                         : (activePresetId === preset.id
-                            ? "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200 shadow-sm"
-                            : "bg-white/80 hover:bg-indigo-50 border-slate-200 hover:border-indigo-200")
+                          ? "bg-indigo-100 border-indigo-400 ring-1 ring-indigo-200 shadow-sm"
+                          : "bg-white/80 hover:bg-indigo-50 border-slate-200 hover:border-indigo-200")
                     )}
                   >
                     {editingPresetId === preset.id ? (
@@ -1479,8 +1479,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
                       className={cn(
                         "text-[11px] font-bold px-4 py-2 border rounded-xl outline-none w-40 shadow-xl",
-                        isFocusMode 
-                          ? "bg-slate-900 border-indigo-700 text-white shadow-indigo-950/20" 
+                        isFocusMode
+                          ? "bg-slate-900 border-indigo-700 text-white shadow-indigo-950/20"
                           : "bg-white border-indigo-500 shadow-indigo-100"
                       )}
                     />
@@ -1502,8 +1502,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     }}
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 font-black text-[10px] rounded-xl border border-dashed transition-all active:scale-95 uppercase tracking-wider",
-                      isFocusMode 
-                        ? "text-indigo-400 hover:bg-indigo-950/30 border-indigo-900/60" 
+                      isFocusMode
+                        ? "text-indigo-400 hover:bg-indigo-950/30 border-indigo-900/60"
                         : "text-indigo-600 hover:bg-indigo-50 border-indigo-200"
                     )}
                   >
@@ -1517,8 +1517,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             {/* Controls Section */}
             <div className={cn(
               "grid grid-cols-1 xl:grid-cols-3 gap-8 p-8 rounded-[2rem] border shadow-sm premium-shadow print:hidden",
-              isFocusMode 
-                ? "bg-slate-900 border-slate-800 text-slate-200" 
+              isFocusMode
+                ? "bg-slate-900 border-slate-800 text-slate-200"
                 : "bg-white border-slate-200/60"
             )}>
               {/* Y-Axis Selection */}
@@ -1538,9 +1538,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                         selectedYDim === dim.key
                           ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-950/30"
-                          : (isFocusMode 
-                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
-                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                          : (isFocusMode
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
                       {dim.label}
@@ -1563,9 +1563,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                       selectedYDim2 === 'none'
                         ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
-                        : (isFocusMode 
-                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
-                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                        : (isFocusMode
+                          ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                          : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                     )}
                   >
                     无
@@ -1578,9 +1578,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                         selectedYDim2 === dim.key
                           ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
-                          : (isFocusMode 
-                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
-                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                          : (isFocusMode
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
                       {dim.label}
@@ -1611,9 +1611,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                         selectedYDim3 === 'none'
                           ? "bg-pink-600 text-white shadow-xl shadow-pink-100 dark:shadow-pink-950/30"
-                          : (isFocusMode 
-                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
-                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                          : (isFocusMode
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
                       无
@@ -1626,9 +1626,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
                           selectedYDim3 === dim.key
                             ? "bg-pink-600 text-white shadow-xl shadow-pink-100 dark:shadow-pink-950/30"
-                            : (isFocusMode 
-                                ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700" 
-                                : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                            : (isFocusMode
+                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                         )}
                       >
                         {dim.label}
@@ -1652,8 +1652,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       onClick={() => setIsXAxisSwapped(!isXAxisSwapped)}
                       className={cn(
                         "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
-                        isXAxisSwapped 
-                          ? "bg-amber-500 text-white border-amber-500" 
+                        isXAxisSwapped
+                          ? "bg-amber-500 text-white border-amber-500"
                           : (isFocusMode ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750" : "bg-white text-slate-500 border-slate-200")
                       )}
                     >
@@ -1664,8 +1664,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       onClick={() => setShowSubtotals(!showSubtotals)}
                       className={cn(
                         "flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black transition-all border",
-                        showSubtotals 
-                          ? "bg-emerald-500 text-white border-emerald-500" 
+                        showSubtotals
+                          ? "bg-emerald-500 text-white border-emerald-500"
                           : (isFocusMode ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750" : "bg-white text-slate-500 border-slate-200")
                       )}
                     >
@@ -1700,12 +1700,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       className={cn(
                         "flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border hover-lift",
                         selectedMetricGroups.includes(group.name)
-                          ? (isFocusMode 
-                              ? "bg-indigo-950/40 border-indigo-800 text-indigo-300 shadow-sm" 
-                              : "bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm")
-                          : (isFocusMode 
-                              ? "bg-slate-800 border-slate-700 text-slate-450 hover:bg-slate-700" 
-                              : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white")
+                          ? (isFocusMode
+                            ? "bg-indigo-950/40 border-indigo-800 text-indigo-300 shadow-sm"
+                            : "bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm")
+                          : (isFocusMode
+                            ? "bg-slate-800 border-slate-700 text-slate-450 hover:bg-slate-700"
+                            : "bg-slate-50 border-slate-200/60 text-slate-500 hover:bg-white")
                       )}
                     >
                       <input
@@ -1723,8 +1723,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       />
                       <div className={cn(
                         "w-4 h-4 rounded-lg border-2 flex items-center justify-center transition-all",
-                        selectedMetricGroups.includes(group.name) 
-                          ? "bg-indigo-500 border-indigo-500 shadow-sm" 
+                        selectedMetricGroups.includes(group.name)
+                          ? "bg-indigo-500 border-indigo-500 shadow-sm"
                           : (isFocusMode ? "bg-slate-900 border-slate-750" : "bg-white border-slate-300")
                       )}>
                         {selectedMetricGroups.includes(group.name) && <Check className="w-3 h-3 text-white stroke-[3]" />}
@@ -1764,8 +1764,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   onClick={() => setCurrentPage(i)}
                   className={cn(
                     "w-6 h-6 rounded-md text-[10px] font-bold transition-all",
-                    currentPage === i 
-                      ? "bg-indigo-600 text-white" 
+                    currentPage === i
+                      ? "bg-indigo-600 text-white"
                       : (isFocusMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-50 text-slate-400 hover:bg-slate-100")
                   )}
                 >
@@ -1789,8 +1789,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         {/* Table Container */}
         <div className={cn(
           "overflow-auto rounded-2xl border shadow-inner transition-all duration-300",
-          isFocusMode 
-            ? "flex-1 border-slate-800 bg-slate-900" 
+          isFocusMode
+            ? "flex-1 border-slate-800 bg-slate-900"
             : "max-h-[600px] border-slate-100 bg-white"
         )}>
           <table className="w-full text-left border-collapse min-w-max">
@@ -1800,8 +1800,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <th
                   className={cn(
                     "p-4 border-b border-r font-black text-[11px] sticky top-0 left-0 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
-                    selectedYDim2 === 'none' 
-                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate" 
+                    selectedYDim2 === 'none'
+                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate"
                       : (selectedYDim3 === 'none' ? "w-[280px] min-w-[280px] max-w-[280px] truncate" : "w-[420px] min-w-[420px] max-w-[420px] truncate"),
                     isFocusMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-800 border-slate-700 text-white"
                   )}
@@ -1849,7 +1849,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               </tr>
               {/* Level 2 Header */}
               <tr className={isFocusMode ? "bg-slate-800" : "bg-slate-100"}>
-                <th 
+                <th
                   className={cn(
                     "p-4 border-b border-r font-black text-xs sticky top-[45px] left-0 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                     isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
@@ -1858,7 +1858,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                 </th>
                 {selectedYDim2 !== 'none' && (
-                  <th 
+                  <th
                     className={cn(
                       "p-4 border-b border-r font-black text-xs sticky top-[45px] left-[140px] z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                       isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
@@ -1868,7 +1868,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </th>
                 )}
                 {selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && (
-                  <th 
+                  <th
                     className={cn(
                       "p-4 border-b border-r font-black text-xs sticky top-[45px] left-[280px] z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                       isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
@@ -1888,8 +1888,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           onClick={() => handleSort(sortKey)}
                           className={cn(
                             "p-3 border-b border-r text-[10px] font-black min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort sticky top-[45px] z-30",
-                            isFocusMode 
-                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700") 
+                            isFocusMode
+                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700")
                               : (isSorting ? "bg-indigo-50 text-indigo-700 border-slate-200" : "bg-slate-100 text-slate-600 border-slate-200")
                           )}
                         >
@@ -1924,8 +1924,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           onClick={() => handleSort(sortKey)}
                           className={cn(
                             "p-3 border-b border-r text-[10px] font-black min-w-[120px] text-center cursor-pointer hover:bg-slate-200 transition-all group/sort sticky top-[45px] z-30",
-                            isFocusMode 
-                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700") 
+                            isFocusMode
+                              ? (isSorting ? "bg-indigo-950 text-indigo-300 border-slate-700 hover:bg-indigo-900" : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700")
                               : (isSorting ? "bg-indigo-50 text-indigo-700 border-slate-200" : "bg-slate-100 text-slate-600 border-slate-200")
                           )}
                         >
@@ -1961,7 +1961,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 return (
                   <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${idx}`} className={cn(
                     "transition-colors",
-                    isFocusMode 
+                    isFocusMode
                       ? (row.isSubtotal ? "bg-indigo-950/20 hover:bg-indigo-900/30" : (idx % 2 === 0 ? "bg-slate-900 hover:bg-slate-800" : "bg-slate-900/50 hover:bg-slate-800/80"))
                       : (row.isSubtotal ? "bg-indigo-50/30 hover:bg-indigo-100/40" : (idx % 2 === 0 ? "bg-white hover:bg-slate-50/50" : "bg-slate-50/20 hover:bg-slate-50/50"))
                   )}>
@@ -1969,12 +1969,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <td className={cn(
                         "p-4 border-b border-r text-sm font-bold sticky left-0 z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                         isFocusMode ? "border-slate-800" : "border-slate-100",
-                        row.isSubtotal 
+                        row.isSubtotal
                           ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
-                          : (idx % 2 === 0 
-                              ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-700") 
-                              : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-700")
-                            )
+                          : (idx % 2 === 0
+                            ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-700")
+                            : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-700")
+                          )
                       )}>
                         {row.dimValue}
                       </td>
@@ -1985,8 +1985,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             rowSpan={v1Span}
                             className={cn(
                               "p-4 border-b border-r text-sm font-black sticky left-0 z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px] min-w-[140px] max-w-[140px] truncate",
-                              isFocusMode 
-                                ? "bg-slate-900 text-slate-100 border-slate-800" 
+                              isFocusMode
+                                ? "bg-slate-900 text-slate-100 border-slate-800"
                                 : "bg-white text-slate-800 border-slate-100"
                             )}
                           >
@@ -1996,12 +1996,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         <td className={cn(
                           "p-4 border-b border-r sticky left-[140px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                           isFocusMode ? "border-slate-800" : "border-slate-100",
-                          row.isSubtotal 
+                          row.isSubtotal
                             ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
-                            : (idx % 2 === 0 
-                                ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs") 
-                                : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
-                              )
+                            : (idx % 2 === 0
+                              ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs")
+                              : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
+                            )
                         )}>
                           {row.dimValue2}
                         </td>
@@ -2013,8 +2013,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             rowSpan={v1Span}
                             className={cn(
                               "p-4 border-b border-r text-sm font-black sticky left-0 z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px] min-w-[140px] max-w-[140px] truncate",
-                              isFocusMode 
-                                ? "bg-slate-900 text-slate-100 border-slate-800" 
+                              isFocusMode
+                                ? "bg-slate-900 text-slate-100 border-slate-800"
                                 : "bg-white text-slate-800 border-slate-100"
                             )}
                           >
@@ -2039,8 +2039,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 className={cn(
                                   "p-4 border-b border-r sticky left-[140px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                                   isFocusMode ? "border-slate-800" : "border-slate-100",
-                                  idx % 2 === 0 
-                                    ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs") 
+                                  idx % 2 === 0
+                                    ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs")
                                     : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
                                 )}
                               >
@@ -2050,12 +2050,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             <td className={cn(
                               "p-4 border-b border-r sticky left-[280px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
                               isFocusMode ? "border-slate-800" : "border-slate-100",
-                              row.isSubtotal 
+                              row.isSubtotal
                                 ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
-                                : (idx % 2 === 0 
-                                    ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-500 font-normal text-xs") 
-                                    : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-500 font-normal text-xs")
-                                  )
+                                : (idx % 2 === 0
+                                  ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-500 font-normal text-xs")
+                                  : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-500 font-normal text-xs")
+                                )
                             )}>
                               {row.dimValue3}
                             </td>
@@ -2078,14 +2078,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 isFocusMode ? "border-slate-800" : "border-slate-50",
                                 row.isSubtotal && (isFocusMode ? "bg-indigo-950/20" : "bg-indigo-50/30"),
                                 group.includes('增减')
-                                  ? (val >= 0 
-                                      ? (isFocusMode ? "text-emerald-400" : "text-emerald-600") 
-                                      : (isFocusMode ? "text-rose-400" : "text-rose-600")
-                                    )
-                                  : (row.isSubtotal 
-                                      ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold") 
-                                      : (isFocusMode ? "text-slate-300" : "text-slate-600")
-                                    )
+                                  ? (val >= 0
+                                    ? (isFocusMode ? "text-emerald-400" : "text-emerald-600")
+                                    : (isFocusMode ? "text-rose-400" : "text-rose-600")
+                                  )
+                                  : (row.isSubtotal
+                                    ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold")
+                                    : (isFocusMode ? "text-slate-300" : "text-slate-600")
+                                  )
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -2110,14 +2110,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 isFocusMode ? "border-slate-800" : "border-slate-50",
                                 row.isSubtotal && (isFocusMode ? "bg-indigo-950/20" : "bg-indigo-50/30"),
                                 group.includes('增减')
-                                  ? (val >= 0 
-                                      ? (isFocusMode ? "text-emerald-400" : "text-emerald-600") 
-                                      : (isFocusMode ? "text-rose-400" : "text-rose-600")
-                                    )
-                                  : (row.isSubtotal 
-                                      ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold") 
-                                      : (isFocusMode ? "text-slate-300" : "text-slate-600")
-                                    )
+                                  ? (val >= 0
+                                    ? (isFocusMode ? "text-emerald-400" : "text-emerald-600")
+                                    : (isFocusMode ? "text-rose-400" : "text-rose-600")
+                                  )
+                                  : (row.isSubtotal
+                                    ? (isFocusMode ? "text-indigo-400 font-bold" : "text-indigo-600 font-bold")
+                                    : (isFocusMode ? "text-slate-300" : "text-slate-600")
+                                  )
                               )}
                             >
                               {formatNumber(val, isRate, isIntegerMode, isWanYuan)}
@@ -2136,8 +2136,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <td
                   className={cn(
                     "p-4 border-b border-r text-white text-sm sticky bottom-0 left-0 z-45 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
-                    selectedYDim2 === 'none' 
-                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate" 
+                    selectedYDim2 === 'none'
+                      ? "w-[140px] min-w-[140px] max-w-[140px] truncate"
                       : (selectedYDim3 === 'none' ? "w-[280px] min-w-[280px] max-w-[280px] truncate" : "w-[420px] min-w-[420px] max-w-[420px] truncate"),
                     isFocusMode ? "bg-indigo-950 border-indigo-900" : "bg-indigo-900 border-indigo-800"
                   )}
