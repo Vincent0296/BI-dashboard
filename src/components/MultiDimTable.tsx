@@ -1022,7 +1022,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <th 
                         className={cn(
                           "p-3 border border-slate-700 font-black text-[10px] text-center",
-                          selectedYDim2 === 'none' ? "w-[150px]" : (selectedYDim3 === 'none' ? "w-[200px]" : "w-[250px]")
+                          selectedYDim2 === 'none' ? "w-[210px]" : (selectedYDim3 === 'none' ? "w-[260px]" : "w-[310px]")
                         )}
                         colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
                       >
