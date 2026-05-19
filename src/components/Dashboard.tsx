@@ -1155,6 +1155,13 @@ export const Dashboard: React.FC = () => {
             <HelpCircle className="w-4 h-4" />
             使用说明
           </button>
+          <button
+            onClick={() => window.open('month_end_closing_guide.html', '_blank')}
+            className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black transition-all hover:bg-slate-100 active:scale-95 border border-transparent hover:border-slate-200"
+          >
+            <BookOpen className="w-4 h-4" />
+            结账合规指引
+          </button>
           <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/50">
             <button
               onClick={() => {

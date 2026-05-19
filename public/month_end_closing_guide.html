@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华东分公司 | 月末结账及报表合规指南</title>
+    <!-- Google Fonts Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* HSL Theme Colors - Professional Deep Slate & Teal */
+            --bg-base: #060913;
+            --bg-surface: #0f172a;
+            --bg-surface-hover: #1e293b;
+            --bg-accent: #0284c7;
+            --bg-accent-glow: rgba(2, 132, 199, 0.15);
+
+            --color-primary: #38bdf8;
+            --color-success: #10b981;
+            --color-success-glow: rgba(16, 185, 129, 0.1);
+            --color-warning: #f59e0b;
+            --color-warning-glow: rgba(245, 158, 11, 0.1);
+            --color-error: #ef4444;
+            --color-error-glow: rgba(239, 68, 68, 0.15);
+
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+
+            --border-color: #1e293b;
+            --border-focus: #38bdf8;
+
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --glow-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+            --glow-error: 0 0 20px rgba(239, 68, 68, 0.25);
+        }
+
+        /* Light Mode Variable Overrides */
+        [data-theme="light"] {
+            --bg-base: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-surface-hover: #f8fafc;
+            --bg-accent: #0284c7;
+            --bg-accent-glow: rgba(2, 132, 199, 0.1);
+
+            --color-primary: #0284c7;
+            --color-success: #059669;
+            --color-success-glow: rgba(5, 150, 105, 0.08);
+            --color-warning: #d97706;
+            --color-warning-glow: rgba(217, 119, 6, 0.08);
+            --color-error: #dc2626;
+            --color-error-glow: rgba(220, 38, 38, 0.08);
+
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --text-dim: #64748b;
+
+            --border-color: #e2e8f0;
+            --border-focus: #0284c7;
+
+            --glow-shadow: 0 4px 20px rgba(2, 132, 199, 0.1);
+            --glow-error: 0 4px 20px rgba(220, 38, 38, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            transition: var(--transition-smooth);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            padding: 30px 24px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            transition: var(--transition-smooth);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 35px;
+        }
+
+        .sidebar-logo svg {
+            width: 32px;
+            height: 32px;
+            color: var(--color-primary);
+        }
+
+        .sidebar-logo-text {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--color-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 16px 12px 40px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .search-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: var(--glow-shadow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            pointer-events: none;
+            width: 16px;
+            height: 16px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition-smooth);
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--text-main);
+            background-color: var(--bg-surface-hover);
+        }
+
+        .nav-item.active {
+            color: var(--color-primary);
+            background-color: var(--bg-accent-glow);
+            border-color: rgba(56, 189, 248, 0.25);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Progress Card */
+        .progress-card {
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .progress-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-track {
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+            width: 0%;
+            transition: width 0.5s ease-out;
+        }
+
+        .progress-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Content Styling */
+        .main-content {
+            margin-left: 320px;
+            flex: 1;
+            padding: 40px 50px;
+            max-width: 1300px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 25px;
+        }
+
+        .header-title-section h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.7px;
+            margin-bottom: 6px;
+        }
+
+        .header-title-section p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            transition: var(--transition-smooth);
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--text-secondary);
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Views (Tabs) Wrapper */
+        .view-panel {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Grid Cards Layout */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            position: relative;
+            transition: var(--transition-smooth);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .card-badge {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background-color: var(--bg-accent-glow);
+            color: var(--color-primary);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Checklist Items styling */
+        .checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-color);
+            transition: var(--transition-smooth);
+        }
+
+        .check-item:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--text-dim);
+        }
+
+        .check-item input[type="checkbox"] {
+            margin-top: 3px;
+            width: 17px;
+            height: 17px;
+            accent-color: var(--color-success);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .check-item.checked {
+            border-color: var(--color-success-glow);
+            background-color: var(--color-success-glow);
+        }
+
+        .check-item.checked .check-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+            opacity: 0.75;
+        }
+
+        .check-text strong {
+            color: var(--text-main);
+        }
+
+        .badge-txcode {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            background-color: var(--bg-surface-hover);
+            color: var(--color-warning);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            font-weight: 600;
+        }
+
+        /* Report Guidelines View Styling */
+        .report-section {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 30px;
+        }
+
+        .report-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .report-header h2 {
+            font-size: 1.45rem;
+            font-weight: 700;
+        }
+
+        .report-header span {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 5px;
+            background-color: var(--bg-accent-glow);
+            color: var(--color-primary);
+            font-weight: bold;
+        }
+
+        .guideline-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .guideline-item {
+            position: relative;
+            padding-left: 24px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .guideline-item::before {
+            content: "•";
+            color: var(--color-primary);
+            font-size: 1.5rem;
+            position: absolute;
+            left: 5px;
+            top: -2px;
+        }
+
+        .relation-diagram {
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .diagram-node {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .diagram-node.highlight {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .diagram-node.success {
+            border-color: var(--color-success);
+            color: var(--color-success);
+        }
+
+        .diagram-arrow {
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Red Lines (财务红线) View Styling */
+        .red-line-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+
+        .red-line-card {
+            background-color: var(--bg-surface);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 16px;
+            padding: 35px;
+            position: relative;
+            transition: var(--transition-smooth);
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.03);
+        }
+
+        .red-line-card:hover {
+            border-color: var(--color-error);
+            box-shadow: var(--glow-error);
+            transform: scale(1.01);
+        }
+
+        .red-line-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--color-error);
+        }
+
+        .red-line-card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .red-line-icon {
+            width: 48px;
+            height: 48px;
+            background-color: var(--color-error-glow);
+            color: var(--color-error);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse-red 2.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .red-line-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .red-line-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .red-line-content strong {
+            color: var(--text-main);
+        }
+
+        /* Calculator View Styling */
+        .calc-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 30px;
+        }
+
+        .calc-header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .calc-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .calc-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calc-box {
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .calc-box-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 5px;
+        }
+
+        .calc-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .calc-input-group label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .calc-input-row {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .calc-input-row:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: var(--glow-shadow);
+        }
+
+        .calc-input-row input {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 10px 14px;
+            color: var(--text-main);
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+        }
+
+        .calc-unit {
+            padding: 10px 14px;
+            background-color: var(--bg-surface-hover);
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            border-left: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .calc-result-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition-smooth);
+        }
+
+        .calc-result-bar.pass {
+            background-color: var(--color-success-glow);
+            color: var(--color-success);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .calc-result-bar.fail {
+            background-color: var(--color-error-glow);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .reset-btn {
+            background-color: var(--bg-surface-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            margin-top: 15px;
+            align-self: flex-start;
+        }
+
+        .reset-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-secondary);
+        }
+
+        /* Float helper for closing page */
+        .action-float-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--color-primary);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            padding: 14px 22px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            z-index: 101;
+            transition: var(--transition-smooth);
+        }
+
+        .action-float-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 25px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Printable Style Customization */
+        @media print {
+
+            .sidebar,
+            .theme-toggle,
+            .action-float-btn,
+            .search-box {
+                display: none !important;
+            }
+
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+
+            .view-panel {
+                display: block !important;
+                opacity: 1 !important;
+                transform: none !important;
+                page-break-after: always;
+            }
+
+            .card,
+            .report-section,
+            .red-line-card,
+            .calc-panel {
+                border: 1px solid #ccc !important;
+                background: #fff !important;
+                color: #000 !important;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+
+            .check-item {
+                border: 1px solid #ddd !important;
+                background: #fff !important;
+                color: #000 !important;
+            }
+
+            .check-text strong {
+                color: #000 !important;
+            }
+
+            .badge-txcode,
+            .card-badge {
+                border: 1px solid #999 !important;
+                color: #000 !important;
+                background: #eee !important;
+            }
+        }
+
+        /* Layout responsivity styling */
+        @media (max-width: 1100px) {
+            .sidebar {
+                width: 80px;
+                padding: 30px 10px;
+                align-items: center;
+            }
+
+            .sidebar-logo-text,
+            .search-box,
+            .progress-card,
+            .nav-text {
+                display: none !important;
+            }
+
+            .sidebar-logo {
+                margin-bottom: 25px;
+            }
+
+            .nav-item {
+                padding: 12px;
+                justify-content: center;
+            }
+
+            .main-content {
+                margin-left: 80px;
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .red-line-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            <span class="sidebar-logo-text">财务多维管家</span>
+        </div>
+
+        <div class="search-box">
+            <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="search-input" id="search-bar" placeholder="搜索结账事项、科目、红线..."
+                oninput="handleSearch()">
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchView('view-checklist', this)">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                    </path>
+                </svg>
+                <span class="nav-text">专项模块月结</span>
+            </li>
+            <li class="nav-item" onclick="switchView('view-reports', this)">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <span class="nav-text">核心报表勾稽</span>
+            </li>
+            <li class="nav-item" onclick="switchView('view-redlines', this)">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+                <span class="nav-text">财务合规红线</span>
+            </li>
+            <li class="nav-item" onclick="switchView('view-calculator', this)">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                    </path>
+                </svg>
+                <span class="nav-text">勾稽计算验证</span>
+            </li>
+        </ul>
+
+        <div class="progress-card">
+            <div class="progress-title">
+                <span>月结整体进度</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-bar-fill"></div>
+            </div>
+            <div class="progress-desc" id="progress-text">已完成 0 / 22 项核对</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header>
+            <div class="header-title-section">
+                <h1 id="page-title">月末结账及报表注意事项</h1>
+                <p id="page-subtitle">请按步骤依次完成结账工作，确保各科目数据勾稽无误。</p>
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" title="切换明暗主题">
+                    <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="display:none;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.22" x2="5.64" y2="17.78"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW 1: CHECKLIST -->
+        <div id="view-checklist" class="view-panel active">
+            <div class="cards-grid">
+                <!-- 1. 薪酬业务 -->
+                <div class="card" data-search="薪酬业务月结 工资 奖金 社保 公积金 福利费 工会经费 职工教育经费 凭证 用工类型 借方余额 报表取数校验 薪酬报表 损益表">
+                    <div class="card-header-row">
+                        <h3 class="card-title">一、薪酬业务</h3>
+                        <span class="card-badge">01 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('salary-1')">
+                            <input type="checkbox" id="salary-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text">完成本月薪酬业务计提、发放及相关凭证生成，包括<strong>工资、奖金、社保、公积金、福利费、工会经费及职工教育经费</strong>等业务处理。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('salary-2')">
+                            <input type="checkbox" id="salary-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">检查涉及薪酬业务的凭证中<strong>增减变动原因</strong>是否正确。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('salary-3')">
+                            <input type="checkbox" id="salary-3" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">检查<strong>用工类型</strong>是否选择正确，不同用工类型余额是否合理，是否存在串项情况。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('salary-4')">
+                            <input type="checkbox" id="salary-4" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">检查应付职工薪酬明细科目中是否存在不合理<strong>借方余额</strong>。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('salary-5')">
+                            <input type="checkbox" id="salary-5" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>薪酬报表检查</strong>：在报表系统中取数并校验薪酬报表及相关损益表数据是否准确。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 2. 租赁业务 -->
+                <div class="card" data-search="租赁业务合同评估记账 折旧计提 资产清算对账 付款清算对账 租赁报表检查 资产负债表">
+                    <div class="card-header-row">
+                        <h3 class="card-title">二、租赁业务</h3>
+                        <span class="card-badge">02 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('lease-1')">
+                            <input type="checkbox" id="lease-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">完成租赁<strong>合同评估记账、当月折旧计提、资产清算对账、付款清算对账</strong>工作。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('lease-2')">
+                            <input type="checkbox" id="lease-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>租赁报表检查</strong>：在报表系统中取数并校验租赁相关报表及相关资产负债表数据是否准确。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 3. 资产业务 -->
+                <div class="card" data-search="资产业务单据 资产折旧 月末检查 提满折旧 数据一致性 资产报表 资产负债表">
+                    <div class="card-header-row">
+                        <h3 class="card-title">三、资产业务</h3>
+                        <span class="card-badge">03 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('asset-1')">
+                            <input type="checkbox" id="asset-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">完成资产业务<strong>单据检查、折旧检查、月末检查、资产提满折旧日期处理、数据一致性检查</strong>等工作。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('asset-2')">
+                            <input type="checkbox" id="asset-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>资产报表检查</strong>：在报表系统中取数并校验资产相关报表及相关资产负债表数据是否准确。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4. 往来资金业务 -->
+                <div class="card"
+                    data-search="往来资金 上级资金单位 内部往来 内部存款 贸易伙伴 往来科目 负数余额 账龄 逾期 银行存款 现金流量 期限管理 内部交易 暂估 监控 ZP0JYADG0030">
+                    <div class="card-header-row">
+                        <h3 class="card-title">四、往来资金业务</h3>
+                        <span class="card-badge">04 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('funds-1')">
+                            <input type="checkbox" id="funds-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>内部款项对账</strong>：与上级资金单位对账，检查内部存款、内部存入款余额中<strong>贸易伙伴</strong>是否正确。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('funds-2')">
+                            <input type="checkbox" id="funds-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text">检查客户、供应商挂账及往来单位余额是否准确，防范出现不合理<strong>负数余额</strong>，确保账龄与逾期反映真实业务。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('funds-3')">
+                            <input type="checkbox" id="funds-3" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>银行存款检查</strong>：核对现金流量项目、贸易伙伴及期限管理是否准确；确保各银行账户无不合理贷方余额。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('funds-4')">
+                            <input type="checkbox" id="funds-4" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>内部交易实时监控</strong>：每日通过系统事务代码 <span
+                                    class="badge-txcode">ZP0JYADG0030</span> 检查内部往来及内部暂估交易，提前消除红灯差异。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 5. 总账业务 -->
+                <div class="card" data-search="总账业务 外币评估 汇率 月末 坏账计提 往来性质 逾期 减资准备 BA07 利润表 信用减值损失 资产减值损失">
+                    <div class="card-header-row">
+                        <h3 class="card-title">五、总账业务</h3>
+                        <span class="card-badge">05 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('gl-1')">
+                            <input type="checkbox" id="gl-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>外币评估</strong>：外币业务单位必须在月末通过ERP系统标准化流程完成外币评估（汇率参考月末最后一天）。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('gl-2')">
+                            <input type="checkbox" id="gl-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>坏账计提</strong>：数据无变化后计提本月坏账金额，重点核查并修改<strong>往来业务性质</strong>和<strong>是否逾期</strong>。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('gl-3')">
+                            <input type="checkbox" id="gl-3" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>减资准备表校验</strong>：校验 <span class="badge-txcode">BA07</span>
+                                报表本年计提数是否与利润表“信用减值损失+资产减值损失”相等。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 6. 涉税业务 -->
+                <div class="card" data-search="涉税业务 税费 凭证 增减变动原因 借方余额 涉税报表 BC02 BB41 勾稽 计提 缴纳">
+                    <div class="card-header-row">
+                        <h3 class="card-title">六、涉税业务</h3>
+                        <span class="card-badge">06 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('tax-1')">
+                            <input type="checkbox" id="tax-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">完成所有税费计提与缴纳凭证处理，检查凭证中<strong>增减变动原因</strong>，纠正不合理借方余额。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('tax-2')">
+                            <input type="checkbox" id="tax-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>税费报表检查</strong>：取数校验税费报表，检查 <span
+                                    class="badge-txcode">BC02</span> (税金及附加计提) 与 <span class="badge-txcode">BB41</span>
+                                的勾稽关系是否通过。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 7. 维修业务 -->
+                <div class="card" data-search="维修业务 停止 维修工单 结算 财务结算 提报工单">
+                    <div class="card-header-row">
+                        <h3 class="card-title">七、维修业务</h3>
+                        <span class="card-badge">07 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('maint-1')">
+                            <input type="checkbox" id="maint-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text"><strong>维修工单停止</strong>：处理并结算本月维修工单，停止系统里新的工单提报，未办完单据顺延下月。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('maint-2')">
+                            <input type="checkbox" id="maint-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span class="check-text">财务部门根据业务办理结果完成本月维修工单的<strong>结算及结转凭证生成</strong>。</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 8. 项目月结 -->
+                <div class="card" data-search="项目月结 投资项目 成本项目 在建工程 结算规则 功能范围 6601 6602 结转 凭证">
+                    <div class="card-header-row">
+                        <h3 class="card-title">八、项目月结</h3>
+                        <span class="card-badge">08 MODULE</span>
+                    </div>
+                    <ul class="checklist">
+                        <li class="check-item" onclick="toggleCheck('project-1')">
+                            <input type="checkbox" id="project-1" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>投资项目结转</strong>：检查本月投资业务入账情况，确认完成后将投资项目结转至<strong>在建工程</strong>科目。</span>
+                        </li>
+                        <li class="check-item" onclick="toggleCheck('project-2')">
+                            <input type="checkbox" id="project-2" onclick="event.stopPropagation(); updateProgress();">
+                            <span
+                                class="check-text"><strong>成本项目结转</strong>：维修结算后检查项目结转规则，核对项目发生额，结转至功能范围（注：功能范围<strong>6601和6602不用结转</strong>）。</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: REPORT RECONCILIATIONS -->
+        <div id="view-reports" class="view-panel">
+            <!-- BA01 -->
+            <div class="report-section" data-search="资产负债表 BA01 合同资产 重分类 合同负债 清账错误 借方余额 一年内到期的非流动负债 一年内到期的租赁负债">
+                <div class="report-header">
+                    <h2>1. 资产负债表</h2>
+                    <span>BA01</span>
+                </div>
+                <ul class="guideline-list">
+                    <li class="guideline-item"><strong>防止合同资产重分类错误</strong>：严禁因合同负债清账错误导致往来单位出现借方余额，从而在期末被系统自动重分类至合同资产中。
+                    </li>
+                    <li class="guideline-item"><strong>科目列报明细管控</strong>：“一年内到期的非流动负债”科目中，除“一年内到期的租赁负债”明细外，其余项严禁包含任何余额数。
+                    </li>
+                </ul>
+            </div>
+
+            <!-- BA04 -->
+            <div class="report-section"
+                data-search="现金流量表 BA04 现金流项目 薪酬 分红 支出 受限资金 党费户 期限管理 C98 现金等价物 内部交易 中石油 华油 银行存款 往来单位 贸易伙伴 勾稽关系 职工税费 个税手续费 返还">
+                <div class="report-header">
+                    <h2>2. 现金流量表</h2>
+                    <span>BA04</span>
+                </div>
+                <ul class="guideline-list">
+                    <li class="guideline-item"><strong>现金流项目实质选择</strong>：按业务实质参考标准选择现金流项目，严禁将代付款项错选为薪酬或分红支出。</li>
+                    <li class="guideline-item">
+                        <strong>党费户受限资金管理</strong>：独立核算的党费账户收付款项，在期限管理中必须选择“C98-受限存款”，防止影响期末现金等价物期末余额。</li>
+                    <li class="guideline-item">
+                        <strong>关联往来单位字段录入</strong>：中石油及华油系统内交易，需在“银行存款”科目的往来单位和贸易伙伴字段中维护对应公司名称，保障内部交易分类的准确性。</li>
+                </ul>
+                <div class="relation-diagram">
+                    <div class="diagram-node highlight">现金流-支付给职工的现金</div>
+                    <div class="diagram-arrow">── 勾稽一致 ──></div>
+                    <div class="diagram-node success">应付职工薪酬表-本年发放数</div>
+                </div>
+                <div class="relation-diagram" style="margin-top: 10px;">
+                    <div class="diagram-node highlight">现金流-支付的各项税费</div>
+                    <div class="diagram-arrow">── 勾稽一致 ──></div>
+                    <div class="diagram-node success">应交税费表-本年上交数</div>
+                </div>
+                <div class="relation-diagram" style="margin-top: 10px;">
+                    <div class="diagram-node highlight">个税手续费返还</div>
+                    <div class="diagram-arrow">── 严禁计入 ──></div>
+                    <div class="diagram-node" style="border-color: var(--color-error); color: var(--color-error);">
+                        收到的税费返还 (现金流量)</div>
+                </div>
+            </div>
+
+            <!-- BA07 -->
+            <div class="report-section" data-search="减值准备情况表 BA07 增减变动原因 账龄分析法 A01001007 信用减值损失 资产减值损失 勾稽">
+                <div class="report-header">
+                    <h2>3. 减值准备情况表</h2>
+                    <span>BA07</span>
+                </div>
+                <ul class="guideline-list">
+                    <li class="guideline-item">
+                        <strong>变动原因选项规范</strong>：常规计提与减少均必须明确选择变动原因为“A01001007-账龄分析法”，无特殊极其少见的重大交易背景严禁选用“其他原因”。</li>
+                </ul>
+                <div class="relation-diagram">
+                    <div class="diagram-node highlight">BA07 报表-本年计提数</div>
+                    <div class="diagram-arrow">── 必须等于 ──></div>
+                    <div class="diagram-node success">利润表：信用减值损失 + 资产减值损失</div>
+                </div>
+            </div>
+
+            <!-- 往来类报表 -->
+            <div class="report-section" data-search="往来类报表 负数余额 逾期 账龄 FB02 到期日 付款条件 清账">
+                <div class="report-header">
+                    <h2>4. 往来类报表</h2>
+                    <span>往来报表</span>
+                </div>
+                <ul class="guideline-list">
+                    <li class="guideline-item"><strong>严禁发生负数余额</strong>：往来报表严禁产生负数余额。逾期天数或账龄显示负数时，总账类科目可通过 <span
+                            class="badge-txcode">FB02</span> 更改到期日和付款条件来调整；并应在期末及时清账。</li>
+                </ul>
+            </div>
+
+            <!-- 税费及薪酬 -->
+            <div class="report-section"
+                data-search="税费及应付职工薪酬报表 BB41 BB39 增值税 转出未交增值税 S02001 未交增值税 S01001 用工类型 合同化 市场化 负数 BC02 BB41 BD03 BB39 勾稽">
+                <div class="report-header">
+                    <h2>5. 税费及应付职工薪酬报表</h2>
+                    <span>BB41 / BB39</span>
+                </div>
+                <ul class="guideline-list">
+                    <li class="guideline-item">
+                        <strong>增值税月结转凭证规范</strong>：月末转出增值税时，借方“转出未交增值税”应选变动原因“S02001-本年减少-本年已交”；贷方“未交增值税-本期转入数”选“S01001-本年增加-本年应交”。
+                    </li>
+                    <li class="guideline-item"><strong>人员用工类型校验</strong>：核对应付职工薪酬时必须选对用工类型，防止“合同化员工”或“市场化员工”数据明细产生倒挂的负数。
+                    </li>
+                </ul>
+                <div class="relation-diagram">
+                    <div class="diagram-node highlight">BC02 报表（税金及附加计提数）</div>
+                    <div class="diagram-arrow">── 必须等于 ──></div>
+                    <div class="diagram-node success">BB41 报表（税费实现数）</div>
+                </div>
+                <div class="relation-diagram" style="margin-top: 10px;">
+                    <div class="diagram-node highlight">BD03 报表（人工成本计提数）</div>
+                    <div class="diagram-arrow">── 必须等于 ──></div>
+                    <div class="diagram-node success">BB39 报表（薪酬计提数）</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: RED LINES -->
+        <div id="view-redlines" class="view-panel">
+            <div class="red-line-container">
+                <!-- 红线1 -->
+                <div class="red-line-card" data-search="直接改表 单体报表 单体日记账 调表 账表相符 ERP核算端 业务前端">
+                    <div class="red-line-card-header">
+                        <div class="red-line-icon">🚫</div>
+                        <h3 class="red-line-title">严禁直接改表</h3>
+                    </div>
+                    <div class="red-line-content">
+                        单体报表填报单位未经集团核准，<strong>严禁使用单体日记账直接调表</strong>。<br>
+                        任何数据源及取数错误，必须返回<strong>业务前端</strong>或<strong>ERP核算端</strong>对原始账务进行修正，贯彻并维护“<strong>账表相符</strong>”的铁律。
+                    </div>
+                </div>
+
+                <!-- 红线2 -->
+                <div class="red-line-card" data-search="外币折算 汇率折算 华油集团 人民币 本位币 差异 归零 报表">
+                    <div class="red-line-card-header">
+                        <div class="red-line-icon">💱</div>
+                        <h3 class="red-line-title">外币折算差异归零</h3>
+                    </div>
+                    <div class="red-line-content">
+                        自2026年度起，华油集团全级次下属单位记账本位币统一收拢为<strong>人民币（RMB）</strong>。<br>
+                        因此在本年度财务报表中，<strong>“外币报表折算差异”科目中不应包含任何余额数</strong>。
+                    </div>
+                </div>
+
+                <!-- 红线3 -->
+                <div class="red-line-card" data-search="内部交易 红灯 预警 ZP0JYADG0030 关账 业财联动 年终决算 对账差异 总会计师 签字 100万 编制说明">
+                    <div class="red-line-card-header">
+                        <div class="red-line-icon">🚨</div>
+                        <h3 class="red-line-title">内部交易红灯预警与巨额差异追责</h3>
+                    </div>
+                    <div class="red-line-content">
+                        月结关账期必须每日查看 <span class="badge-txcode">ZP0JYADG0030</span>
+                        报表。<strong>一旦业务状态呈现红灯警告，月末系统将直接锁定，无法办理结账关账</strong>。各单位必须加强业财协作，及时冲销交易。<br>
+                        在年终决算对账中，若关联方内部交易<strong>对账差异达100万元以上</strong>，必须逐一查明，编写差异调节表及专项说明，并
+                        <strong>提交公司总会计师签字确认</strong>。
+                    </div>
+                </div>
+
+                <!-- 红线4 -->
+                <div class="red-line-card" data-search="共享账务调整单 严格审批 审批流程 区域公司 ERP总协调人 审核 财务经理 终审 全程留痕 可追溯 月度通报">
+                    <div class="red-line-card-header">
+                        <div class="red-line-icon">🔒</div>
+                        <h3 class="red-line-title">严控共享账务调整单使用</h3>
+                    </div>
+                    <div class="red-line-content">
+                        严控通过共享账务调整单录入调整凭证的操作。<br>
+                        必须严格执行多重审批授权机制：由<strong>“区域公司ERP总协调人审核”</strong>发起 $\rightarrow$
+                        报<strong>“财务经理进行最终审批”</strong>。<br>
+                        确保所有系统账务调整动作<strong>全程留痕、全程受控、可回溯审计</strong>。财务部按月通报使用情况。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: CALCULATOR -->
+        <div id="view-calculator" class="view-panel">
+            <div class="calc-panel">
+                <div class="calc-header">
+                    <h2>月度财务指标勾稽关系在线验证器</h2>
+                    <p>在下方输入本期结账数据，系统将自动基于勾稽公式进行对账平衡校验。</p>
+                </div>
+
+                <div class="calc-grid">
+                    <!-- Calculator Case 1: BA07 vs Income Statement -->
+                    <div class="calc-box">
+                        <div class="calc-box-title">对账单 A：减资准备本年计提数勾稽 (BA07 vs 利润表)</div>
+
+                        <div class="calc-input-group">
+                            <label for="input-loss-credit">1. 利润表 - 信用减值损失本年累计数</label>
+                            <div class="calc-input-row">
+                                <input type="number" id="input-loss-credit" placeholder="0.00" value="0"
+                                    oninput="calculateBA07()">
+                                <div class="calc-unit">元</div>
+                            </div>
+                        </div>
+
+                        <div class="calc-input-group">
+                            <label for="input-loss-asset">2. 利润表 - 资产减值损失本年累计数</label>
+                            <div class="calc-input-row">
+                                <input type="number" id="input-loss-asset" placeholder="0.00" value="0"
+                                    oninput="calculateBA07()">
+                                <div class="calc-unit">元</div>
+                            </div>
+                        </div>
+
+                        <div class="calc-input-group">
+                            <label for="input-ba07-accrued">3. BA07表 - 减资准备本年计提数 (实际值)</label>
+                            <div class="calc-input-row">
+                                <input type="number" id="input-ba07-accrued" placeholder="0.00" value="0"
+                                    oninput="calculateBA07()">
+                                <div class="calc-unit">元</div>
+                            </div>
+                        </div>
+
+                        <div class="calc-result-bar pass" id="ba07-result-bar">
+                            <span id="ba07-status-text">对账平衡</span>
+                            <span id="ba07-diff-text">差异: 0.00 元</span>
+                        </div>
+                    </div>
+
+                    <!-- Calculator Case 2: Tax & Payroll (BC02/BB41 & BD03/BB39) -->
+                    <div class="calc-box">
+                        <div class="calc-box-title">对账单 B：税金与薪酬计提一致性校验 (BC02/BB41 & BD03/BB39)</div>
+
+                        <!-- BC02 vs BB41 -->
+                        <div style="margin-bottom: 10px;">
+                            <div class="calc-input-group" style="margin-bottom: 8px;">
+                                <label for="input-bc02-accrued">1. BC02表（税金及附加本年计提数）</label>
+                                <div class="calc-input-row">
+                                    <input type="number" id="input-bc02-accrued" placeholder="0.00" value="0"
+                                        oninput="calculateTaxSalary()">
+                                    <div class="calc-unit">元</div>
+                                </div>
+                            </div>
+                            <div class="calc-input-group">
+                                <label for="input-bb41-actual">2. BB41表（本期税费上交及实现数）</label>
+                                <div class="calc-input-row">
+                                    <input type="number" id="input-bb41-actual" placeholder="0.00" value="0"
+                                        oninput="calculateTaxSalary()">
+                                    <div class="calc-unit">元</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BD03 vs BB39 -->
+                        <div>
+                            <div class="calc-input-group" style="margin-bottom: 8px;">
+                                <label for="input-bd03-salary">3. BD03表（人工成本计提数）</label>
+                                <div class="calc-input-row">
+                                    <input type="number" id="input-bd03-salary" placeholder="0.00" value="0"
+                                        oninput="calculateTaxSalary()">
+                                    <div class="calc-unit">元</div>
+                                </div>
+                            </div>
+                            <div class="calc-input-group">
+                                <label for="input-bb39-salary">4. BB39表（薪酬计提数）</label>
+                                <div class="calc-input-row">
+                                    <input type="number" id="input-bb39-salary" placeholder="0.00" value="0"
+                                        oninput="calculateTaxSalary()">
+                                    <div class="calc-unit">元</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="calc-result-bar pass" id="tax-salary-result-bar">
+                            <span id="tax-salary-status-text">对账平衡</span>
+                            <span id="tax-salary-diff-text">差异: 税 0.00 | 薪 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="reset-btn" onclick="resetCalculator()">清空数据并重新对账</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- PRINT FLOAT BUTTON -->
+    <button class="action-float-btn" onclick="window.print()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span>打印核对表</span>
+    </button>
+
+    <script>
+        // Checkboxes items storage list
+        const checklistItems = [
+            'salary-1', 'salary-2', 'salary-3', 'salary-4', 'salary-5',
+            'lease-1', 'lease-2',
+            'asset-1', 'asset-2',
+            'funds-1', 'funds-2', 'funds-3', 'funds-4',
+            'gl-1', 'gl-2', 'gl-3',
+            'tax-1', 'tax-2',
+            'maint-1', 'maint-2',
+            'project-1', 'project-2'
+        ];
+
+        // Page load initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCheckedState();
+            updateProgress();
+
+            // Apply default theme or local preferences
+            const savedTheme = localStorage.getItem('guide-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            toggleThemeUI(savedTheme);
+        });
+
+        // Theme toggling functionality
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('guide-theme', nextTheme);
+            toggleThemeUI(nextTheme);
+        }
+
+        function toggleThemeUI(theme) {
+            const darkIcon = document.getElementById('theme-icon-dark');
+            const lightIcon = document.getElementById('theme-icon-light');
+            if (theme === 'dark') {
+                darkIcon.style.display = 'block';
+                lightIcon.style.display = 'none';
+            } else {
+                darkIcon.style.display = 'none';
+                lightIcon.style.display = 'block';
+            }
+        }
+
+        // View Navigation
+        function switchView(viewId, element) {
+            // Deactivate all views
+            document.querySelectorAll('.view-panel').forEach(view => {
+                view.classList.remove('active');
+            });
+            // Activate target view
+            document.getElementById(viewId).classList.add('active');
+
+            // Deactivate all nav menu highlights
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // Highlight selected nav
+            element.classList.add('active');
+
+            // Scroll to main content header
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Checklist Checkbox Actions
+        function toggleCheck(id) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                const checkItem = checkbox.closest('.check-item');
+                if (checkbox.checked) {
+                    checkItem.classList.add('checked');
+                } else {
+                    checkItem.classList.remove('checked');
+                }
+                saveCheckedState();
+                updateProgress();
+            }
+        }
+
+        // Sync list visual card with checkbox click
+        document.querySelectorAll('.check-item input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const item = e.target.closest('.check-item');
+                if (e.target.checked) {
+                    item.classList.add('checked');
+                } else {
+                    item.classList.remove('checked');
+                }
+                saveCheckedState();
+                updateProgress();
+            });
+        });
+
+        // Save progress details to LocalStorage
+        function saveCheckedState() {
+            const state = {};
+            checklistItems.forEach(id => {
+                const cb = document.getElementById(id);
+                if (cb) {
+                    state[id] = cb.checked;
+                }
+            });
+            localStorage.setItem('month_end_checklist_progress', JSON.stringify(state));
+        }
+
+        // Load progress details from LocalStorage
+        function loadCheckedState() {
+            const stateStr = localStorage.getItem('month_end_checklist_progress');
+            if (stateStr) {
+                try {
+                    const state = JSON.parse(stateStr);
+                    checklistItems.forEach(id => {
+                        const cb = document.getElementById(id);
+                        if (cb && state[id] !== undefined) {
+                            cb.checked = state[id];
+                            const checkItem = cb.closest('.check-item');
+                            if (state[id]) {
+                                checkItem.classList.add('checked');
+                            } else {
+                                checkItem.classList.remove('checked');
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('加载 LocalStorage 结账进度出错', e);
+                }
+            }
+        }
+
+        // Calculate and Update Progress Indicator
+        function updateProgress() {
+            let checkedCount = 0;
+            checklistItems.forEach(id => {
+                const cb = document.getElementById(id);
+                if (cb && cb.checked) {
+                    checkedCount++;
+                }
+            });
+
+            const total = checklistItems.length;
+            const percentage = Math.round((checkedCount / total) * 100);
+
+            document.getElementById('progress-percent').innerText = `${percentage}%`;
+            document.getElementById('progress-bar-fill').style.width = `${percentage}%`;
+            document.getElementById('progress-text').innerText = `已完成 ${checkedCount} / ${total} 项核对`;
+        }
+
+        // Live Real-Time Search Filtering
+        function handleSearch() {
+            const query = document.getElementById('search-bar').value.trim().toLowerCase();
+
+            // Card checklists filter
+            document.querySelectorAll('#view-checklist .card').forEach(card => {
+                const text = card.getAttribute('data-search').toLowerCase();
+                const matched = text.includes(query);
+                card.style.display = matched || query === '' ? 'block' : 'none';
+            });
+
+            // Report sections filter
+            document.querySelectorAll('#view-reports .report-section').forEach(section => {
+                const text = section.getAttribute('data-search').toLowerCase();
+                const matched = text.includes(query);
+                section.style.display = matched || query === '' ? 'block' : 'none';
+            });
+
+            // Red lines filter
+            document.querySelectorAll('#view-redlines .red-line-card').forEach(card => {
+                const text = card.getAttribute('data-search').toLowerCase();
+                const matched = text.includes(query);
+                card.style.display = matched || query === '' ? 'block' : 'none';
+            });
+        }
+
+        // CALCULATORS LOGIC
+        // A: BA07 Reconciliation
+        function calculateBA07() {
+            const lossCredit = parseFloat(document.getElementById('input-loss-credit').value) || 0;
+            const lossAsset = parseFloat(document.getElementById('input-loss-asset').value) || 0;
+            const ba07Accrued = parseFloat(document.getElementById('input-ba07-accrued').value) || 0;
+
+            const expectedAccrued = lossCredit + lossAsset;
+            const difference = Math.abs(ba07Accrued - expectedAccrued);
+
+            const resultBar = document.getElementById('ba07-result-bar');
+            const statusText = document.getElementById('ba07-status-text');
+            const diffText = document.getElementById('ba07-diff-text');
+
+            if (difference < 0.01) {
+                resultBar.className = 'calc-result-bar pass';
+                statusText.innerText = '✓ 对账平衡';
+                diffText.innerText = `勾稽公式相符 (期望计提数: ${expectedAccrued.toFixed(2)} 元)`;
+            } else {
+                resultBar.className = 'calc-result-bar fail';
+                statusText.innerText = '✗ 勾稽不平衡';
+                diffText.innerText = `差异: ${difference.toFixed(2)} 元 (期望: ${expectedAccrued.toFixed(2)} 元 | 实际: ${ba07Accrued.toFixed(2)} 元)`;
+            }
+        }
+
+        // B: Tax and Payroll Reconciliation
+        function calculateTaxSalary() {
+            // Tax: BC02 vs BB41
+            const bc02Accrued = parseFloat(document.getElementById('input-bc02-accrued').value) || 0;
+            const bb41Actual = parseFloat(document.getElementById('input-bb41-actual').value) || 0;
+            const taxDiff = Math.abs(bc02Accrued - bb41Actual);
+
+            // Salary: BD03 vs BB39
+            const bd03Salary = parseFloat(document.getElementById('input-bd03-salary').value) || 0;
+            const bb39Salary = parseFloat(document.getElementById('input-bb39-salary').value) || 0;
+            const salaryDiff = Math.abs(bd03Salary - bb39Salary);
+
+            const resultBar = document.getElementById('tax-salary-result-bar');
+            const statusText = document.getElementById('tax-salary-status-text');
+            const diffText = document.getElementById('tax-salary-diff-text');
+
+            const isTaxBalanced = taxDiff < 0.01;
+            const isSalaryBalanced = salaryDiff < 0.01;
+
+            if (isTaxBalanced && isSalaryBalanced) {
+                resultBar.className = 'calc-result-bar pass';
+                statusText.innerText = '✓ 对账平衡';
+                diffText.innerText = `税费与薪酬全部符合账面勾稽条件`;
+            } else {
+                resultBar.className = 'calc-result-bar fail';
+                statusText.innerText = '✗ 勾稽不平衡';
+
+                let details = '差异: ';
+                if (!isTaxBalanced) details += `税费差 ${taxDiff.toFixed(2)} 元; `;
+                if (!isSalaryBalanced) details += `薪酬差 ${salaryDiff.toFixed(2)} 元;`;
+                diffText.innerText = details;
+            }
+        }
+
+        // Reset Calculator Values
+        function resetCalculator() {
+            document.getElementById('input-loss-credit').value = '0';
+            document.getElementById('input-loss-asset').value = '0';
+            document.getElementById('input-ba07-accrued').value = '0';
+
+            document.getElementById('input-bc02-accrued').value = '0';
+            document.getElementById('input-bb41-actual').value = '0';
+            document.getElementById('input-bd03-salary').value = '0';
+            document.getElementById('input-bb39-salary').value = '0';
+
+            calculateBA07();
+            calculateTaxSalary();
+        }
+    </script>
+</body>
+
+</html>
