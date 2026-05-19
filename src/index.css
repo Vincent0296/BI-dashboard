@@ -61,7 +61,7 @@
   }
   
   /* 强制中文字体栈，并强制背景为纯白，防止 PDF 尾部或背景变灰 */
-  html, body {
+  html, body, #root, .min-h-screen.bg-slate-50 {
     background: #ffffff !important;
     background-color: #ffffff !important;
     height: auto !important;
@@ -72,6 +72,19 @@
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "Segoe UI", Roboto, sans-serif !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* 针对所有包含打印区域的祖先元素进行重置，去除背景、内边距、外边距、阴影和边框，消除额外高度和灰色背景 */
+  :has(.print-area), html, body, #root, .min-h-screen.bg-slate-50 {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
   }
 
   /* 隐藏所有非打印相关的 DOM 节点，使页面高度完全贴合打印区域，消除尾部空白页/灰色区域 */
@@ -95,6 +108,11 @@
     width: 100% !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
   }
 
   /* 分页符 */

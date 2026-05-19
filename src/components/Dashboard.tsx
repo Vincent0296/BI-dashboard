@@ -367,7 +367,13 @@ export const Dashboard: React.FC = () => {
 
             // Extract strictly the core metric columns (C1:AN1 area): no __EMPTY, no dimension keys
             const coreMetricHeaders: string[] = headersRow
-              .map(h => String(h || '').trim().replace(/R$/, '').replace(/^目标[-－\s]*/, '目标'))
+              .map(h => {
+                let cleanH = String(h || '').trim().replace(/R$/, '').replace(/^目标[-－\s]*/, '目标');
+                if (cleanH.includes('百元收入')) {
+                  cleanH = cleanH.replace('百元收入', '') + '占收比';
+                }
+                return cleanH;
+              })
               .filter(h => h && !h.startsWith('__EMPTY') && !EXCLUDED_KEYS.includes(h));
 
             // Set as definitive slicer order
@@ -399,7 +405,10 @@ export const Dashboard: React.FC = () => {
               }
               const metrics: Record<string, number> = {};
               headersRow.forEach((h, idx) => {
-                const key = String(h || '').trim().replace(/R$/, '');
+                let key = String(h || '').trim().replace(/R$/, '');
+                if (key.includes('百元收入')) {
+                  key = key.replace('百元收入', '') + '占收比';
+                }
                 if (key && !key.startsWith('__EMPTY') && idx !== dateColIdx && idx !== projectNoColIdx) {
                   const val = parseFloat(String(row[idx] ?? '0').replace(/,/g, ''));
                   metrics[key] = isNaN(val) ? 0 : val;
@@ -432,7 +441,10 @@ export const Dashboard: React.FC = () => {
                   if (!k.startsWith('__EMPTY') && !EXCLUDED_KEYS.includes(k)) {
                     let num = typeof val === 'number' ? val : (parseFloat(String(val).replace(/,/g, '')) || 0);
                     if (isWanYuanSheet) num *= 10000; // 统一转换为元
-                    const cleanK = k.trim().replace(/^目标[-－\s]*/, '目标').replace(/R$/, '');
+                    let cleanK = k.trim().replace(/^目标[-－\s]*/, '目标').replace(/R$/, '');
+                    if (cleanK.includes('百元收入')) {
+                      cleanK = cleanK.replace('百元收入', '') + '占收比';
+                    }
                     metrics[cleanK] = num;
                   }
                 });

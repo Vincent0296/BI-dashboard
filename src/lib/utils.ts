@@ -56,7 +56,7 @@ export function formatNumber(
 export function isRateMetric(metricName: string): boolean {
   if (!metricName) return false;
   if (metricName.includes('项目数')) return false;
-  return metricName.includes('率') || metricName.includes('Percent') || metricName.includes('百元');
+  return metricName.includes('率') || metricName.includes('Percent') || metricName.includes('百元') || metricName.includes('占收比');
 }
 
 /** Returns true if the metric should be displayed in 万元 (i.e. it's a money amount, not a rate or ratio) */

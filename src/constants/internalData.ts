@@ -45,9 +45,9 @@ export const OPERATING_METRICS = [
   "对标利润率",
   "经营利润率",
   "食材成本率",
-  "百元收入人工成本",
-  "百元收入能源成本",
-  "百元收入材料成本",
+  "人工成本占收比",
+  "能源成本占收比",
+  "材料成本占收比",
   "人工成本",
   "能源成本",
   "项目个数",
@@ -65,9 +65,9 @@ export const THREE_YEAR_BENEFIT_METRICS = [
   "目标其他",
   "目标利润",
   "目标利润率",
-  "目标百元收入人工成本",
-  "目标百元收入能源成本",
-  "目标百元收入材料成本",
+  "目标人工成本占收比",
+  "目标能源成本占收比",
+  "目标材料成本占收比",
   "重点项目个数",
   "未达标个数",
   "重点项目未达标数",
@@ -425,19 +425,19 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "unit": "元"
   },
   {
-    "name": "目标百元收入人工成本",
+    "name": "目标人工成本占收比",
     "formula": "=目标薪酬及外包/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
-    "name": "目标百元收入能源成本",
+    "name": "目标能源成本占收比",
     "formula": "=目标能源动力/目标收入",
     "source": "calculated",
     "unit": "元"
   },
   {
-    "name": "目标百元收入材料成本",
+    "name": "目标材料成本占收比",
     "formula": "=目标外购材料/目标收入",
     "source": "calculated",
     "unit": "元"
@@ -485,19 +485,19 @@ export const DEFAULT_METRICS_METADATA: MetricMetadata[] = [
     "unit": "元"
   },
   {
-    "name": "百元收入人工成本",
+    "name": "人工成本占收比",
     "formula": "=(15用工薪酬成本+16外包劳务支出)/收入YTD",
     "source": "operating",
     "unit": "元"
   },
   {
-    "name": "百元收入能源成本",
+    "name": "能源成本占收比",
     "formula": "=(8外购燃料+9外购动力)/收入YTD",
     "source": "operating",
     "unit": "元"
   },
   {
-    "name": "百元收入材料成本",
+    "name": "材料成本占收比",
     "formula": "=3外购材料/收入YTD",
     "source": "operating",
     "unit": "元"
