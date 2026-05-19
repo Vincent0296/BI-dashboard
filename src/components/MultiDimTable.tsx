@@ -1005,12 +1005,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             <div key={chunkIdx} className="print-page-break flex flex-col space-y-4">
               <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2">
                 <div className="flex flex-col">
-                  <h2 className="text-xl font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <h2 className="text-[21px] font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                     维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} {selectedYDim2 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim2)?.label}` : ''} {selectedYDim3 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim3)?.label}` : ''} | 期间: {selectedMonth}
                   </p>
                 </div>
-                <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                <div className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
                   内部报表
                 </div>
               </div>
@@ -1021,7 +1021,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     <tr className="bg-slate-800 text-white">
                       <th
                         className={cn(
-                          "p-3 border border-slate-700 font-black text-[10px] text-center",
+                          "p-3 border border-slate-700 font-black text-[11px] text-center",
                           selectedYDim2 === 'none' ? "w-[150px]" : (selectedYDim3 === 'none' ? "w-[260px]" : "w-[330px]")
                         )}
                         colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
@@ -1038,7 +1038,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             <th
                               key={group}
                               colSpan={indicatorsInChunk.length}
-                              className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
+                              className="p-3 border border-slate-700 font-black text-[12px] text-center uppercase tracking-wider"
                             >
                               {group}
                             </th>
@@ -1054,7 +1054,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                             <th
                               key={cat}
                               colSpan={groupsForCat.length}
-                              className="p-3 border border-slate-700 font-black text-[11px] text-center uppercase tracking-wider"
+                              className="p-3 border border-slate-700 font-black text-[12px] text-center uppercase tracking-wider"
                             >
                               {cat}
                             </th>
@@ -1063,16 +1063,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       )}
                     </tr>
                     <tr className="bg-slate-100">
-                      <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center w-full">
+                      <th className="p-3 border border-slate-200 text-slate-800 font-black text-[11px] text-center w-full">
                         {DIMENSIONS.find(d => d.key === selectedYDim)?.label}
                       </th>
                       {selectedYDim2 !== 'none' && (
-                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center w-full">
+                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[11px] text-center w-full">
                           {DIMENSIONS.find(d => d.key === selectedYDim2)?.label}
                         </th>
                       )}
                       {selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && (
-                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[10px] text-center w-full">
+                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[11px] text-center w-full">
                           {DIMENSIONS.find(d => d.key === selectedYDim3)?.label}
                         </th>
                       )}
@@ -1083,7 +1083,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           ).map(cat => (
                             <th
                               key={`${group}_${cat}`}
-                              className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
+                              className="p-3 border border-slate-200 text-slate-600 font-black text-[11px] text-center"
                             >
                               {cat}
                             </th>
@@ -1097,7 +1097,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           return groupsForCat.map(group => (
                             <th
                               key={`${group}_${cat}`}
-                              className="p-3 border border-slate-200 text-slate-600 font-black text-[10px] text-center"
+                              className="p-3 border border-slate-200 text-slate-600 font-black text-[11px] text-center"
                             >
                               {group}
                             </th>
@@ -1117,19 +1117,19 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       return (
                         <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${idx}`} className={cn(row.isSubtotal ? "bg-slate-50" : "bg-white")}>
                           {selectedYDim2 === 'none' ? (
-                            <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[10px] text-center">
+                            <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[11px] text-center">
                               {row.dimValue}
                             </td>
                           ) : selectedYDim3 === 'none' ? (
                             <>
                               {isFirstOfV1 && (
-                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[10px] text-center align-middle">
+                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[11px] text-center align-middle">
                                   {row.dimValue}
                                 </td>
                               )}
                               <td className={cn(
                                 "p-2 border border-slate-200 text-center leading-tight",
-                                row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[10px]" : "text-slate-600 font-medium text-[9px]"
+                                row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[11px]" : "text-slate-600 font-medium text-[10px]"
                               )}>
                                 {row.dimValue2}
                               </td>
@@ -1137,24 +1137,24 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           ) : (
                             <>
                               {isFirstOfV1 && (
-                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[10px] text-center align-middle">
+                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[11px] text-center align-middle">
                                   {row.dimValue}
                                 </td>
                               )}
                               {row.isSubtotal && row.subtotalLevel === 1 ? (
-                                <td colSpan={2} className="p-2 border border-slate-200 text-center leading-tight bg-slate-50 text-indigo-600 font-black text-[10px]">
+                                <td colSpan={2} className="p-2 border border-slate-200 text-center leading-tight bg-slate-50 text-indigo-600 font-black text-[11px]">
                                   {row.dimValue2}
                                 </td>
                               ) : (
                                 <>
                                   {isFirstOfV2 && (
-                                    <td rowSpan={v2Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[10px] text-center align-middle">
+                                    <td rowSpan={v2Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[11px] text-center align-middle">
                                       {row.dimValue2}
                                     </td>
                                   )}
                                   <td className={cn(
                                     "p-2 border border-slate-200 text-center leading-tight",
-                                    row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[10px]" : "text-slate-550 font-medium text-[9px]"
+                                    row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[11px]" : "text-slate-550 font-medium text-[10px]"
                                   )}>
                                     {row.dimValue3}
                                   </td>
@@ -1173,7 +1173,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                   <td
                                     key={`${group}_${cat}`}
                                     className={cn(
-                                      "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      "p-2 border border-slate-200 text-[11px] text-center font-bold",
                                       row.isSubtotal && "bg-slate-50",
                                       group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
@@ -1197,7 +1197,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                   <td
                                     key={`${group}_${cat}`}
                                     className={cn(
-                                      "p-2 border border-slate-200 text-[10px] text-center font-bold",
+                                      "p-2 border border-slate-200 text-[11px] text-center font-bold",
                                       row.isSubtotal && "bg-slate-50",
                                       group.includes('\u589e\u51cf')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
@@ -1216,7 +1216,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </tbody>
                   <tfoot className="table-footer-group">
                     <tr className="bg-slate-800 text-white font-bold">
-                      <td className="p-2 border border-slate-700 text-center text-[10px]" colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}>合计</td>
+                      <td className="p-2 border border-slate-700 text-center text-[11px]" colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}>合计</td>
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => (
                           chunk.filter(cat =>
@@ -1228,7 +1228,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               <td
                                 key={`${group}_${cat}`}
                                 className={cn(
-                                  "p-2 border border-slate-700 text-[10px] text-center",
+                                  "p-2 border border-slate-700 text-[11px] text-center",
                                   group.includes('\u589e\u51cf')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
@@ -1251,7 +1251,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               <td
                                 key={`${group}_${cat}`}
                                 className={cn(
-                                  "p-2 border-b border-r text-sm text-center sticky bottom-0 z-35",
+                                  "p-2 border-b border-r text-[15px] text-center sticky bottom-0 z-35",
                                   group.includes('\u589e\u51cf')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
@@ -1267,7 +1267,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </tfoot>
                 </table>
               </div>
-              <div className="flex justify-between items-center text-[8px] text-slate-400 font-bold">
+              <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold">
                 <span>导出时间: {new Date().toLocaleString()}</span>
                 <span>报表数据期: {selectedMonth}</span>
                 <span>第 {chunkIdx + 1} / {indicatorChunks.length} 页</span>
