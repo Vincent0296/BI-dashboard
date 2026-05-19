@@ -60,11 +60,23 @@
     margin: 10mm;
   }
   
-  /* 强制中文字体栈，解决 PDF 不显示中文问题 */
+  /* 强制中文字体栈，并强制背景为纯白，防止 PDF 尾部或背景变灰 */
+  html, body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
   * {
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", "Segoe UI", Roboto, sans-serif !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* 隐藏所有非打印相关的 DOM 节点，使页面高度完全贴合打印区域，消除尾部空白页/灰色区域 */
+  *:not(.print-area):not(.print-area *):not(:has(.print-area)) {
+    display: none !important;
   }
 
   /* 默认隐藏所有内容 */
@@ -77,13 +89,12 @@
     visibility: visible !important;
   }
 
-  /* 定位打印区域 */
+  /* 定位并重置打印区域 */
   .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: white !important;
+    position: relative !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
   /* 分页符 */
