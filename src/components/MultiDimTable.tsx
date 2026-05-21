@@ -1284,7 +1284,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       <div className={cn(
         "flex flex-col transition-all duration-300",
         isFocusMode
-          ? "fixed inset-0 z-50 bg-slate-950 text-slate-100 p-8 overflow-hidden flex flex-col h-screen space-y-4"
+          ? "fixed inset-0 z-[100] bg-slate-950 text-slate-100 p-8 overflow-hidden flex flex-col h-screen space-y-4"
           : "w-full space-y-6",
         isPrinting && "hidden"
       )}>

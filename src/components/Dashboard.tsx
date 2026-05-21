@@ -1133,7 +1133,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <header className="sticky top-0 z-50 glass-card border-b border-slate-200/60 px-6 py-3 flex items-center justify-between print:hidden">
+      <header className="sticky top-0 z-[60] glass-card border-b border-slate-200/60 px-6 py-3 flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <div className="bg-gradient-to-br from-indigo-600 to-blue-500 p-2.5 rounded-2xl shadow-lg shadow-indigo-200 animate-float">
             <BarChart2 className="w-6 h-6 text-white" />
@@ -1309,7 +1309,7 @@ export const Dashboard: React.FC = () => {
         ) : (
 
           <>
-            <section className="bg-white/70 backdrop-blur-md rounded-3xl border border-slate-200/60 shadow-sm sticky top-[80px] z-40 print:hidden overflow-visible premium-shadow transition-all hover:shadow-md">
+            <section className="bg-white/70 backdrop-blur-md rounded-3xl border border-slate-200/60 shadow-sm sticky top-[80px] z-[55] print:hidden overflow-visible premium-shadow transition-all hover:shadow-md">
               <div
                 className="flex items-center justify-between p-5 cursor-pointer hover:bg-white/80 transition-colors"
                 onClick={() => setIsSlicerVisible(!isSlicerVisible)}
