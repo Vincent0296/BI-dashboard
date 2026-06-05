@@ -90,6 +90,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
   const [selectedYDim, setSelectedYDim] = useState<typeof DIMENSIONS[number]['key']>('propertyType');
   const [selectedYDim2, setSelectedYDim2] = useState<typeof DIMENSIONS[number]['key'] | 'none'>('none');
   const [selectedYDim3, setSelectedYDim3] = useState<typeof DIMENSIONS[number]['key'] | 'none'>('none');
+  const [selectedYDim4, setSelectedYDim4] = useState<typeof DIMENSIONS[number]['key'] | 'none'>('none');
 
   const handleSelectYDim = (val: typeof DIMENSIONS[number]['key']) => {
     setSelectedYDim(val);
@@ -97,8 +98,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     if (selectedYDim2 === val) {
       setSelectedYDim2('none');
       setSelectedYDim3('none');
+      setSelectedYDim4('none');
     } else if (selectedYDim3 === val) {
       setSelectedYDim3('none');
+      setSelectedYDim4('none');
+    } else if (selectedYDim4 === val) {
+      setSelectedYDim4('none');
     }
   };
 
@@ -107,13 +112,27 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     setActivePresetId(null);
     if (val === 'none') {
       setSelectedYDim3('none');
+      setSelectedYDim4('none');
     } else if (selectedYDim3 === val) {
       setSelectedYDim3('none');
+      setSelectedYDim4('none');
+    } else if (selectedYDim4 === val) {
+      setSelectedYDim4('none');
     }
   };
 
   const handleSelectYDim3 = (val: typeof DIMENSIONS[number]['key'] | 'none') => {
     setSelectedYDim3(val);
+    setActivePresetId(null);
+    if (val === 'none') {
+      setSelectedYDim4('none');
+    } else if (selectedYDim4 === val) {
+      setSelectedYDim4('none');
+    }
+  };
+
+  const handleSelectYDim4 = (val: typeof DIMENSIONS[number]['key'] | 'none') => {
+    setSelectedYDim4(val);
     setActivePresetId(null);
   };
 
@@ -201,6 +220,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               selectedYDim: p.filters.selectedYDim,
               selectedYDim2: p.filters.selectedYDim2 || 'none',
               selectedYDim3: p.filters.selectedYDim3 || 'none',
+              selectedYDim4: p.filters.selectedYDim4 || 'none',
               selectedMetricGroups: groups,
               isXAxisSwapped: p.filters.isXAxisSwapped || false,
               showSubtotals: p.filters.showSubtotals || false,
@@ -236,6 +256,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedYDim,
           selectedYDim2,
           selectedYDim3,
+          selectedYDim4,
           selectedMetricGroups,
           isXAxisSwapped,
           showSubtotals,
@@ -255,6 +276,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
           selectedYDim: newPresetObj.filters.selectedYDim,
           selectedYDim2: newPresetObj.filters.selectedYDim2,
           selectedYDim3: newPresetObj.filters.selectedYDim3,
+          selectedYDim4: newPresetObj.filters.selectedYDim4,
           selectedMetricGroups: newPresetObj.filters.selectedMetricGroups as string[],
           isXAxisSwapped: newPresetObj.filters.isXAxisSwapped,
           showSubtotals: newPresetObj.filters.showSubtotals,
@@ -275,6 +297,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     setSelectedYDim(preset.selectedYDim as any);
     setSelectedYDim2(preset.selectedYDim2 as any);
     setSelectedYDim3((preset.selectedYDim3 || 'none') as any);
+    setSelectedYDim4((preset.selectedYDim4 || 'none') as any);
     setSelectedMetricGroups(preset.selectedMetricGroups);
     setIsXAxisSwapped(preset.isXAxisSwapped);
     setShowSubtotals(preset.showSubtotals || false);
@@ -333,6 +356,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             selectedYDim,
             selectedYDim2,
             selectedYDim3,
+            selectedYDim4,
             selectedMetricGroups,
             isXAxisSwapped,
             showSubtotals,
@@ -343,7 +367,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         .eq('id', preset.id);
 
       if (!error) {
-        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedYDim3, selectedMetricGroups, isXAxisSwapped, showSubtotals, printIndicatorsPerPage } as TablePreset : p));
+        setTablePresets(tablePresets.map(p => p.id === preset.id ? { ...p, selectedYDim, selectedYDim2, selectedYDim3, selectedYDim4, selectedMetricGroups, isXAxisSwapped, showSubtotals, printIndicatorsPerPage } as TablePreset : p));
         alert('方案已成功更新');
       }
     } catch (err) {
@@ -398,7 +422,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
     if (selectedYDim2 === 'none') {
       const rawValues = Array.from(new Set(data.map(d => String(d[selectedYDim])))) as string[];
-      return getDimOrder(selectedYDim, rawValues).map(v => ({ v1: v, v2: null, v3: null }));
+      return getDimOrder(selectedYDim, rawValues).map(v => ({ v1: v, v2: null, v3: null, v4: null }));
     } else if (selectedYDim3 === 'none') {
       const pairSet = new Set<string>();
       data.forEach(d => {
@@ -412,9 +436,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       return sortedV1s.flatMap(v1 => {
         const v2sForV1 = pairs.filter(p => p.v1 === v1).map(p => p.v2);
         const sortedV2s = getDimOrder(selectedYDim2, v2sForV1);
-        return sortedV2s.map(v2 => ({ v1, v2, v3: null }));
+        return sortedV2s.map(v2 => ({ v1, v2, v3: null, v4: null }));
       });
-    } else {
+    } else if (selectedYDim4 === 'none') {
       const tripletSet = new Set<string>();
       data.forEach(d => {
         tripletSet.add(`${d[selectedYDim]}|${d[selectedYDim2]}|${d[selectedYDim3]}`);
@@ -430,11 +454,34 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         return sortedV2s.flatMap(v2 => {
           const v3sForV2 = triplets.filter(p => p.v1 === v1 && p.v2 === v2).map(p => p.v3);
           const sortedV3s = getDimOrder(selectedYDim3, v3sForV2);
-          return sortedV3s.map(v3 => ({ v1, v2, v3 }));
+          return sortedV3s.map(v3 => ({ v1, v2, v3, v4: null }));
+        });
+      });
+    } else {
+      const quadrupletSet = new Set<string>();
+      data.forEach(d => {
+        quadrupletSet.add(`${d[selectedYDim]}|${d[selectedYDim2]}|${d[selectedYDim3]}|${d[selectedYDim4]}`);
+      });
+      const quadruplets = Array.from(quadrupletSet).map(p => {
+        const [v1, v2, v3, v4] = p.split('|');
+        return { v1, v2, v3, v4 };
+      });
+      const sortedV1s = getDimOrder(selectedYDim, Array.from(new Set(quadruplets.map(p => p.v1))));
+      return sortedV1s.flatMap(v1 => {
+        const v2sForV1 = Array.from(new Set(quadruplets.filter(p => p.v1 === v1).map(p => p.v2)));
+        const sortedV2s = getDimOrder(selectedYDim2, v2sForV1);
+        return sortedV2s.flatMap(v2 => {
+          const v3sForV2 = Array.from(new Set(quadruplets.filter(p => p.v1 === v1 && p.v2 === v2).map(p => p.v3)));
+          const sortedV3s = getDimOrder(selectedYDim3, v3sForV2);
+          return sortedV3s.flatMap(v3 => {
+            const v4sForV3 = quadruplets.filter(p => p.v1 === v1 && p.v2 === v2 && p.v3 === v3).map(p => p.v4);
+            const sortedV4s = getDimOrder(selectedYDim4, v4sForV3);
+            return sortedV4s.map(v4 => ({ v1, v2, v3, v4 }));
+          });
         });
       });
     }
-  }, [data, selectedYDim, selectedYDim2, selectedYDim3]);
+  }, [data, selectedYDim, selectedYDim2, selectedYDim3, selectedYDim4]);
 
   const getMetricAggregatedValue = (dataSlice: EnrichedRecord[], metricName: string, timeGroupName: string): number => {
     if (!selectedMonth || !selectedMonth.includes('-')) return 0;
@@ -759,7 +806,8 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       const slice = data.filter(d =>
         String(d[selectedYDim]) === dv.v1 &&
         (dv.v2 === null || String(d[selectedYDim2]) === dv.v2) &&
-        (dv.v3 === null || String(d[selectedYDim3]) === dv.v3)
+        (dv.v3 === null || String(d[selectedYDim3]) === dv.v3) &&
+        (dv.v4 === null || String(d[selectedYDim4]) === dv.v4)
       );
       const metrics: Record<string, number> = {};
 
@@ -769,7 +817,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
         });
       });
 
-      return { dimValue: dv.v1, dimValue2: dv.v2, dimValue3: dv.v3, metrics };
+      return { dimValue: dv.v1, dimValue2: dv.v2, dimValue3: dv.v3, dimValue4: dv.v4, metrics };
     });
 
     if (sortConfig.key && sortConfig.direction) {
@@ -804,11 +852,12 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             dimValue: v1,
             dimValue2: '小计',
             dimValue3: ' ',
+            dimValue4: ' ',
             metrics: subtotalMetrics,
             isSubtotal: true,
             subtotalLevel: 1
           });
-        } else {
+        } else if (selectedYDim4 === 'none') {
           // Y1, Y2, and Y3 all active!
           const v2Values = Array.from(new Set(rawData.filter(d => d.dimValue === v1).map(d => d.dimValue2)));
           v2Values.forEach(v2 => {
@@ -827,6 +876,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               dimValue: v1,
               dimValue2: v2,
               dimValue3: '小计',
+              dimValue4: ' ',
               metrics: subtotalMetricsL2,
               isSubtotal: true,
               subtotalLevel: 2
@@ -845,6 +895,71 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
             dimValue: v1,
             dimValue2: '小计',
             dimValue3: ' ',
+            dimValue4: ' ',
+            metrics: subtotalMetricsL1,
+            isSubtotal: true,
+            subtotalLevel: 1
+          });
+        } else {
+          // Y1, Y2, Y3, and Y4 all active!
+          const v2Values = Array.from(new Set(rawData.filter(d => d.dimValue === v1).map(d => d.dimValue2)));
+          v2Values.forEach(v2 => {
+            const v3Values = Array.from(new Set(rawData.filter(d => d.dimValue === v1 && d.dimValue2 === v2).map(d => d.dimValue3)));
+            v3Values.forEach(v3 => {
+              const subGroup = rawData.filter(d => d.dimValue === v1 && d.dimValue2 === v2 && d.dimValue3 === v3);
+              finalData.push(...subGroup);
+
+              // Calculate Level 3 subtotal for v1 + v2 + v3
+              const sliceL3 = data.filter(d => String(d[selectedYDim]) === v1 && String(d[selectedYDim2]) === v2 && String(d[selectedYDim3]) === v3);
+              const subtotalMetricsL3: Record<string, number> = {};
+              selectedMetricGroups.forEach(groupName => {
+                categories.forEach(cat => {
+                  subtotalMetricsL3[`${groupName}_${cat}`] = calculateValue(sliceL3, cat, groupName);
+                });
+              });
+              finalData.push({
+                dimValue: v1,
+                dimValue2: v2,
+                dimValue3: v3,
+                dimValue4: '小计',
+                metrics: subtotalMetricsL3,
+                isSubtotal: true,
+                subtotalLevel: 3
+              });
+            });
+
+            // Calculate Level 2 subtotal for v1 + v2
+            const sliceL2 = data.filter(d => String(d[selectedYDim]) === v1 && String(d[selectedYDim2]) === v2);
+            const subtotalMetricsL2: Record<string, number> = {};
+            selectedMetricGroups.forEach(groupName => {
+              categories.forEach(cat => {
+                subtotalMetricsL2[`${groupName}_${cat}`] = calculateValue(sliceL2, cat, groupName);
+              });
+            });
+            finalData.push({
+              dimValue: v1,
+              dimValue2: v2,
+              dimValue3: '小计',
+              dimValue4: ' ',
+              metrics: subtotalMetricsL2,
+              isSubtotal: true,
+              subtotalLevel: 2
+            });
+          });
+
+          // Calculate Level 1 subtotal for v1
+          const sliceL1 = data.filter(d => String(d[selectedYDim]) === v1);
+          const subtotalMetricsL1: Record<string, number> = {};
+          selectedMetricGroups.forEach(groupName => {
+            categories.forEach(cat => {
+              subtotalMetricsL1[`${groupName}_${cat}`] = calculateValue(sliceL1, cat, groupName);
+            });
+          });
+          finalData.push({
+            dimValue: v1,
+            dimValue2: '小计',
+            dimValue3: ' ',
+            dimValue4: ' ',
             metrics: subtotalMetricsL1,
             isSubtotal: true,
             subtotalLevel: 1
@@ -855,7 +970,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     }
 
     return rawData;
-  }, [data, dimValues, selectedYDim, selectedYDim2, selectedYDim3, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig, showSubtotals]);
+  }, [data, dimValues, selectedYDim, selectedYDim2, selectedYDim3, selectedYDim4, selectedMetricGroups, categories, selectedMonth, metricMetadata, timeGroupMetadata, sortConfig, showSubtotals]);
 
   const handleSort = (key: string) => {
     setSortConfig(prev => {
@@ -881,15 +996,27 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     // Export ALL indicators from 'categories' prop, not just 'currentIndicators'
     const showSecondary = selectedYDim2 !== 'none';
     const showTertiary = selectedYDim2 !== 'none' && selectedYDim3 !== 'none';
+    const showQuaternary = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none';
     const dim1Label = DIMENSIONS.find(d => d.key === selectedYDim)?.label || '维度1';
     const dim2Label = DIMENSIONS.find(d => d.key === selectedYDim2)?.label || '维度2';
     const dim3Label = DIMENSIONS.find(d => d.key === selectedYDim3)?.label || '维度3';
+    const dim4Label = DIMENSIONS.find(d => d.key === selectedYDim4)?.label || '维度4';
 
     let header1: string[] = [];
     let header2: string[] = [];
 
-    const dimColsHeader1 = [dim1Label, ...(showSecondary ? [dim2Label] : []), ...(showTertiary ? [dim3Label] : [])];
-    const dimColsHeader2 = ['', ...(showSecondary ? [''] : []), ...(showTertiary ? [''] : [])];
+    const dimColsHeader1 = [
+      dim1Label,
+      ...(showSecondary ? [dim2Label] : []),
+      ...(showTertiary ? [dim3Label] : []),
+      ...(showQuaternary ? [dim4Label] : [])
+    ];
+    const dimColsHeader2 = [
+      '',
+      ...(showSecondary ? [''] : []),
+      ...(showTertiary ? [''] : []),
+      ...(showQuaternary ? [''] : [])
+    ];
 
     if (!isXAxisSwapped) {
       header1 = [...dimColsHeader1, ...selectedMetricGroups.flatMap(g => Array(categories.length).fill(g))];
@@ -903,6 +1030,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       row.dimValue,
       ...(showSecondary ? [row.dimValue2] : []),
       ...(showTertiary ? [row.dimValue3] : []),
+      ...(showQuaternary ? [row.dimValue4] : []),
       ...(!isXAxisSwapped
         ? selectedMetricGroups.flatMap(g =>
           categories.map(cat => {
@@ -927,6 +1055,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
       '合计',
       ...(showSecondary ? [''] : []),
       ...(showTertiary ? [''] : []),
+      ...(showQuaternary ? [''] : []),
       ...(!isXAxisSwapped
         ? selectedMetricGroups.flatMap(g =>
           categories.map(cat => {
@@ -978,12 +1107,17 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
     // 预计算 span 以优化性能
     const v1Spans = new Map<string, number>();
     const v2Spans = new Map<string, number>();
+    const v3Spans = new Map<string, number>();
     if (selectedYDim2 !== 'none') {
       tableData.forEach(row => {
         v1Spans.set(row.dimValue, (v1Spans.get(row.dimValue) || 0) + 1);
         if (selectedYDim3 !== 'none') {
           const key = `${row.dimValue}|${row.dimValue2}`;
           v2Spans.set(key, (v2Spans.get(key) || 0) + 1);
+          if (selectedYDim4 !== 'none') {
+            const key3 = `${row.dimValue}|${row.dimValue2}|${row.dimValue3}`;
+            v3Spans.set(key3, (v3Spans.get(key3) || 0) + 1);
+          }
         }
       });
     }
@@ -1007,7 +1141,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 <div className="flex flex-col">
                   <h2 className="text-[22px] font-black text-slate-800">多维交叉数据分析表 (第 {chunkIdx + 1}/{indicatorChunks.length} 部分)</h2>
                   <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
-                    维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} {selectedYDim2 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim2)?.label}` : ''} {selectedYDim3 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim3)?.label}` : ''} | 期间: {selectedMonth}
+                    维度: {DIMENSIONS.find(d => d.key === selectedYDim)?.label} {selectedYDim2 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim2)?.label}` : ''} {selectedYDim3 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim3)?.label}` : ''} {selectedYDim4 !== 'none' ? `+ ${DIMENSIONS.find(d => d.key === selectedYDim4)?.label}` : ''} | 期间: {selectedMonth}
                   </p>
                 </div>
                 <div className="text-[12px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
@@ -1022,9 +1156,9 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       <th
                          className={cn(
                           "p-3 border border-slate-700 font-black text-[12px] text-center",
-                          selectedYDim2 === 'none' ? "w-[150px]" : (selectedYDim3 === 'none' ? "w-[260px]" : "w-[330px]")
+                          selectedYDim2 === 'none' ? "w-[150px]" : (selectedYDim3 === 'none' ? "w-[260px]" : (selectedYDim4 === 'none' ? "w-[330px]" : "w-[400px]"))
                         )}
-                        colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
+                        colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : (selectedYDim4 === 'none' ? 3 : 4))}
                       >
                         维度
                       </th>
@@ -1076,6 +1210,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           {DIMENSIONS.find(d => d.key === selectedYDim3)?.label}
                         </th>
                       )}
+                      {selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' && (
+                        <th className="p-3 border border-slate-200 text-slate-800 font-black text-[12px] text-center w-full">
+                          {DIMENSIONS.find(d => d.key === selectedYDim4)?.label}
+                        </th>
+                      )}
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => (
                           chunk.filter(cat =>
@@ -1114,8 +1253,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       const isFirstOfV2 = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue || tableData[idx - 1].dimValue2 !== row.dimValue2);
                       const v2Span = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' ? (v2Spans.get(`${row.dimValue}|${row.dimValue2}`) || 1) : 1;
 
+                      const isFirstOfV3 = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue || tableData[idx - 1].dimValue2 !== row.dimValue2 || tableData[idx - 1].dimValue3 !== row.dimValue3);
+                      const v3Span = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' ? (v3Spans.get(`${row.dimValue}|${row.dimValue2}|${row.dimValue3}`) || 1) : 1;
+
                       return (
-                        <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${idx}`} className={cn(row.isSubtotal ? "bg-slate-50" : "bg-white")}>
+                        <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${row.dimValue4 || ''}-${idx}`} className={cn(row.isSubtotal ? "bg-slate-50" : "bg-white")}>
                           {selectedYDim2 === 'none' ? (
                             <td className="p-2 border border-slate-200 text-slate-700 font-bold text-[12px] text-center">
                               {row.dimValue}
@@ -1134,7 +1276,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 {row.dimValue2}
                               </td>
                             </>
-                          ) : (
+                          ) : selectedYDim4 === 'none' ? (
                             <>
                               {isFirstOfV1 && (
                                 <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[12px] text-center align-middle">
@@ -1154,9 +1296,45 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                   )}
                                   <td className={cn(
                                     "p-2 border border-slate-200 text-center leading-tight",
-                                    row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[12px]" : "text-slate-550 font-medium text-[11px]"
+                                    row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[12px]" : "text-slate-600 font-medium text-[11px]"
                                   )}>
                                     {row.dimValue3}
+                                  </td>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {isFirstOfV1 && (
+                                <td rowSpan={v1Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[12px] text-center align-middle">
+                                  {row.dimValue}
+                                </td>
+                              )}
+                              {row.isSubtotal && row.subtotalLevel === 1 ? (
+                                <td colSpan={3} className="p-2 border border-slate-200 text-center leading-tight bg-slate-50 text-indigo-600 font-black text-[12px]">
+                                  {row.dimValue2}
+                                </td>
+                              ) : row.isSubtotal && row.subtotalLevel === 2 ? (
+                                <td colSpan={2} className="p-2 border border-slate-200 text-center leading-tight bg-slate-50 text-indigo-600 font-black text-[12px]">
+                                  {row.dimValue3}
+                                </td>
+                              ) : (
+                                <>
+                                  {isFirstOfV2 && (
+                                    <td rowSpan={v2Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[12px] text-center align-middle">
+                                      {row.dimValue2}
+                                    </td>
+                                  )}
+                                  {isFirstOfV3 && (
+                                    <td rowSpan={v3Span} className="p-2 border border-slate-200 text-slate-800 font-black text-[12px] text-center align-middle">
+                                      {row.dimValue3}
+                                    </td>
+                                  )}
+                                  <td className={cn(
+                                    "p-2 border border-slate-200 text-center leading-tight",
+                                    row.isSubtotal ? "bg-slate-50 text-indigo-600 font-black text-[12px]" : "text-slate-550 font-medium text-[11px]"
+                                  )}>
+                                    {row.dimValue4}
                                   </td>
                                 </>
                               )}
@@ -1175,7 +1353,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     className={cn(
                                       "p-2 border border-slate-200 text-[12px] text-center font-bold",
                                       row.isSubtotal && "bg-slate-50",
-                                      group.includes('\u589e\u51cf')
+                                      group.includes('增减')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : (row.isSubtotal ? "text-indigo-600" : "text-slate-600")
                                     )}
@@ -1199,7 +1377,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                     className={cn(
                                       "p-2 border border-slate-200 text-[12px] text-center font-bold",
                                       row.isSubtotal && "bg-slate-50",
-                                      group.includes('\u589e\u51cf')
+                                      group.includes('增减')
                                         ? (val >= 0 ? "text-emerald-600" : "text-rose-600")
                                         : (row.isSubtotal ? "text-indigo-600" : "text-slate-600")
                                     )}
@@ -1216,7 +1394,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                   </tbody>
                   <tfoot className="table-footer-group">
                     <tr className="bg-slate-800 text-white font-bold">
-                      <td className="p-2 border border-slate-700 text-center text-[12px]" colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}>合计</td>
+                      <td className="p-2 border border-slate-700 text-center text-[12px]" colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : (selectedYDim4 === 'none' ? 3 : 4))}>合计</td>
                       {!isXAxisSwapped ? (
                         selectedMetricGroups.map(group => (
                           chunk.filter(cat =>
@@ -1229,7 +1407,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[12px] text-center",
-                                  group.includes('\u589e\u51cf')
+                                  group.includes('增减')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
@@ -1252,7 +1430,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                                 key={`${group}_${cat}`}
                                 className={cn(
                                   "p-2 border border-slate-700 text-[12px] text-center",
-                                  group.includes('\u589e\u51cf')
+                                  group.includes('增减')
                                     ? (val >= 0 ? "text-emerald-400" : "text-rose-400")
                                     : "text-white"
                                 )}
@@ -1516,7 +1694,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
 
             {/* Controls Section */}
             <div className={cn(
-              "grid grid-cols-1 xl:grid-cols-3 gap-8 p-8 rounded-[2rem] border shadow-sm premium-shadow print:hidden",
+              "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 p-8 rounded-[2rem] border shadow-sm premium-shadow print:hidden",
               isFocusMode
                 ? "bg-slate-900 border-slate-800 text-slate-200"
                 : "bg-white border-slate-200/60"
@@ -1539,7 +1717,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         selectedYDim === dim.key
                           ? "bg-indigo-600 text-white shadow-xl shadow-indigo-100 dark:shadow-indigo-950/30"
                           : (isFocusMode
-                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
                             : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
@@ -1564,7 +1742,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                       selectedYDim2 === 'none'
                         ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
                         : (isFocusMode
-                          ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                          ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-755"
                           : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                     )}
                   >
@@ -1579,7 +1757,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         selectedYDim2 === dim.key
                           ? "bg-purple-600 text-white shadow-xl shadow-purple-100 dark:shadow-purple-950/30"
                           : (isFocusMode
-                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
                             : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
@@ -1612,7 +1790,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                         selectedYDim3 === 'none'
                           ? "bg-pink-600 text-white shadow-xl shadow-pink-100 dark:shadow-pink-950/30"
                           : (isFocusMode
-                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
                             : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                       )}
                     >
@@ -1627,7 +1805,56 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           selectedYDim3 === dim.key
                             ? "bg-pink-600 text-white shadow-xl shadow-pink-100 dark:shadow-pink-950/30"
                             : (isFocusMode
-                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
+                              : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                        )}
+                      >
+                        {dim.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className={cn("p-2 rounded-lg", isFocusMode ? "bg-amber-950/40" : "bg-amber-50")}>
+                    <Filter className={cn("w-4 h-4", isFocusMode ? "text-amber-400" : "text-amber-600")} />
+                  </div>
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">四级维度 (Y4)</h4>
+                </div>
+                {selectedYDim3 === 'none' ? (
+                  <div className={cn(
+                    "text-xs font-medium p-3 rounded-xl border border-dashed text-center",
+                    isFocusMode ? "text-slate-500 border-slate-800" : "text-slate-400 border-slate-200"
+                  )}>
+                    请先选择三级维度以启用四级维度
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleSelectYDim4('none')}
+                      className={cn(
+                        "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                        selectedYDim4 === 'none'
+                          ? "bg-amber-600 text-white shadow-xl shadow-amber-100 dark:shadow-amber-950/30"
+                          : (isFocusMode
+                            ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
+                            : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
+                      )}
+                    >
+                      无
+                    </button>
+                    {DIMENSIONS.filter(d => d.key !== selectedYDim && d.key !== selectedYDim2 && d.key !== selectedYDim3).map(dim => (
+                      <button
+                        key={dim.key}
+                        onClick={() => handleSelectYDim4(dim.key)}
+                        className={cn(
+                          "px-5 py-2.5 rounded-xl text-xs font-black transition-all hover-lift active:scale-95",
+                          selectedYDim4 === dim.key
+                            ? "bg-amber-600 text-white shadow-xl shadow-amber-100 dark:shadow-amber-950/30"
+                            : (isFocusMode
+                              ? "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-750"
                               : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/60")
                         )}
                       >
@@ -1639,7 +1866,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
               </div>
 
               {/* X-Axis Metric Group Selection */}
-              <div className="space-y-5 xl:col-span-3">
+              <div className="space-y-5 xl:col-span-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg", isFocusMode ? "bg-indigo-950/40" : "bg-indigo-50")}>
@@ -1802,10 +2029,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     "p-4 border-b border-r font-black text-[11px] sticky top-0 left-0 z-50 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
                     selectedYDim2 === 'none'
                       ? "w-[140px] min-w-[140px] max-w-[140px] truncate"
-                      : (selectedYDim3 === 'none' ? "w-[280px] min-w-[280px] max-w-[280px] truncate" : "w-[420px] min-w-[420px] max-w-[420px] truncate"),
+                      : (selectedYDim3 === 'none'
+                        ? "w-[280px] min-w-[280px] max-w-[280px] truncate"
+                        : (selectedYDim4 === 'none'
+                          ? "w-[420px] min-w-[420px] max-w-[420px] truncate"
+                          : "w-[560px] min-w-[560px] max-w-[560px] truncate")),
                     isFocusMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-800 border-slate-700 text-white"
                   )}
-                  colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
+                  colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : (selectedYDim4 === 'none' ? 3 : 4))}
                 >
                   维度 \ {isXAxisSwapped ? '指标' : '计算组'}
                 </th>
@@ -1875,6 +2106,16 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     )}
                   >
                     {DIMENSIONS.find(d => d.key === selectedYDim3)?.label}
+                  </th>
+                )}
+                {selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' && (
+                  <th
+                    className={cn(
+                      "p-4 border-b border-r font-black text-xs sticky top-[45px] left-[420px] z-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)] text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                      isFocusMode ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-800 border-slate-200"
+                    )}
+                  >
+                    {DIMENSIONS.find(d => d.key === selectedYDim4)?.label}
                   </th>
                 )}
                 {!isXAxisSwapped ? (
@@ -1958,8 +2199,11 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                 const isFirstOfV2 = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue || tableData[idx - 1].dimValue2 !== row.dimValue2);
                 const v2Span = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' ? tableData.filter(r => r.dimValue === row.dimValue && r.dimValue2 === row.dimValue2).length : 1;
 
+                const isFirstOfV3 = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' && (idx === 0 || tableData[idx - 1].dimValue !== row.dimValue || tableData[idx - 1].dimValue2 !== row.dimValue2 || tableData[idx - 1].dimValue3 !== row.dimValue3);
+                const v3Span = selectedYDim2 !== 'none' && selectedYDim3 !== 'none' && selectedYDim4 !== 'none' ? tableData.filter(r => r.dimValue === row.dimValue && r.dimValue2 === row.dimValue2 && r.dimValue3 === row.dimValue3).length : 1;
+
                 return (
-                  <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${idx}`} className={cn(
+                  <tr key={`${row.dimValue}-${row.dimValue2}-${row.dimValue3 || ''}-${row.dimValue4 || ''}-${idx}`} className={cn(
                     "transition-colors",
                     isFocusMode
                       ? (row.isSubtotal ? "bg-indigo-950/20 hover:bg-indigo-900/30" : (idx % 2 === 0 ? "bg-slate-900 hover:bg-slate-800" : "bg-slate-900/50 hover:bg-slate-800/80"))
@@ -2006,7 +2250,7 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                           {row.dimValue2}
                         </td>
                       </>
-                    ) : (
+                    ) : selectedYDim4 === 'none' ? (
                       <>
                         {isFirstOfV1 && (
                           <td
@@ -2053,11 +2297,91 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                               row.isSubtotal
                                 ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
                                 : (idx % 2 === 0
-                                  ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-500 font-normal text-xs")
-                                  : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-500 font-normal text-xs")
+                                  ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-555 font-medium text-xs")
+                                  : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-555 font-medium text-xs")
                                 )
                             )}>
                               {row.dimValue3}
+                            </td>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {isFirstOfV1 && (
+                          <td
+                            rowSpan={v1Span}
+                            className={cn(
+                              "p-4 border-b border-r text-sm font-black sticky left-0 z-20 text-center align-middle shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[140px] min-w-[140px] max-w-[140px] truncate",
+                              isFocusMode
+                                ? "bg-slate-900 text-slate-100 border-slate-800"
+                                : "bg-white text-slate-800 border-slate-100"
+                            )}
+                          >
+                            {row.dimValue}
+                          </td>
+                        )}
+                        {row.isSubtotal && row.subtotalLevel === 1 ? (
+                          <td
+                            colSpan={3}
+                            className={cn(
+                              "p-4 border-b border-r sticky left-[140px] z-20 text-center w-[420px] min-w-[420px] max-w-[420px] truncate",
+                              isFocusMode ? "border-slate-800 bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "border-slate-100 bg-indigo-50 text-indigo-600 font-black text-xs"
+                            )}
+                          >
+                            {row.dimValue2}
+                          </td>
+                        ) : row.isSubtotal && row.subtotalLevel === 2 ? (
+                          <td
+                            colSpan={2}
+                            className={cn(
+                              "p-4 border-b border-r sticky left-[280px] z-20 text-center w-[280px] min-w-[280px] max-w-[280px] truncate",
+                              isFocusMode ? "border-slate-800 bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "border-slate-100 bg-indigo-50 text-indigo-600 font-black text-xs"
+                            )}
+                          >
+                            {row.dimValue3}
+                          </td>
+                        ) : (
+                          <>
+                            {isFirstOfV2 && (
+                              <td
+                                rowSpan={v2Span}
+                                className={cn(
+                                  "p-4 border-b border-r sticky left-[140px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                                  isFocusMode ? "border-slate-800" : "border-slate-100",
+                                  idx % 2 === 0
+                                    ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs")
+                                    : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
+                                )}
+                              >
+                                {row.dimValue2}
+                              </td>
+                            )}
+                            {isFirstOfV3 && (
+                              <td
+                                rowSpan={v3Span}
+                                className={cn(
+                                  "p-4 border-b border-r sticky left-[280px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                                  isFocusMode ? "border-slate-800" : "border-slate-100",
+                                  idx % 2 === 0
+                                    ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600 font-medium text-xs")
+                                    : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-600 font-medium text-xs")
+                                )}
+                              >
+                                {row.dimValue3}
+                              </td>
+                            )}
+                            <td className={cn(
+                              "p-4 border-b border-r sticky left-[420px] z-20 text-center w-[140px] min-w-[140px] max-w-[140px] truncate",
+                              isFocusMode ? "border-slate-800" : "border-slate-100",
+                              row.isSubtotal
+                                ? (isFocusMode ? "bg-[#1e1b4b] text-indigo-400 font-black text-xs" : "bg-indigo-50 text-indigo-600 font-black text-xs")
+                                : (idx % 2 === 0
+                                  ? (isFocusMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-550 font-normal text-xs")
+                                  : (isFocusMode ? "bg-[#1e293b] text-slate-300" : "bg-slate-50 text-slate-555 font-normal text-xs")
+                                )
+                            )}>
+                              {row.dimValue4}
                             </td>
                           </>
                         )}
@@ -2138,10 +2462,14 @@ export const MultiDimTable: React.FC<MultiDimTableProps> = ({
                     "p-4 border-b border-r text-white text-sm sticky bottom-0 left-0 z-45 shadow-[2px_0_5px_rgba(0,0,0,0.2)] text-center",
                     selectedYDim2 === 'none'
                       ? "w-[140px] min-w-[140px] max-w-[140px] truncate"
-                      : (selectedYDim3 === 'none' ? "w-[280px] min-w-[280px] max-w-[280px] truncate" : "w-[420px] min-w-[420px] max-w-[420px] truncate"),
+                      : (selectedYDim3 === 'none'
+                        ? "w-[280px] min-w-[280px] max-w-[280px] truncate"
+                        : (selectedYDim4 === 'none'
+                          ? "w-[420px] min-w-[420px] max-w-[420px] truncate"
+                          : "w-[560px] min-w-[560px] max-w-[560px] truncate")),
                     isFocusMode ? "bg-indigo-950 border-indigo-900" : "bg-indigo-900 border-indigo-800"
                   )}
-                  colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : 3)}
+                  colSpan={selectedYDim2 === 'none' ? 1 : (selectedYDim3 === 'none' ? 2 : (selectedYDim4 === 'none' ? 3 : 4))}
                 >
                   合计
                 </td>
