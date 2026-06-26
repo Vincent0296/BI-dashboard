@@ -127,7 +127,8 @@ export const Dashboard: React.FC = () => {
     isKeyProjects: [],
     isExistingProjects: [],
     reportCalibers: [],
-    projectShortNames: []
+    projectShortNames: [],
+    projectNos: []
   });
 
   const handleResetFilters = () => {
@@ -142,7 +143,8 @@ export const Dashboard: React.FC = () => {
       isKeyProjects: [...new Set(sourceData.map(d => d.isKeyProject))],
       isExistingProjects: [...new Set(sourceData.map(d => d.isExistingProject))],
       reportCalibers: [...new Set(sourceData.map(d => d.reportCaliber))],
-      projectShortNames: [...new Set(sourceData.map(d => d.projectShortName))]
+      projectShortNames: [...new Set(sourceData.map(d => d.projectShortName))],
+      projectNos: [...new Set(sourceData.map(d => d.projectNo))]
     });
     setActivePresetId(null);
   };
@@ -159,7 +161,8 @@ export const Dashboard: React.FC = () => {
           (excludedDim === 'isKeyProjects' || (filters.isKeyProjects.length === 0 || filters.isKeyProjects.includes(d.isKeyProject))) &&
           (excludedDim === 'isExistingProjects' || (filters.isExistingProjects.length === 0 || filters.isExistingProjects.includes(d.isExistingProject))) &&
           (excludedDim === 'reportCalibers' || (filters.reportCalibers.length === 0 || filters.reportCalibers.includes(d.reportCaliber))) &&
-          (excludedDim === 'projectShortNames' || (filters.projectShortNames.length === 0 || filters.projectShortNames.includes(d.projectShortName)))
+          (excludedDim === 'projectShortNames' || (filters.projectShortNames.length === 0 || filters.projectShortNames.includes(d.projectShortName))) &&
+          (excludedDim === 'projectNos' || (filters.projectNos.length === 0 || (filters.projectNos || []).includes(d.projectNo)))
         );
       });
       return [...new Set(filtered.map(d => String(d[dim])))].sort();
@@ -174,7 +177,8 @@ export const Dashboard: React.FC = () => {
       isKeyProjects: getOptions('isKeyProject', 'isKeyProjects'),
       isExistingProjects: getOptions('isExistingProject', 'isExistingProjects'),
       reportCalibers: getOptions('reportCaliber', 'reportCalibers'),
-      projectShortNames: getOptions('projectShortName', 'projectShortNames')
+      projectShortNames: getOptions('projectShortName', 'projectShortNames'),
+      projectNos: getOptions('projectNo', 'projectNos')
     };
   }, [sourceData, filters]);
 
@@ -253,7 +257,10 @@ export const Dashboard: React.FC = () => {
   };
 
   const applyPreset = (preset: FilterPreset) => {
-    setFilters(preset.filters as any);
+    setFilters({
+      projectNos: [],
+      ...preset.filters
+    } as any);
     if (preset.selectedIndicators) {
       setSelectedIndicators(preset.selectedIndicators);
     }
@@ -557,7 +564,8 @@ export const Dashboard: React.FC = () => {
         isKeyProjects: [...new Set(enriched.map(d => d.isKeyProject))],
         isExistingProjects: [...new Set(enriched.map(d => d.isExistingProject))],
         reportCalibers: [...new Set(enriched.map(d => d.reportCaliber))],
-        projectShortNames: [...new Set(enriched.map(d => d.projectShortName))]
+        projectShortNames: [...new Set(enriched.map(d => d.projectShortName))],
+        projectNos: [...new Set(enriched.map(d => d.projectNo))]
       });
 
       alert(`导入成功！共加载 ${enriched.length} 条项目月度数据。`);
@@ -817,7 +825,8 @@ export const Dashboard: React.FC = () => {
       (filters.isKeyProjects || []).includes(d.isKeyProject) &&
       (filters.isExistingProjects || []).includes(d.isExistingProject) &&
       (filters.reportCalibers || []).includes(d.reportCaliber) &&
-      (filters.projectShortNames || []).includes(d.projectShortName)
+      (filters.projectShortNames || []).includes(d.projectShortName) &&
+      (filters.projectNos || []).includes(d.projectNo)
     );
   }, [filters, sourceData]);
 
@@ -931,6 +940,7 @@ export const Dashboard: React.FC = () => {
       { '维度': '产权口径', '已选范围': filters.ownerships.length === sourceData.map(d => d.ownership).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.ownerships.join(', ') },
       { '维度': '管理口径', '已选范围': filters.managements.length === sourceData.map(d => d.management).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.managements.join(', ') },
       { '维度': '业务业态', '已选范围': filters.propertyTypes.length === sourceData.map(d => d.propertyType).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.propertyTypes.join(', ') },
+      { '维度': '项目编号', '已选范围': (filters.projectNos || []).length === sourceData.map(d => d.projectNo).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : (filters.projectNos || []).join(', ') },
       { '维度': '项目名称', '已选范围': filters.projectNames.length === sourceData.map(d => d.projectName).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.projectNames.join(', ') }
     ];
 
@@ -1022,6 +1032,7 @@ export const Dashboard: React.FC = () => {
           { '维度': '产权口径', '已选范围': filters.ownerships.length === sourceData.map(d => d.ownership).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.ownerships.join(', ') },
           { '维度': '管理口径', '已选范围': filters.managements.length === sourceData.map(d => d.management).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.managements.join(', ') },
           { '维度': '业务业态', '已选范围': filters.propertyTypes.length === sourceData.map(d => d.propertyType).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.propertyTypes.join(', ') },
+          { '维度': '项目编号', '已选范围': (filters.projectNos || []).length === sourceData.map(d => d.projectNo).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : (filters.projectNos || []).join(', ') },
           { '维度': '项目名称', '已选范围': filters.projectNames.length === sourceData.map(d => d.projectName).filter((v, i, a) => a.indexOf(v) === i).length ? '全部已选' : filters.projectNames.join(', ') }
         ];
 
@@ -1465,6 +1476,13 @@ export const Dashboard: React.FC = () => {
                       onChange={(val) => { setFilters({ ...filters, secondaryPropertyTypes: val }); setActivePresetId(null); }}
                     />
                     <Slicer
+                      label="项目编号"
+                      options={slicerOptions.projectNos}
+                      selected={filters.projectNos}
+                      onChange={(val) => { setFilters({ ...filters, projectNos: val }); setActivePresetId(null); }}
+                      showSearch
+                    />
+                    <Slicer
                       label="项目名称"
                       options={slicerOptions.projectNames}
                       selected={filters.projectNames}
@@ -1776,7 +1794,7 @@ export const Dashboard: React.FC = () => {
                     <div className="w-1 h-3.5 bg-indigo-500 rounded-full" />
                     <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
                       已选指标顺序微调
-                      <span className="text-xs text-slate-400 font-normal">
+                      <span className="text-xs text-slate-450 font-normal">
                         (共 {selectedIndicators.length} 个, 可通过左右箭头调整表格和图表中的显示位置)
                       </span>
                     </h4>
@@ -2024,10 +2042,9 @@ const IndicatorCheckbox: React.FC<{
     </div>
     <span className={cn(
       "text-[11px] font-bold truncate transition-colors",
-      selectedIndicators.includes(indicator) ? "text-indigo-900" : "text-slate-500"
+      selectedIndicators.includes(indicator) ? "text-indigo-900" : "text-slate-505"
     )}>
       {indicator}
     </span>
   </label>
 );
-
