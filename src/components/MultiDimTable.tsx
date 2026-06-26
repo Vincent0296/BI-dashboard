@@ -69,6 +69,7 @@ const DIMENSIONS = [
   { key: 'management', label: '管理口径' },
   { key: 'propertyType', label: '业态' },
   { key: 'secondaryPropertyType', label: '二级业态' },
+  { key: 'projectNo', label: '项目编号' },
   { key: 'projectName', label: '项目名称' },
   { key: 'isKeyProject', label: '重点项目' },
   { key: 'isExistingProject', label: '现有项目' },
