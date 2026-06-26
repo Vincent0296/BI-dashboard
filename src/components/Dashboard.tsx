@@ -1004,7 +1004,7 @@ export const Dashboard: React.FC = () => {
         const seen = new Set<string>();
         
         // Collect from projectInfoMap first
-        Object.values(projectInfoMap).forEach(p => {
+        (Object.values(projectInfoMap) as ProjectInfo[]).forEach(p => {
           if (p.projectNo && !seen.has(p.projectNo)) {
             seen.add(p.projectNo);
             allProjects.push(p);
