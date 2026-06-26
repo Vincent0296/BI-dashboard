@@ -66,6 +66,7 @@ export interface FilterState {
   isExistingProjects: string[];
   reportCalibers: string[];
   projectShortNames: string[];
+  projectNos: string[];
 }
 
 export interface User {
