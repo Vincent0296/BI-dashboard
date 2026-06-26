@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import {
   FilterState,
   MetricKey,
@@ -50,6 +53,7 @@ export const Dashboard: React.FC = () => {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   const [isIntegerMode, setIsIntegerMode] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ active: boolean; status: string; percent: number } | null>(null);
   const [clickedIndicator, setClickedIndicator] = useState<string | null>(null);
   const [tableDimension, setTableDimension] = useState<'产权口径' | '管理口径' | '业务业态' | '项目名称'>('业务业态');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'pie' | 'table'>('bar');
@@ -957,6 +961,419 @@ export const Dashboard: React.FC = () => {
     XLSX.writeFile(wb, `BI_Export_${selectedMonth}_All_Metrics.xlsx`);
   };
 
+  const exportDimensionPackages = async () => {
+    if (sourceData.length === 0 || !selectedMonth || !selectedMonth.includes('-')) {
+      alert('无可导出的数据或未选择有效月份');
+      return;
+    }
+
+    setExportProgress({ active: true, status: '正在初始化...', percent: 0 });
+
+    setTimeout(async () => {
+      try {
+        const [year, month] = selectedMonth.split('-').map(Number);
+
+        setExportProgress({ active: true, status: '正在从服务器加载 Excel 模版...', percent: 2 });
+        const response = await fetch('./模版.xlsx');
+        if (!response.ok) {
+          throw new Error('加载模版文件失败，请确认模版存在且服务正常。');
+        }
+        const templateBuffer = await response.arrayBuffer();
+
+        setExportProgress({ active: true, status: '正在解析模版架构...', percent: 5 });
+        const tempWorkbook = new ExcelJS.Workbook();
+        await tempWorkbook.xlsx.load(templateBuffer);
+        
+        const templateSheet = tempWorkbook.getWorksheet('项目1');
+        if (!templateSheet) {
+          throw new Error('未在模版中找到“项目1”工作表。');
+        }
+
+        const rowLabels: string[] = [];
+        const cleanLabelsMap: Record<string, string> = {};
+        for (let r = 2; r <= templateSheet.rowCount; r++) {
+          const val = templateSheet.getCell(`A${r}`).value;
+          const rawLabel = val ? String(val).trim() : '';
+          if (rawLabel) {
+            rowLabels.push(rawLabel);
+            cleanLabelsMap[rawLabel] = rawLabel.replace(/R$/, '');
+          }
+        }
+
+        const allProjects: ProjectInfo[] = [];
+        const seen = new Set<string>();
+        
+        // Collect from projectInfoMap first
+        Object.values(projectInfoMap).forEach(p => {
+          if (p.projectNo && !seen.has(p.projectNo)) {
+            seen.add(p.projectNo);
+            allProjects.push(p);
+          }
+        });
+
+        // Collect any missing projects that are in sourceData
+        sourceData.forEach(d => {
+          if (d.projectNo && !seen.has(d.projectNo)) {
+            seen.add(d.projectNo);
+            allProjects.push({
+              projectNo: d.projectNo,
+              projectName: d.projectName || d.projectNo,
+              ownership: d.ownership || '未分类',
+              management: d.management || '未分类',
+              propertyType: d.propertyType || '未分类',
+              secondaryPropertyType: d.secondaryPropertyType || '未分类',
+              isKeyProject: d.isKeyProject || '否',
+              isExistingProject: d.isExistingProject || '否',
+              reportCaliber: d.reportCaliber || '未分类',
+              projectShortName: d.projectShortName || d.projectName || '未分类'
+            });
+          }
+        });
+
+        const buildGroupWorkbook = async (groupProjects: ProjectInfo[], isWanYuan: boolean): Promise<ArrayBuffer> => {
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.load(templateBuffer);
+
+          const sheetTotal = wb.getWorksheet('合计');
+          const sheetProj1 = wb.getWorksheet('项目1');
+
+          if (!sheetTotal || !sheetProj1) {
+            throw new Error('未在模版中找到“合计”或“项目1”工作表');
+          }
+
+          const groupProjectNos = groupProjects.map(p => p.projectNo);
+          const groupRecords = sourceData.filter(d => groupProjectNos.includes(d.projectNo));
+
+          // Fill Total Sheet
+          for (let r = 2; r <= 39; r++) {
+            const rawLabel = rowLabels[r - 2];
+            if (!rawLabel) continue;
+            const cleanLabel = cleanLabelsMap[rawLabel];
+
+            const valB = getMetricValue(groupRecords, cleanLabel, '本年累计', year, month);
+            const valC = getMetricValue(groupRecords, cleanLabel, '去年同期', year, month);
+            const valD = valB - valC;
+            const valE = getMetricValue(groupRecords, cleanLabel, '当月发生额', year, month);
+            const valF = getMetricValue(groupRecords, cleanLabel, '上月发生额', year, month);
+            const valG = valE - valF;
+
+            const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
+            const vals = [valB, valC, valD, valE, valF, valG];
+
+            cols.forEach((col, idx) => {
+              let val = vals[idx];
+              const cell = sheetTotal.getCell(`${col}${r}`);
+              if (isNaN(val) || val === null || val === undefined) {
+                cell.value = null;
+              } else {
+                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
+                if (isWanYuan && !isCount) {
+                  val = val / 10000;
+                  cell.value = val;
+                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                } else {
+                  cell.value = val;
+                  cell.numFmt = isCount 
+                    ? '#,##0;-#,##0;"-"'
+                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                }
+              }
+            });
+          }
+
+          // Create sheet for each project in this group
+          const sheetNamesUsed = new Set<string>();
+          for (const project of groupProjects) {
+            let baseName = project.projectName.replace(/[\\\/\?\*\[\]]/g, '').trim();
+            if (!baseName) baseName = project.projectNo;
+
+            let sheetName = baseName.slice(0, 30);
+            if (sheetNamesUsed.has(sheetName)) {
+              const suffix = `_${project.projectNo}`;
+              sheetName = baseName.slice(0, 30 - suffix.length) + suffix;
+              
+              let counter = 1;
+              while (sheetNamesUsed.has(sheetName)) {
+                const counterSuffix = `_${counter++}`;
+                sheetName = baseName.slice(0, 30 - suffix.length - counterSuffix.length) + suffix + counterSuffix;
+              }
+            }
+            sheetNamesUsed.add(sheetName);
+            const newSheet = wb.addWorksheet(sheetName);
+
+            // Copy Columns configuration
+            newSheet.columns = sheetProj1.columns.map(col => ({
+              width: col.width,
+              style: col.style
+            }));
+
+            // Copy Rows and Cell styles
+            for (let r = 1; r <= sheetProj1.rowCount; r++) {
+              const srcRow = sheetProj1.getRow(r);
+              const destRow = newSheet.getRow(r);
+              destRow.height = srcRow.height;
+
+              for (let c = 1; c <= sheetProj1.columnCount; c++) {
+                const srcCell = srcRow.getCell(c);
+                const destCell = destRow.getCell(c);
+                destCell.value = srcCell.value;
+                destCell.style = srcCell.style;
+              }
+            }
+
+            const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
+
+            // Fill Project Sheet Data
+            for (let r = 2; r <= 39; r++) {
+              const rawLabel = rowLabels[r - 2];
+              if (!rawLabel) continue;
+              const cleanLabel = cleanLabelsMap[rawLabel];
+
+              const valB = getMetricValue(projectRecords, cleanLabel, '本年累计', year, month);
+              const valC = getMetricValue(projectRecords, cleanLabel, '去年同期', year, month);
+              const valD = valB - valC;
+              const valE = getMetricValue(projectRecords, cleanLabel, '当月发生额', year, month);
+              const valF = getMetricValue(projectRecords, cleanLabel, '上月发生额', year, month);
+              const valG = valE - valF;
+
+              const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
+              const vals = [valB, valC, valD, valE, valF, valG];
+
+              cols.forEach((col, idx) => {
+                let val = vals[idx];
+                const cell = newSheet.getCell(`${col}${r}`);
+                if (isNaN(val) || val === null || val === undefined) {
+                  cell.value = null;
+                } else {
+                  const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
+                  if (isWanYuan && !isCount) {
+                    val = val / 10000;
+                    cell.value = val;
+                    cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                  } else {
+                    cell.value = val;
+                    cell.numFmt = isCount 
+                      ? '#,##0;-#,##0;"-"'
+                      : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                  }
+                }
+              });
+            }
+          }
+
+          wb.removeWorksheet('项目1');
+          wb.removeWorksheet('项目2');
+
+          const buf = await wb.xlsx.writeBuffer();
+          return buf as ArrayBuffer;
+        };
+
+        const buildTotalWorkbook = async (
+          groups: { name: string; records: EnrichedRecord[] }[],
+          grandTotalRecords: EnrichedRecord[],
+          isWanYuan: boolean
+        ): Promise<ArrayBuffer> => {
+          const wb = new ExcelJS.Workbook();
+          await wb.xlsx.load(templateBuffer);
+
+          const sheetTotal = wb.getWorksheet('合计');
+          const sheetProj1 = wb.getWorksheet('项目1');
+
+          if (!sheetTotal || !sheetProj1) {
+            throw new Error('未在模版中找到“合计”或“项目1”工作表');
+          }
+
+          // Fill Total Sheet with Grand Total of the entire package
+          for (let r = 2; r <= 39; r++) {
+            const rawLabel = rowLabels[r - 2];
+            if (!rawLabel) continue;
+            const cleanLabel = cleanLabelsMap[rawLabel];
+
+            const valB = getMetricValue(grandTotalRecords, cleanLabel, '本年累计', year, month);
+            const valC = getMetricValue(grandTotalRecords, cleanLabel, '去年同期', year, month);
+            const valD = valB - valC;
+            const valE = getMetricValue(grandTotalRecords, cleanLabel, '当月发生额', year, month);
+            const valF = getMetricValue(grandTotalRecords, cleanLabel, '上月发生额', year, month);
+            const valG = valE - valF;
+
+            const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
+            const vals = [valB, valC, valD, valE, valF, valG];
+
+            cols.forEach((col, idx) => {
+              let val = vals[idx];
+              const cell = sheetTotal.getCell(`${col}${r}`);
+              if (isNaN(val) || val === null || val === undefined) {
+                cell.value = null;
+              } else {
+                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
+                if (isWanYuan && !isCount) {
+                  val = val / 10000;
+                  cell.value = val;
+                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                } else {
+                  cell.value = val;
+                  cell.numFmt = isCount 
+                    ? '#,##0;-#,##0;"-"'
+                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                }
+              }
+            });
+          }
+
+          // Create sheet for each caliber group
+          const sheetNamesUsed = new Set<string>();
+          for (const g of groups) {
+            let baseName = g.name.replace(/[\\\/\?\*\[\]]/g, '').trim();
+            if (!baseName) baseName = '未命名分类';
+
+            let sheetName = baseName.slice(0, 30);
+            if (sheetNamesUsed.has(sheetName)) {
+              let counter = 1;
+              while (sheetNamesUsed.has(sheetName)) {
+                const counterSuffix = `_${counter++}`;
+                sheetName = baseName.slice(0, 30 - counterSuffix.length) + counterSuffix;
+              }
+            }
+            sheetNamesUsed.add(sheetName);
+            const newSheet = wb.addWorksheet(sheetName);
+
+            // Copy Columns configuration
+            newSheet.columns = sheetProj1.columns.map(col => ({
+              width: col.width,
+              style: col.style
+            }));
+
+            // Copy Rows and Cell styles
+            for (let r = 1; r <= sheetProj1.rowCount; r++) {
+              const srcRow = sheetProj1.getRow(r);
+              const destRow = newSheet.getRow(r);
+              destRow.height = srcRow.height;
+
+              for (let c = 1; c <= sheetProj1.columnCount; c++) {
+                const srcCell = srcRow.getCell(c);
+                const destCell = destRow.getCell(c);
+                destCell.value = srcCell.value;
+                destCell.style = srcCell.style;
+              }
+            }
+
+            // Fill Group Data
+            for (let r = 2; r <= 39; r++) {
+              const rawLabel = rowLabels[r - 2];
+              if (!rawLabel) continue;
+              const cleanLabel = cleanLabelsMap[rawLabel];
+
+              const valB = getMetricValue(g.records, cleanLabel, '本年累计', year, month);
+              const valC = getMetricValue(g.records, cleanLabel, '去年同期', year, month);
+              const valD = valB - valC;
+              const valE = getMetricValue(g.records, cleanLabel, '当月发生额', year, month);
+              const valF = getMetricValue(g.records, cleanLabel, '上月发生额', year, month);
+              const valG = valE - valF;
+
+              const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
+              const vals = [valB, valC, valD, valE, valF, valG];
+
+              cols.forEach((col, idx) => {
+                let val = vals[idx];
+                const cell = newSheet.getCell(`${col}${r}`);
+              if (isNaN(val) || val === null || val === undefined) {
+                cell.value = null;
+              } else {
+                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
+                if (isWanYuan && !isCount) {
+                  val = val / 10000;
+                  cell.value = val;
+                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                } else {
+                  cell.value = val;
+                  cell.numFmt = isCount 
+                    ? '#,##0;-#,##0;"-"'
+                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                }
+              }
+            });
+          }
+        }
+
+        wb.removeWorksheet('项目1');
+        wb.removeWorksheet('项目2');
+
+        const buf = await wb.xlsx.writeBuffer();
+        return buf as ArrayBuffer;
+      };
+
+      const exportDimension = async (
+        dimKey: 'management' | 'ownership' | 'propertyType',
+        dimLabel: string,
+        startPercent: number,
+        isWanYuan: boolean
+      ) => {
+        const suffix = isWanYuan ? ' (万元版)' : '';
+        const fileSuffix = isWanYuan ? '_万元版' : '';
+        setExportProgress({ active: true, status: `正在生成 “${dimLabel}” 报表包${suffix}...`, percent: startPercent });
+
+        const groups: Record<string, ProjectInfo[]> = {};
+        allProjects.forEach(p => {
+          const val = p[dimKey] || '未分类';
+          if (!groups[val]) groups[val] = [];
+          groups[val].push(p);
+        });
+
+        const zip = new JSZip();
+        const entries = Object.entries(groups);
+        for (let i = 0; i < entries.length; i++) {
+          const [val, projs] = entries[i];
+          setExportProgress({ 
+            active: true, 
+            status: `正在生成 “${dimLabel}”${suffix} - ${val} (${i + 1}/${entries.length})...`, 
+            percent: startPercent + Math.floor((i / entries.length) * 10) 
+          });
+          const buf = await buildGroupWorkbook(projs, isWanYuan);
+          zip.file(`${val}.xlsx`, buf);
+        }
+
+        // Generate total sheet
+        setExportProgress({ active: true, status: `正在生成 “${dimLabel}”${suffix} 总合计表...`, percent: startPercent + 11 });
+        const totalGroups = Object.entries(groups).map(([val, projs]) => {
+          const groupProjectNos = projs.map(p => p.projectNo);
+          const records = sourceData.filter(d => groupProjectNos.includes(d.projectNo));
+          return { name: val, records };
+        });
+        const totalBuf = await buildTotalWorkbook(totalGroups, sourceData, isWanYuan);
+        zip.file(`总合计表.xlsx`, totalBuf);
+
+        const blob = await zip.generateAsync({ type: 'blob' });
+        saveAs(blob, `${dimLabel}_报表包_${selectedMonth}${fileSuffix}.zip`);
+      };
+
+      // --- 1. 管理口径 (元版 & 万元版) ---
+      await exportDimension('management', '管理口径', 10, false);
+      await new Promise(r => setTimeout(r, 800));
+      await exportDimension('management', '管理口径', 25, true);
+      await new Promise(r => setTimeout(r, 800));
+
+      // --- 2. 产权口径 (元版 & 万元版) ---
+      await exportDimension('ownership', '产权口径', 40, false);
+      await new Promise(r => setTimeout(r, 800));
+      await exportDimension('ownership', '产权口径', 55, true);
+      await new Promise(r => setTimeout(r, 800));
+
+      // --- 3. 业态 (元版 & 万元版) ---
+      await exportDimension('propertyType', '业态', 70, false);
+      await new Promise(r => setTimeout(r, 800));
+      await exportDimension('propertyType', '业态', 85, true);
+
+      setExportProgress({ active: true, status: '所有报表包已成功生成，开始下载！', percent: 100 });
+      setTimeout(() => setExportProgress(null), 1500);
+
+    } catch (err: any) {
+      console.error('Batch export failed:', err);
+      alert(`批量导出失败: ${err.message || err}`);
+      setExportProgress(null);
+    }
+  }, 100);
+};
+
   const exportChartToPDF = () => {
     checkAuth(() => window.print());
   };
@@ -1259,6 +1676,16 @@ export const Dashboard: React.FC = () => {
               {sourceData.length > 0 ? '重新导入' : '导入数据'}
             </span>
           </button>
+
+          {sourceData.length > 0 && (
+            <button
+              onClick={() => checkAuth(exportDimensionPackages)}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-xs font-black transition-all shadow-lg active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              分维度批量导出
+            </button>
+          )}
 
           {authState.isLoggedIn ? (
             <div className="flex items-center gap-3 bg-white pl-1.5 pr-4 py-1.5 rounded-2xl border border-slate-200 shadow-sm">
@@ -2011,6 +2438,32 @@ export const Dashboard: React.FC = () => {
       {/* Modals */}
       {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => { setIsAuthModalOpen(false); setPendingAction(null); }} onLoginSuccess={handleLoginSuccess} />}
       {isFeedbackModalOpen && <FeedbackModal isOpen={isFeedbackModalOpen} onClose={() => setIsFeedbackModalOpen(false)} />}
+
+      {exportProgress && exportProgress.active && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col items-center">
+            <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-slate-100 border-t-indigo-600 animate-spin"></div>
+              <span className="text-sm font-black text-indigo-600">{exportProgress.percent}%</span>
+            </div>
+            
+            <h3 className="text-lg font-black text-slate-800 mb-2">正在导出维度报表包</h3>
+            <p className="text-sm text-slate-600 text-center mb-6">{exportProgress.status}</p>
+            
+            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-4">
+              <div 
+                className="bg-indigo-600 h-full rounded-full transition-all duration-300 shadow-sm shadow-indigo-200"
+                style={{ width: `${exportProgress.percent}%` }}
+              ></div>
+            </div>
+            
+            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200/50">
+              <AlertCircle className="w-3.5 h-3.5" />
+              提示：浏览器连续下载多个文件时请允许
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
