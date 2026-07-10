@@ -31,9 +31,16 @@ import { cn, formatNumber, isMoneyMetric, isRateMetric } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_METRICS_METADATA, DEFAULT_TIME_GROUPS, DEFAULT_CATEGORIES_ORDER, MAIN_INDICATORS, OPERATING_METRICS, THREE_YEAR_BENEFIT_METRICS, BUSINESS_METRICS, BUDGET_METRICS, TIME_SERIES_ALLOWED_METRICS } from '../constants/internalData';
 
+interface BudgetRecord {
+  month: string;
+  projectNo: string;
+  metrics: Record<string, number>;
+}
+
 export const Dashboard: React.FC = () => {
   // --- States ---
   const [sourceData, setSourceData] = useState<EnrichedRecord[]>([]);
+  const [budgetData, setBudgetData] = useState<BudgetRecord[]>([]);
   const [projectInfoMap, setProjectInfoMap] = useState<Record<string, ProjectInfo>>({});
   const [metricMetadata, setMetricMetadata] = useState<MetricMetadata[]>(DEFAULT_METRICS_METADATA);
   const [timeGroupMetadata, setTimeGroupMetadata] = useState<TimeGroupMetadata[]>(DEFAULT_TIME_GROUPS);
@@ -325,6 +332,7 @@ export const Dashboard: React.FC = () => {
     let allFactRecords: DataRecord[] = [];
     let staticProjectMetrics: Record<string, Record<string, number>> = {};
     let currentOrder = [...categoriesOrder];
+    let tempBudgetRecords: BudgetRecord[] = [];
     try {
       console.log('Starting file upload...', files.length, 'files');
       for (let i = 0; i < files.length; i++) {
@@ -337,8 +345,60 @@ export const Dashboard: React.FC = () => {
           const cleanSheetName = sheetName.trim().toLowerCase();
           const EXCLUDED_KEYS = ['项目编号', '日期', '项目名称', '项目代码', '项目ID', 'ProjectNo', '月份', '时间', 'Period', 'Name'];
 
+          // Branch 0.5: Budget Data Sheet
+          if (cleanSheetName === '2026分月预算' || cleanSheetName.includes('2026分月预算')) {
+            const dataRows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+            if (dataRows.length > 0) {
+              const headersRow = dataRows[0] || [];
+              const dateColIdx = headersRow.indexOf('预算月度');
+              const projectNoColIdx = headersRow.indexOf('项目编号');
+
+              if (dateColIdx !== -1 && projectNoColIdx !== -1) {
+                const parsedBudgets: BudgetRecord[] = dataRows.slice(1).map(row => {
+                  const projectNo = String(row[projectNoColIdx] || '').trim();
+                  const rawDate = row[dateColIdx];
+                  let monthStr = '';
+                  
+                  if (typeof rawDate === 'number') {
+                    const dateObj = XLSX.SSF.parse_date_code(rawDate);
+                    monthStr = `${dateObj.y}-${dateObj.m.toString().padStart(2, '0')}`;
+                  } else if (rawDate) {
+                    const s = String(rawDate).trim();
+                    const m2 = s.match(/(\d{4})[-\/.](\d{1,2})/);
+                    if (m2) {
+                      monthStr = `${m2[1]}-${m2[2].padStart(2, '0')}`;
+                    } else {
+                      const dObj = new Date(rawDate);
+                      if (!isNaN(dObj.getTime())) {
+                        const y = dObj.getFullYear();
+                        const m = String(dObj.getMonth() + 1).padStart(2, '0');
+                        monthStr = `${y}-${m}`;
+                      }
+                    }
+                  }
+
+                  const metrics: Record<string, number> = {};
+                  headersRow.forEach((h, idx) => {
+                    let key = String(h || '').trim().replace(/R$/, '');
+                    if (key.includes('百元收入')) {
+                      key = key.replace('百元收入', '') + '占收比';
+                    }
+                    if (key && !key.startsWith('__EMPTY') && idx !== dateColIdx && idx !== projectNoColIdx) {
+                      const val = parseFloat(String(row[idx] ?? '0').replace(/,/g, ''));
+                      metrics[key] = isNaN(val) ? 0 : val;
+                    }
+                  });
+
+                  return { month: monthStr, projectNo, metrics };
+                }).filter(r => r.month.length >= 7 && r.projectNo);
+
+                tempBudgetRecords = [...tempBudgetRecords, ...parsedBudgets];
+              }
+            }
+          }
+
           // Branch 1: Project Bridge/Info Sheet
-          if (cleanSheetName.includes('项目基本信息') || cleanSheetName.includes('项目桥表') || cleanSheetName.includes('bridge')) {
+          else if (cleanSheetName.includes('项目基本信息') || cleanSheetName.includes('项目桥表') || cleanSheetName.includes('bridge')) {
             const json = XLSX.utils.sheet_to_json(ws, { raw: true }) as any[];
             json.forEach(row => {
               const pNo = String(row['项目编号'] || row['项目代码'] || row['项目ID'] || row['ProjectNo'] || '');
@@ -572,7 +632,11 @@ export const Dashboard: React.FC = () => {
         projectNos: [...new Set(enriched.map(d => d.projectNo))]
       });
 
-      alert(`导入成功！共加载 ${enriched.length} 条项目月度数据。`);
+      if (tempBudgetRecords.length > 0) {
+        setBudgetData(tempBudgetRecords);
+      }
+
+      alert(`导入成功！共加载 ${enriched.length} 条项目月度数据${tempBudgetRecords.length > 0 ? `，并加载了 ${tempBudgetRecords.length} 条预算数据` : ''}。`);
 
     } catch (err) {
       console.error('Import Error:', err);
@@ -967,6 +1031,11 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
+    if (budgetData.length === 0) {
+      alert('未检测到导入的预算数据，请在导入数据时包含“2026分月预算”工作表。');
+      return;
+    }
+
     setExportProgress({ active: true, status: '正在初始化...', percent: 0 });
 
     setTimeout(async () => {
@@ -974,13 +1043,13 @@ export const Dashboard: React.FC = () => {
         const [year, month] = selectedMonth.split('-').map(Number);
 
         setExportProgress({ active: true, status: '正在从服务器加载 Excel 模版...', percent: 2 });
-        const response = await fetch('./模版.xlsx');
+        const response = await fetch(`./模版.xlsx?t=${Date.now()}`);
         if (!response.ok) {
           throw new Error('加载模版文件失败，请确认模版存在且服务正常。');
         }
         const templateBuffer = await response.arrayBuffer();
 
-        setExportProgress({ active: true, status: '正在解析模版架构...', percent: 5 });
+        setExportProgress({ active: true, status: '正在解析模版...', percent: 5 });
         const tempWorkbook = new ExcelJS.Workbook();
         await tempWorkbook.xlsx.load(templateBuffer);
         
@@ -988,6 +1057,46 @@ export const Dashboard: React.FC = () => {
         if (!templateSheet) {
           throw new Error('未在模版中找到“项目1”工作表。');
         }
+
+        const budgetRecords = budgetData;
+
+        const getBudgetMetricValue = (
+          records: BudgetRecord[],
+          metricName: string,
+          type: '进度预算' | '全年预算' | '当月预算',
+          yr: number,
+          mh: number
+        ): number => {
+          let filtered = records;
+          if (type === '进度预算') {
+            filtered = records.filter(r => {
+              const [ry, rm] = r.month.split('-').map(Number);
+              return ry === yr && rm <= mh;
+            });
+          } else if (type === '全年预算') {
+            filtered = records.filter(r => {
+              const [ry] = r.month.split('-').map(Number);
+              return ry === yr;
+            });
+          } else if (type === '当月预算') {
+            filtered = records.filter(r => {
+              const [ry, rm] = r.month.split('-').map(Number);
+              return ry === yr && rm === mh;
+            });
+          }
+
+          const getSum = (list: BudgetRecord[], targetName: string): number => {
+            let sum = list.reduce((acc, curr) => acc + (curr.metrics[targetName] || 0), 0);
+            if (sum !== 0) return sum;
+            const clean = targetName.replace(/^\d+/, '');
+            if (clean !== targetName) {
+              sum = list.reduce((acc, curr) => acc + (curr.metrics[clean] || 0), 0);
+            }
+            return sum;
+          };
+
+          return getSum(filtered, metricName);
+        };
 
         const rowLabels: string[] = [];
         const cleanLabelsMap: Record<string, string> = {};
@@ -1030,7 +1139,11 @@ export const Dashboard: React.FC = () => {
           }
         });
 
-        const buildGroupWorkbook = async (groupProjects: ProjectInfo[], isWanYuan: boolean): Promise<ArrayBuffer> => {
+        const buildGroupWorkbook = async (
+          groupProjects: ProjectInfo[],
+          isWanYuan: boolean,
+          groupBudgets: BudgetRecord[]
+        ): Promise<ArrayBuffer> => {
           const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(templateBuffer);
 
@@ -1052,13 +1165,18 @@ export const Dashboard: React.FC = () => {
 
             const valB = getMetricValue(groupRecords, cleanLabel, '本年累计', year, month);
             const valC = getMetricValue(groupRecords, cleanLabel, '去年同期', year, month);
-            const valD = valB - valC;
-            const valE = getMetricValue(groupRecords, cleanLabel, '当月发生额', year, month);
-            const valF = getMetricValue(groupRecords, cleanLabel, '上月发生额', year, month);
-            const valG = valE - valF;
+            const valD = getBudgetMetricValue(groupBudgets, cleanLabel, '进度预算', year, month);
+            const valE = getBudgetMetricValue(groupBudgets, cleanLabel, '全年预算', year, month);
+            const valF = valB - valC;
+            const valG = valB - valD;
+            const valH = getMetricValue(groupRecords, cleanLabel, '当月发生额', year, month);
+            const valI = getMetricValue(groupRecords, cleanLabel, '上月发生额', year, month);
+            const valJ = getBudgetMetricValue(groupBudgets, cleanLabel, '当月预算', year, month);
+            const valK = valH - valI;
+            const valL = valH - valJ;
 
-            const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
-            const vals = [valB, valC, valD, valE, valF, valG];
+            const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+            const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
 
             cols.forEach((col, idx) => {
               let val = vals[idx];
@@ -1081,21 +1199,28 @@ export const Dashboard: React.FC = () => {
             });
           }
 
-          // Create sheet for each project in this group
+          // Group projects by name to find those with multiple project numbers
+          const nameToProjects: Record<string, ProjectInfo[]> = {};
+          groupProjects.forEach(p => {
+            const name = (p.projectName || p.projectNo).trim();
+            if (!nameToProjects[name]) {
+              nameToProjects[name] = [];
+            }
+            nameToProjects[name].push(p);
+          });
+
           const sheetNamesUsed = new Set<string>();
-          for (const project of groupProjects) {
-            let baseName = project.projectName.replace(/[\\\/\?\*\[\]]/g, '').trim();
-            if (!baseName) baseName = project.projectNo;
+
+          const createAndCopySheet = (name: string) => {
+            let baseName = name.replace(/[\\\/\?\*\[\]]/g, '').trim();
+            if (!baseName) baseName = '未命名项目';
 
             let sheetName = baseName.slice(0, 30);
             if (sheetNamesUsed.has(sheetName)) {
-              const suffix = `_${project.projectNo}`;
-              sheetName = baseName.slice(0, 30 - suffix.length) + suffix;
-              
               let counter = 1;
               while (sheetNamesUsed.has(sheetName)) {
-                const counterSuffix = `_${counter++}`;
-                sheetName = baseName.slice(0, 30 - suffix.length - counterSuffix.length) + suffix + counterSuffix;
+                const suffix = `_${counter++}`;
+                sheetName = baseName.slice(0, 30 - suffix.length) + suffix;
               }
             }
             sheetNamesUsed.add(sheetName);
@@ -1113,35 +1238,40 @@ export const Dashboard: React.FC = () => {
               const destRow = newSheet.getRow(r);
               destRow.height = srcRow.height;
 
-              for (let c = 1; c <= sheetProj1.columnCount; c++) {
+              for (let c = 1; c <= Math.max(sheetProj1.columnCount || 0, 12); c++) {
                 const srcCell = srcRow.getCell(c);
                 const destCell = destRow.getCell(c);
                 destCell.value = srcCell.value;
                 destCell.style = srcCell.style;
               }
             }
+            return newSheet;
+          };
 
-            const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
-
-            // Fill Project Sheet Data
+          const fillSheetData = (sheet: ExcelJS.Worksheet, records: EnrichedRecord[], budgets: BudgetRecord[]) => {
             for (let r = 2; r <= 39; r++) {
               const rawLabel = rowLabels[r - 2];
               if (!rawLabel) continue;
               const cleanLabel = cleanLabelsMap[rawLabel];
 
-              const valB = getMetricValue(projectRecords, cleanLabel, '本年累计', year, month);
-              const valC = getMetricValue(projectRecords, cleanLabel, '去年同期', year, month);
-              const valD = valB - valC;
-              const valE = getMetricValue(projectRecords, cleanLabel, '当月发生额', year, month);
-              const valF = getMetricValue(projectRecords, cleanLabel, '上月发生额', year, month);
-              const valG = valE - valF;
+              const valB = getMetricValue(records, cleanLabel, '本年累计', year, month);
+              const valC = getMetricValue(records, cleanLabel, '去年同期', year, month);
+              const valD = getBudgetMetricValue(budgets, cleanLabel, '进度预算', year, month);
+              const valE = getBudgetMetricValue(budgets, cleanLabel, '全年预算', year, month);
+              const valF = valB - valC;
+              const valG = valB - valD;
+              const valH = getMetricValue(records, cleanLabel, '当月发生额', year, month);
+              const valI = getMetricValue(records, cleanLabel, '上月发生额', year, month);
+              const valJ = getBudgetMetricValue(budgets, cleanLabel, '当月预算', year, month);
+              const valK = valH - valI;
+              const valL = valH - valJ;
 
-              const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
-              const vals = [valB, valC, valD, valE, valF, valG];
+              const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+              const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
 
               cols.forEach((col, idx) => {
                 let val = vals[idx];
-                const cell = newSheet.getCell(`${col}${r}`);
+                const cell = sheet.getCell(`${col}${r}`);
                 if (isNaN(val) || val === null || val === undefined) {
                   cell.value = null;
                 } else {
@@ -1159,6 +1289,34 @@ export const Dashboard: React.FC = () => {
                 }
               });
             }
+          };
+
+          // Generate sheets for projects
+          for (const [projName, projs] of Object.entries(nameToProjects)) {
+            if (projs.length > 1) {
+              // 1. Create combined sheet
+              const combinedSheet = createAndCopySheet(`${projName}_合并`);
+              const groupProjectNosForName = projs.map(p => p.projectNo);
+              const combinedRecords = sourceData.filter(d => groupProjectNosForName.includes(d.projectNo));
+              const combinedBudgets = groupBudgets.filter(d => groupProjectNosForName.includes(d.projectNo));
+              fillSheetData(combinedSheet, combinedRecords, combinedBudgets);
+
+              // 2. Create individual sheets
+              for (const project of projs) {
+                let suffixName = `${project.projectName}_${project.projectNo}`;
+                const indivSheet = createAndCopySheet(suffixName);
+                const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
+                const projectBudgets = groupBudgets.filter(d => d.projectNo === project.projectNo);
+                fillSheetData(indivSheet, projectRecords, projectBudgets);
+              }
+            } else {
+              // Only 1 project number, create normally
+              const project = projs[0];
+              const indivSheet = createAndCopySheet(project.projectName || project.projectNo);
+              const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
+              const projectBudgets = groupBudgets.filter(d => d.projectNo === project.projectNo);
+              fillSheetData(indivSheet, projectRecords, projectBudgets);
+            }
           }
 
           wb.removeWorksheet('项目1');
@@ -1169,8 +1327,9 @@ export const Dashboard: React.FC = () => {
         };
 
         const buildTotalWorkbook = async (
-          groups: { name: string; records: EnrichedRecord[] }[],
+          groups: { name: string; records: EnrichedRecord[]; budgets: BudgetRecord[] }[],
           grandTotalRecords: EnrichedRecord[],
+          grandTotalBudgets: BudgetRecord[],
           isWanYuan: boolean
         ): Promise<ArrayBuffer> => {
           const wb = new ExcelJS.Workbook();
@@ -1191,13 +1350,18 @@ export const Dashboard: React.FC = () => {
 
             const valB = getMetricValue(grandTotalRecords, cleanLabel, '本年累计', year, month);
             const valC = getMetricValue(grandTotalRecords, cleanLabel, '去年同期', year, month);
-            const valD = valB - valC;
-            const valE = getMetricValue(grandTotalRecords, cleanLabel, '当月发生额', year, month);
-            const valF = getMetricValue(grandTotalRecords, cleanLabel, '上月发生额', year, month);
-            const valG = valE - valF;
+            const valD = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '进度预算', year, month);
+            const valE = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '全年预算', year, month);
+            const valF = valB - valC;
+            const valG = valB - valD;
+            const valH = getMetricValue(grandTotalRecords, cleanLabel, '当月发生额', year, month);
+            const valI = getMetricValue(grandTotalRecords, cleanLabel, '上月发生额', year, month);
+            const valJ = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '当月预算', year, month);
+            const valK = valH - valI;
+            const valL = valH - valJ;
 
-            const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
-            const vals = [valB, valC, valD, valE, valF, valG];
+            const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+            const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
 
             cols.forEach((col, idx) => {
               let val = vals[idx];
@@ -1249,7 +1413,7 @@ export const Dashboard: React.FC = () => {
               const destRow = newSheet.getRow(r);
               destRow.height = srcRow.height;
 
-              for (let c = 1; c <= sheetProj1.columnCount; c++) {
+              for (let c = 1; c <= Math.max(sheetProj1.columnCount || 0, 12); c++) {
                 const srcCell = srcRow.getCell(c);
                 const destCell = destRow.getCell(c);
                 destCell.value = srcCell.value;
@@ -1265,42 +1429,47 @@ export const Dashboard: React.FC = () => {
 
               const valB = getMetricValue(g.records, cleanLabel, '本年累计', year, month);
               const valC = getMetricValue(g.records, cleanLabel, '去年同期', year, month);
-              const valD = valB - valC;
-              const valE = getMetricValue(g.records, cleanLabel, '当月发生额', year, month);
-              const valF = getMetricValue(g.records, cleanLabel, '上月发生额', year, month);
-              const valG = valE - valF;
+              const valD = getBudgetMetricValue(g.budgets, cleanLabel, '进度预算', year, month);
+              const valE = getBudgetMetricValue(g.budgets, cleanLabel, '全年预算', year, month);
+              const valF = valB - valC;
+              const valG = valB - valD;
+              const valH = getMetricValue(g.records, cleanLabel, '当月发生额', year, month);
+              const valI = getMetricValue(g.records, cleanLabel, '上月发生额', year, month);
+              const valJ = getBudgetMetricValue(g.budgets, cleanLabel, '当月预算', year, month);
+              const valK = valH - valI;
+              const valL = valH - valJ;
 
-              const cols = ['B', 'C', 'D', 'E', 'F', 'G'];
-              const vals = [valB, valC, valD, valE, valF, valG];
+              const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+              const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
 
               cols.forEach((col, idx) => {
                 let val = vals[idx];
                 const cell = newSheet.getCell(`${col}${r}`);
-              if (isNaN(val) || val === null || val === undefined) {
-                cell.value = null;
-              } else {
-                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
-                if (isWanYuan && !isCount) {
-                  val = val / 10000;
-                  cell.value = val;
-                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                if (isNaN(val) || val === null || val === undefined) {
+                  cell.value = null;
                 } else {
-                  cell.value = val;
-                  cell.numFmt = isCount 
-                    ? '#,##0;-#,##0;"-"'
-                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                  const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
+                  if (isWanYuan && !isCount) {
+                    val = val / 10000;
+                    cell.value = val;
+                    cell.numFmt = '#,##0.00;-#,##0.00;"-"';
+                  } else {
+                    cell.value = val;
+                    cell.numFmt = isCount 
+                      ? '#,##0;-#,##0;"-"'
+                      : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
+                  }
                 }
-              }
-            });
+              });
+            }
           }
-        }
 
-        wb.removeWorksheet('项目1');
-        wb.removeWorksheet('项目2');
+          wb.removeWorksheet('项目1');
+          wb.removeWorksheet('项目2');
 
-        const buf = await wb.xlsx.writeBuffer();
-        return buf as ArrayBuffer;
-      };
+          const buf = await wb.xlsx.writeBuffer();
+          return buf as ArrayBuffer;
+        };
 
       const exportDimension = async (
         dimKey: 'management' | 'ownership' | 'propertyType',
@@ -1328,7 +1497,9 @@ export const Dashboard: React.FC = () => {
             status: `正在生成 “${dimLabel}”${suffix} - ${val} (${i + 1}/${entries.length})...`, 
             percent: startPercent + Math.floor((i / entries.length) * 10) 
           });
-          const buf = await buildGroupWorkbook(projs, isWanYuan);
+          const groupProjectNos = projs.map(p => p.projectNo);
+          const groupBudgets = budgetRecords.filter(d => groupProjectNos.includes(d.projectNo));
+          const buf = await buildGroupWorkbook(projs, isWanYuan, groupBudgets);
           zip.file(`${val}.xlsx`, buf);
         }
 
@@ -1337,9 +1508,10 @@ export const Dashboard: React.FC = () => {
         const totalGroups = Object.entries(groups).map(([val, projs]) => {
           const groupProjectNos = projs.map(p => p.projectNo);
           const records = sourceData.filter(d => groupProjectNos.includes(d.projectNo));
-          return { name: val, records };
+          const budgets = budgetRecords.filter(d => groupProjectNos.includes(d.projectNo));
+          return { name: val, records, budgets };
         });
-        const totalBuf = await buildTotalWorkbook(totalGroups, sourceData, isWanYuan);
+        const totalBuf = await buildTotalWorkbook(totalGroups, sourceData, budgetRecords, isWanYuan);
         zip.file(`总合计表.xlsx`, totalBuf);
 
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -1665,6 +1837,7 @@ export const Dashboard: React.FC = () => {
             onChange={handleFileUpload}
             accept=".xlsx,.xls"
             className="hidden"
+            multiple
           />
           <button
             onClick={() => fileInputRef.current?.click()}
