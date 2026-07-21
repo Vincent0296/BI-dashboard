@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import {defineConfig, loadEnv} from 'vite';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const serveTemplatePlugin = () => ({
   name: 'serve-template',
   configureServer(server: any) {
@@ -26,7 +28,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     base: './', // Use relative paths to support GitHub Pages subfolders
-    plugins: [react(), tailwindcss(), serveTemplatePlugin()],
+    plugins: [react(), tailwindcss(), serveTemplatePlugin(), cloudflare()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
