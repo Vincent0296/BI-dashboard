@@ -1053,9 +1053,9 @@ export const Dashboard: React.FC = () => {
         const tempWorkbook = new ExcelJS.Workbook();
         await tempWorkbook.xlsx.load(templateBuffer);
         
-        const templateSheet = tempWorkbook.getWorksheet('项目1');
+        const templateSheet = tempWorkbook.getWorksheet('Sheet1') || tempWorkbook.getWorksheet('项目1') || tempWorkbook.worksheets[0];
         if (!templateSheet) {
-          throw new Error('未在模版中找到“项目1”工作表。');
+          throw new Error('未在模版中找到工作表。');
         }
 
         const budgetRecords = budgetData;
@@ -1098,16 +1098,46 @@ export const Dashboard: React.FC = () => {
           return getSum(filtered, metricName);
         };
 
-        const rowLabels: string[] = [];
-        const cleanLabelsMap: Record<string, string> = {};
-        for (let r = 2; r <= templateSheet.rowCount; r++) {
-          const val = templateSheet.getCell(`A${r}`).value;
-          const rawLabel = val ? String(val).trim() : '';
-          if (rawLabel) {
-            rowLabels.push(rawLabel);
-            cleanLabelsMap[rawLabel] = rawLabel.replace(/R$/, '');
-          }
-        }
+        const METRIC_KEYS: string[] = [
+          '收入YTD',
+          '2经营性采购支出',
+          '3外购材料',
+          '4食材耗用',
+          '5物料消耗',
+          '6油气管材',
+          '7其他材料',
+          '8外购燃料',
+          '9外购动力',
+          '10商旅采购成本',
+          '11酒店佣金',
+          '12运输费',
+          '13经营性税费',
+          '14油气分成支出',
+          '15用工薪酬成本',
+          '16外包劳务支出',
+          '17维修费',
+          '18租赁费',
+          '19物业采暖费',
+          '20绿化环境卫生费',
+          '21五项费用',
+          '22财产性税费',
+          '23折旧折耗及摊销',
+          '24其他固定成本',
+          '25行政性罚款',
+          '26信用减值损失',
+          '27存货差额调整',
+          '28财务费用',
+          '29利息支出',
+          '30资产处置损益',
+          '31资产减值损失',
+          '32营业外收支净额',
+          '33投资收益',
+          '34其他收益',
+          '35其他非经常性损益',
+          '36利润总额',
+          '37所得税费用',
+          '利润YTD'
+        ];
 
         const allProjects: ProjectInfo[] = [];
         const seen = new Set<string>();
@@ -1147,67 +1177,10 @@ export const Dashboard: React.FC = () => {
           const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(templateBuffer);
 
-          const sheetTotal = wb.getWorksheet('合计');
-          const sheetProj1 = wb.getWorksheet('项目1');
-
-          if (!sheetTotal || !sheetProj1) {
-            throw new Error('未在模版中找到“合计”或“项目1”工作表');
+          const templateMaster = wb.getWorksheet('Sheet1') || wb.getWorksheet('项目1') || wb.worksheets[0];
+          if (!templateMaster) {
+            throw new Error('未在模版中找到工作表。');
           }
-
-          const groupProjectNos = groupProjects.map(p => p.projectNo);
-          const groupRecords = sourceData.filter(d => groupProjectNos.includes(d.projectNo));
-
-          // Fill Total Sheet
-          for (let r = 2; r <= 39; r++) {
-            const rawLabel = rowLabels[r - 2];
-            if (!rawLabel) continue;
-            const cleanLabel = cleanLabelsMap[rawLabel];
-
-            const valB = getMetricValue(groupRecords, cleanLabel, '本年累计', year, month);
-            const valC = getMetricValue(groupRecords, cleanLabel, '去年同期', year, month);
-            const valD = getBudgetMetricValue(groupBudgets, cleanLabel, '进度预算', year, month);
-            const valE = getBudgetMetricValue(groupBudgets, cleanLabel, '全年预算', year, month);
-            const valF = valB - valC;
-            const valG = valB - valD;
-            const valH = getMetricValue(groupRecords, cleanLabel, '当月发生额', year, month);
-            const valI = getMetricValue(groupRecords, cleanLabel, '上月发生额', year, month);
-            const valJ = getBudgetMetricValue(groupBudgets, cleanLabel, '当月预算', year, month);
-            const valK = valH - valI;
-            const valL = valH - valJ;
-
-            const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-            const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
-
-            cols.forEach((col, idx) => {
-              let val = vals[idx];
-              const cell = sheetTotal.getCell(`${col}${r}`);
-              if (isNaN(val) || val === null || val === undefined) {
-                cell.value = null;
-              } else {
-                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
-                if (isWanYuan && !isCount) {
-                  val = val / 10000;
-                  cell.value = val;
-                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
-                } else {
-                  cell.value = val;
-                  cell.numFmt = isCount 
-                    ? '#,##0;-#,##0;"-"'
-                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
-                }
-              }
-            });
-          }
-
-          // Group projects by name to find those with multiple project numbers
-          const nameToProjects: Record<string, ProjectInfo[]> = {};
-          groupProjects.forEach(p => {
-            const name = (p.projectName || p.projectNo).trim();
-            if (!nameToProjects[name]) {
-              nameToProjects[name] = [];
-            }
-            nameToProjects[name].push(p);
-          });
 
           const sheetNamesUsed = new Set<string>();
 
@@ -1226,51 +1199,55 @@ export const Dashboard: React.FC = () => {
             sheetNamesUsed.add(sheetName);
             const newSheet = wb.addWorksheet(sheetName);
 
-            // Copy Columns configuration
-            newSheet.columns = sheetProj1.columns.map(col => ({
+            newSheet.columns = templateMaster.columns.map(col => ({
               width: col.width,
               style: col.style
             }));
 
-            // Copy Rows and Cell styles
-            for (let r = 1; r <= sheetProj1.rowCount; r++) {
-              const srcRow = sheetProj1.getRow(r);
+            const maxRow = Math.max(templateMaster.rowCount || 0, 40);
+            const maxCol = Math.max(templateMaster.columnCount || 0, 14);
+
+            for (let r = 1; r <= maxRow; r++) {
+              const srcRow = templateMaster.getRow(r);
               const destRow = newSheet.getRow(r);
               destRow.height = srcRow.height;
 
-              for (let c = 1; c <= Math.max(sheetProj1.columnCount || 0, 12); c++) {
+              for (let c = 1; c <= maxCol; c++) {
                 const srcCell = srcRow.getCell(c);
                 const destCell = destRow.getCell(c);
                 destCell.value = srcCell.value;
                 destCell.style = srcCell.style;
               }
             }
+
+            const formattedMonth = String(month).padStart(2, '0');
+            newSheet.getCell('A1').value = `${sheetName}预算执行分析（${year}年${formattedMonth}月）`;
+
             return newSheet;
           };
 
           const fillSheetData = (sheet: ExcelJS.Worksheet, records: EnrichedRecord[], budgets: BudgetRecord[]) => {
-            for (let r = 2; r <= 39; r++) {
-              const rawLabel = rowLabels[r - 2];
-              if (!rawLabel) continue;
-              const cleanLabel = cleanLabelsMap[rawLabel];
+            for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
+              const r = idx + 3;
+              const cleanLabel = METRIC_KEYS[idx];
 
               const valB = getMetricValue(records, cleanLabel, '本年累计', year, month);
               const valC = getMetricValue(records, cleanLabel, '去年同期', year, month);
               const valD = getBudgetMetricValue(budgets, cleanLabel, '进度预算', year, month);
               const valE = getBudgetMetricValue(budgets, cleanLabel, '全年预算', year, month);
               const valF = valB - valC;
-              const valG = valB - valD;
-              const valH = getMetricValue(records, cleanLabel, '当月发生额', year, month);
-              const valI = getMetricValue(records, cleanLabel, '上月发生额', year, month);
-              const valJ = getBudgetMetricValue(budgets, cleanLabel, '当月预算', year, month);
-              const valK = valH - valI;
-              const valL = valH - valJ;
+              const valH = valB - valD;
+              const valJ = getMetricValue(records, cleanLabel, '当月发生额', year, month);
+              const valK = getMetricValue(records, cleanLabel, '上月发生额', year, month);
+              const valL = getBudgetMetricValue(budgets, cleanLabel, '当月预算', year, month);
+              const valM = valJ - valK;
+              const valN = valJ - valL;
 
-              const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-              const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
+              const cols = ['B', 'C', 'D', 'E', 'F', 'H', 'J', 'K', 'L', 'M', 'N'];
+              const vals = [valB, valC, valD, valE, valF, valH, valJ, valK, valL, valM, valN];
 
-              cols.forEach((col, idx) => {
-                let val = vals[idx];
+              cols.forEach((col, cIdx) => {
+                let val = vals[cIdx];
                 const cell = sheet.getCell(`${col}${r}`);
                 if (isNaN(val) || val === null || val === undefined) {
                   cell.value = null;
@@ -1291,17 +1268,34 @@ export const Dashboard: React.FC = () => {
             }
           };
 
+          const groupProjectNos = groupProjects.map(p => p.projectNo);
+          const groupRecords = sourceData.filter(d => groupProjectNos.includes(d.projectNo));
+
+          // Create Total Sheet
+          const sheetTotal = createAndCopySheet('合计');
+          fillSheetData(sheetTotal, groupRecords, groupBudgets);
+
+          // Group projects by name to find those with multiple project numbers
+          const nameToProjects: Record<string, ProjectInfo[]> = {};
+          groupProjects.forEach(p => {
+            const name = (p.projectName || p.projectNo).trim();
+            if (!nameToProjects[name]) {
+              nameToProjects[name] = [];
+            }
+            nameToProjects[name].push(p);
+          });
+
           // Generate sheets for projects
           for (const [projName, projs] of Object.entries(nameToProjects)) {
             if (projs.length > 1) {
-              // 1. Create combined sheet
+              // 1. Combined sheet
               const combinedSheet = createAndCopySheet(`${projName}_合并`);
               const groupProjectNosForName = projs.map(p => p.projectNo);
               const combinedRecords = sourceData.filter(d => groupProjectNosForName.includes(d.projectNo));
               const combinedBudgets = groupBudgets.filter(d => groupProjectNosForName.includes(d.projectNo));
               fillSheetData(combinedSheet, combinedRecords, combinedBudgets);
 
-              // 2. Create individual sheets
+              // 2. Individual sheets
               for (const project of projs) {
                 let suffixName = `${project.projectName}_${project.projectNo}`;
                 const indivSheet = createAndCopySheet(suffixName);
@@ -1310,7 +1304,7 @@ export const Dashboard: React.FC = () => {
                 fillSheetData(indivSheet, projectRecords, projectBudgets);
               }
             } else {
-              // Only 1 project number, create normally
+              // Single project
               const project = projs[0];
               const indivSheet = createAndCopySheet(project.projectName || project.projectNo);
               const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
@@ -1319,8 +1313,10 @@ export const Dashboard: React.FC = () => {
             }
           }
 
-          wb.removeWorksheet('项目1');
-          wb.removeWorksheet('项目2');
+          ['Sheet1', '项目1', '项目2'].forEach(sName => {
+            const ws = wb.getWorksheet(sName);
+            if (ws) wb.removeWorksheet(ws.id);
+          });
 
           const buf = await wb.xlsx.writeBuffer();
           return buf as ArrayBuffer;
@@ -1335,59 +1331,15 @@ export const Dashboard: React.FC = () => {
           const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(templateBuffer);
 
-          const sheetTotal = wb.getWorksheet('合计');
-          const sheetProj1 = wb.getWorksheet('项目1');
-
-          if (!sheetTotal || !sheetProj1) {
-            throw new Error('未在模版中找到“合计”或“项目1”工作表');
+          const templateMaster = wb.getWorksheet('Sheet1') || wb.getWorksheet('项目1') || wb.worksheets[0];
+          if (!templateMaster) {
+            throw new Error('未在模版中找到工作表。');
           }
 
-          // Fill Total Sheet with Grand Total of the entire package
-          for (let r = 2; r <= 39; r++) {
-            const rawLabel = rowLabels[r - 2];
-            if (!rawLabel) continue;
-            const cleanLabel = cleanLabelsMap[rawLabel];
-
-            const valB = getMetricValue(grandTotalRecords, cleanLabel, '本年累计', year, month);
-            const valC = getMetricValue(grandTotalRecords, cleanLabel, '去年同期', year, month);
-            const valD = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '进度预算', year, month);
-            const valE = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '全年预算', year, month);
-            const valF = valB - valC;
-            const valG = valB - valD;
-            const valH = getMetricValue(grandTotalRecords, cleanLabel, '当月发生额', year, month);
-            const valI = getMetricValue(grandTotalRecords, cleanLabel, '上月发生额', year, month);
-            const valJ = getBudgetMetricValue(grandTotalBudgets, cleanLabel, '当月预算', year, month);
-            const valK = valH - valI;
-            const valL = valH - valJ;
-
-            const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-            const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
-
-            cols.forEach((col, idx) => {
-              let val = vals[idx];
-              const cell = sheetTotal.getCell(`${col}${r}`);
-              if (isNaN(val) || val === null || val === undefined) {
-                cell.value = null;
-              } else {
-                const isCount = ['项目个数', '亏损个数', '重点项目个数', '未达标个数', '重点项目未达标数', '利润率下降项目数', '效益下降项目数'].includes(cleanLabel);
-                if (isWanYuan && !isCount) {
-                  val = val / 10000;
-                  cell.value = val;
-                  cell.numFmt = '#,##0.00;-#,##0.00;"-"';
-                } else {
-                  cell.value = val;
-                  cell.numFmt = isCount 
-                    ? '#,##0;-#,##0;"-"'
-                    : (isIntegerMode ? '#,##0;-#,##0;"-"' : '#,##0.00;-#,##0.00;"-"');
-                }
-              }
-            });
-          }
-
-          // Create sheet for each caliber group
           const sheetNamesUsed = new Set<string>();
-          for (const g of groups) {
-            let baseName = g.name.replace(/[\\\/\?\*\[\]]/g, '').trim();
+
+          const createAndCopySheet = (name: string) => {
+            let baseName = name.replace(/[\\\/\?\*\[\]]/g, '').trim();
             if (!baseName) baseName = '未命名分类';
 
             let sheetName = baseName.slice(0, 30);
@@ -1401,19 +1353,20 @@ export const Dashboard: React.FC = () => {
             sheetNamesUsed.add(sheetName);
             const newSheet = wb.addWorksheet(sheetName);
 
-            // Copy Columns configuration
-            newSheet.columns = sheetProj1.columns.map(col => ({
+            newSheet.columns = templateMaster.columns.map(col => ({
               width: col.width,
               style: col.style
             }));
 
-            // Copy Rows and Cell styles
-            for (let r = 1; r <= sheetProj1.rowCount; r++) {
-              const srcRow = sheetProj1.getRow(r);
+            const maxRow = Math.max(templateMaster.rowCount || 0, 40);
+            const maxCol = Math.max(templateMaster.columnCount || 0, 14);
+
+            for (let r = 1; r <= maxRow; r++) {
+              const srcRow = templateMaster.getRow(r);
               const destRow = newSheet.getRow(r);
               destRow.height = srcRow.height;
 
-              for (let c = 1; c <= Math.max(sheetProj1.columnCount || 0, 12); c++) {
+              for (let c = 1; c <= maxCol; c++) {
                 const srcCell = srcRow.getCell(c);
                 const destCell = destRow.getCell(c);
                 destCell.value = srcCell.value;
@@ -1421,30 +1374,35 @@ export const Dashboard: React.FC = () => {
               }
             }
 
-            // Fill Group Data
-            for (let r = 2; r <= 39; r++) {
-              const rawLabel = rowLabels[r - 2];
-              if (!rawLabel) continue;
-              const cleanLabel = cleanLabelsMap[rawLabel];
+            const formattedMonth = String(month).padStart(2, '0');
+            newSheet.getCell('A1').value = `${sheetName}预算执行分析（${year}年${formattedMonth}月）`;
 
-              const valB = getMetricValue(g.records, cleanLabel, '本年累计', year, month);
-              const valC = getMetricValue(g.records, cleanLabel, '去年同期', year, month);
-              const valD = getBudgetMetricValue(g.budgets, cleanLabel, '进度预算', year, month);
-              const valE = getBudgetMetricValue(g.budgets, cleanLabel, '全年预算', year, month);
+            return newSheet;
+          };
+
+          const fillSheetData = (sheet: ExcelJS.Worksheet, records: EnrichedRecord[], budgets: BudgetRecord[]) => {
+            for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
+              const r = idx + 3;
+              const cleanLabel = METRIC_KEYS[idx];
+
+              const valB = getMetricValue(records, cleanLabel, '本年累计', year, month);
+              const valC = getMetricValue(records, cleanLabel, '去年同期', year, month);
+              const valD = getBudgetMetricValue(budgets, cleanLabel, '进度预算', year, month);
+              const valE = getBudgetMetricValue(budgets, cleanLabel, '全年预算', year, month);
               const valF = valB - valC;
-              const valG = valB - valD;
-              const valH = getMetricValue(g.records, cleanLabel, '当月发生额', year, month);
-              const valI = getMetricValue(g.records, cleanLabel, '上月发生额', year, month);
-              const valJ = getBudgetMetricValue(g.budgets, cleanLabel, '当月预算', year, month);
-              const valK = valH - valI;
-              const valL = valH - valJ;
+              const valH = valB - valD;
+              const valJ = getMetricValue(records, cleanLabel, '当月发生额', year, month);
+              const valK = getMetricValue(records, cleanLabel, '上月发生额', year, month);
+              const valL = getBudgetMetricValue(budgets, cleanLabel, '当月预算', year, month);
+              const valM = valJ - valK;
+              const valN = valJ - valL;
 
-              const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-              const vals = [valB, valC, valD, valE, valF, valG, valH, valI, valJ, valK, valL];
+              const cols = ['B', 'C', 'D', 'E', 'F', 'H', 'J', 'K', 'L', 'M', 'N'];
+              const vals = [valB, valC, valD, valE, valF, valH, valJ, valK, valL, valM, valN];
 
-              cols.forEach((col, idx) => {
-                let val = vals[idx];
-                const cell = newSheet.getCell(`${col}${r}`);
+              cols.forEach((col, cIdx) => {
+                let val = vals[cIdx];
+                const cell = sheet.getCell(`${col}${r}`);
                 if (isNaN(val) || val === null || val === undefined) {
                   cell.value = null;
                 } else {
@@ -1462,10 +1420,22 @@ export const Dashboard: React.FC = () => {
                 }
               });
             }
+          };
+
+          // Fill Total Sheet with Grand Total of the entire package
+          const sheetTotal = createAndCopySheet('合计');
+          fillSheetData(sheetTotal, grandTotalRecords, grandTotalBudgets);
+
+          // Create sheet for each caliber group
+          for (const g of groups) {
+            const groupSheet = createAndCopySheet(g.name);
+            fillSheetData(groupSheet, g.records, g.budgets);
           }
 
-          wb.removeWorksheet('项目1');
-          wb.removeWorksheet('项目2');
+          ['Sheet1', '项目1', '项目2'].forEach(sName => {
+            const ws = wb.getWorksheet(sName);
+            if (ws) wb.removeWorksheet(ws.id);
+          });
 
           const buf = await wb.xlsx.writeBuffer();
           return buf as ArrayBuffer;
