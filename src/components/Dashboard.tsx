@@ -1169,6 +1169,74 @@ export const Dashboard: React.FC = () => {
           }
         });
 
+        const populateIndexSheet = (ws: ExcelJS.Worksheet, sheetNames: string[]) => {
+          ws.mergeCells('A1:C1');
+          const titleCell = ws.getCell('A1');
+          titleCell.value = '工作表目录';
+          titleCell.font = { name: '方正仿宋_GBK', size: 16, bold: true };
+          titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+          ws.getRow(1).height = 32;
+
+          const headerRow = ws.getRow(2);
+          headerRow.height = 26;
+          const headers = ['序号', '工作表名称', '快捷跳转'];
+          const colWidths = [10, 36, 20];
+          
+          headers.forEach((h, idx) => {
+            const colLetter = String.fromCharCode(65 + idx);
+            const cell = ws.getCell(`${colLetter}2`);
+            cell.value = h;
+            cell.font = { name: '方正仿宋_GBK', size: 12, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFEFEFEF' }
+            };
+            cell.border = {
+              top: { style: 'thin' },
+              bottom: { style: 'thin' },
+              left: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            ws.getColumn(idx + 1).width = colWidths[idx];
+          });
+
+          sheetNames.forEach((sName, idx) => {
+            const rowNum = idx + 3;
+            const row = ws.getRow(rowNum);
+            row.height = 22;
+
+            const cellA = row.getCell(1);
+            cellA.value = idx + 1;
+            cellA.font = { name: '方正仿宋_GBK', size: 11 };
+            cellA.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            const cellB = row.getCell(2);
+            cellB.value = sName;
+            cellB.font = { name: '方正仿宋_GBK', size: 11 };
+            cellB.alignment = { horizontal: 'left', vertical: 'middle' };
+
+            const cellC = row.getCell(3);
+            const escapedSheetName = sName.replace(/'/g, "''");
+            cellC.value = {
+              text: '点击跳转 ➔',
+              hyperlink: `#'${escapedSheetName}'!A1`
+            };
+            cellC.font = { name: '方正仿宋_GBK', size: 11, color: { argb: 'FF0056B3' }, underline: true };
+            cellC.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            [cellA, cellB, cellC].forEach(cell => {
+              cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+              };
+            });
+          });
+        };
+
         const buildGroupWorkbook = async (
           groupProjects: ProjectInfo[],
           isWanYuan: boolean,
@@ -1182,6 +1250,8 @@ export const Dashboard: React.FC = () => {
             throw new Error('未在模版中找到工作表。');
           }
 
+          const indexSheet = wb.addWorksheet('目录');
+          const createdSheetNames: string[] = [];
           const sheetNamesUsed = new Set<string>();
 
           const createAndCopySheet = (name: string) => {
@@ -1197,6 +1267,7 @@ export const Dashboard: React.FC = () => {
               }
             }
             sheetNamesUsed.add(sheetName);
+            createdSheetNames.push(sheetName);
             const newSheet = wb.addWorksheet(sheetName);
 
             newSheet.columns = templateMaster.columns.map(col => ({
@@ -1313,9 +1384,13 @@ export const Dashboard: React.FC = () => {
             }
           }
 
+          populateIndexSheet(indexSheet, createdSheetNames);
+
           ['Sheet1', '项目1', '项目2'].forEach(sName => {
             const ws = wb.getWorksheet(sName);
-            if (ws) wb.removeWorksheet(ws.id);
+            if (ws && ws.id !== indexSheet.id && !createdSheetNames.includes(sName)) {
+              wb.removeWorksheet(ws.id);
+            }
           });
 
           const buf = await wb.xlsx.writeBuffer();
@@ -1336,6 +1411,8 @@ export const Dashboard: React.FC = () => {
             throw new Error('未在模版中找到工作表。');
           }
 
+          const indexSheet = wb.addWorksheet('目录');
+          const createdSheetNames: string[] = [];
           const sheetNamesUsed = new Set<string>();
 
           const createAndCopySheet = (name: string) => {
@@ -1351,6 +1428,7 @@ export const Dashboard: React.FC = () => {
               }
             }
             sheetNamesUsed.add(sheetName);
+            createdSheetNames.push(sheetName);
             const newSheet = wb.addWorksheet(sheetName);
 
             newSheet.columns = templateMaster.columns.map(col => ({
@@ -1432,9 +1510,13 @@ export const Dashboard: React.FC = () => {
             fillSheetData(groupSheet, g.records, g.budgets);
           }
 
+          populateIndexSheet(indexSheet, createdSheetNames);
+
           ['Sheet1', '项目1', '项目2'].forEach(sName => {
             const ws = wb.getWorksheet(sName);
-            if (ws) wb.removeWorksheet(ws.id);
+            if (ws && ws.id !== indexSheet.id && !createdSheetNames.includes(sName)) {
+              wb.removeWorksheet(ws.id);
+            }
           });
 
           const buf = await wb.xlsx.writeBuffer();
