@@ -1220,8 +1220,7 @@ export const Dashboard: React.FC = () => {
             const cellC = row.getCell(3);
             const escapedSheetName = sName.replace(/'/g, "''");
             cellC.value = {
-              text: '点击跳转 ➔',
-              hyperlink: `#'${escapedSheetName}'!A1`
+              formula: `HYPERLINK("#'${escapedSheetName}'!A1", "点击跳转 ➔")`
             };
             cellC.font = { name: '方正仿宋_GBK', size: 11, color: { argb: 'FF0056B3' }, underline: true };
             cellC.alignment = { horizontal: 'center', vertical: 'middle' };
