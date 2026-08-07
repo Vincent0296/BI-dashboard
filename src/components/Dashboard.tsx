@@ -1239,10 +1239,27 @@ export const Dashboard: React.FC = () => {
         const buildGroupWorkbook = async (
           groupProjects: ProjectInfo[],
           isWanYuan: boolean,
-          groupBudgets: BudgetRecord[]
+          groupBudgets: BudgetRecord[],
+          managementGroupName: string | null = null
         ): Promise<ArrayBuffer> => {
           const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(templateBuffer);
+
+          let reasonWorkbook: ExcelJS.Workbook | null = null;
+          if (managementGroupName) {
+            try {
+              const url = `./管理口径原因分析默认模版/${encodeURIComponent(managementGroupName)}.xlsx?t=${Date.now()}`;
+              const resp = await fetch(url);
+              if (resp.ok) {
+                const buf = await resp.arrayBuffer();
+                const wbTemp = new ExcelJS.Workbook();
+                await wbTemp.xlsx.load(buf);
+                reasonWorkbook = wbTemp;
+              }
+            } catch (err) {
+              console.warn(`无法加载管理口径原因模版 [${managementGroupName}]:`, err);
+            }
+          }
 
           const templateMaster = wb.getWorksheet('Sheet1') || wb.getWorksheet('项目1') || wb.worksheets[0];
           if (!templateMaster) {
@@ -1336,6 +1353,25 @@ export const Dashboard: React.FC = () => {
                 }
               });
             }
+
+            // Copy Columns G and I from reasonWorkbook if available
+            if (reasonWorkbook) {
+              const reasonSheet = reasonWorkbook.getWorksheet(sheet.name) ||
+                reasonWorkbook.worksheets.find(ws => ws.name.toLowerCase().trim() === sheet.name.toLowerCase().trim());
+              if (reasonSheet) {
+                for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
+                  const r = idx + 3;
+                  const cellG = reasonSheet.getCell(`G${r}`);
+                  const cellI = reasonSheet.getCell(`I${r}`);
+                  if (cellG && cellG.value !== null && cellG.value !== undefined) {
+                    sheet.getCell(`G${r}`).value = cellG.value;
+                  }
+                  if (cellI && cellI.value !== null && cellI.value !== undefined) {
+                    sheet.getCell(`I${r}`).value = cellI.value;
+                  }
+                }
+              }
+            }
           };
 
           const groupProjectNos = groupProjects.map(p => p.projectNo);
@@ -1400,10 +1436,27 @@ export const Dashboard: React.FC = () => {
           groups: { name: string; records: EnrichedRecord[]; budgets: BudgetRecord[] }[],
           grandTotalRecords: EnrichedRecord[],
           grandTotalBudgets: BudgetRecord[],
-          isWanYuan: boolean
+          isWanYuan: boolean,
+          isManagement: boolean = false
         ): Promise<ArrayBuffer> => {
           const wb = new ExcelJS.Workbook();
           await wb.xlsx.load(templateBuffer);
+
+          let reasonWorkbook: ExcelJS.Workbook | null = null;
+          if (isManagement) {
+            try {
+              const url = `./管理口径原因分析默认模版/总合计表.xlsx?t=${Date.now()}`;
+              const resp = await fetch(url);
+              if (resp.ok) {
+                const buf = await resp.arrayBuffer();
+                const wbTemp = new ExcelJS.Workbook();
+                await wbTemp.xlsx.load(buf);
+                reasonWorkbook = wbTemp;
+              }
+            } catch (err) {
+              console.warn(`无法加载管理口径总合计表原因模版:`, err);
+            }
+          }
 
           const templateMaster = wb.getWorksheet('Sheet1') || wb.getWorksheet('项目1') || wb.worksheets[0];
           if (!templateMaster) {
@@ -1497,6 +1550,25 @@ export const Dashboard: React.FC = () => {
                 }
               });
             }
+
+            // Copy Columns G and I from reasonWorkbook if available
+            if (reasonWorkbook) {
+              const reasonSheet = reasonWorkbook.getWorksheet(sheet.name) ||
+                reasonWorkbook.worksheets.find(ws => ws.name.toLowerCase().trim() === sheet.name.toLowerCase().trim());
+              if (reasonSheet) {
+                for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
+                  const r = idx + 3;
+                  const cellG = reasonSheet.getCell(`G${r}`);
+                  const cellI = reasonSheet.getCell(`I${r}`);
+                  if (cellG && cellG.value !== null && cellG.value !== undefined) {
+                    sheet.getCell(`G${r}`).value = cellG.value;
+                  }
+                  if (cellI && cellI.value !== null && cellI.value !== undefined) {
+                    sheet.getCell(`I${r}`).value = cellI.value;
+                  }
+                }
+              }
+            }
           };
 
           // Fill Total Sheet with Grand Total of the entire package
@@ -1522,6 +1594,8 @@ export const Dashboard: React.FC = () => {
           return buf as ArrayBuffer;
         };
 
+      const mainZip = new JSZip();
+
       const exportDimension = async (
         dimKey: 'management' | 'ownership' | 'propertyType',
         dimLabel: string,
@@ -1539,7 +1613,18 @@ export const Dashboard: React.FC = () => {
           groups[val].push(p);
         });
 
-        const zip = new JSZip();
+        // Determine folder name inside the main zip
+        const selectedMonthClean = selectedMonth.replace('-', '');
+        let folderName = '';
+        if (dimKey === 'management') {
+          folderName = `预算执行分析管理口径_${selectedMonthClean}${isWanYuan ? '万元' : '元'}`;
+        } else {
+          folderName = `${dimLabel}_报表包_${selectedMonth}${fileSuffix}`;
+        }
+
+        const zip = mainZip.folder(folderName);
+        if (!zip) throw new Error(`无法创建文件夹: ${folderName}`);
+
         const entries = Object.entries(groups);
         for (let i = 0; i < entries.length; i++) {
           const [val, projs] = entries[i];
@@ -1550,7 +1635,7 @@ export const Dashboard: React.FC = () => {
           });
           const groupProjectNos = projs.map(p => p.projectNo);
           const groupBudgets = budgetRecords.filter(d => groupProjectNos.includes(d.projectNo));
-          const buf = await buildGroupWorkbook(projs, isWanYuan, groupBudgets);
+          const buf = await buildGroupWorkbook(projs, isWanYuan, groupBudgets, dimKey === 'management' ? val : null);
           zip.file(`${val}.xlsx`, buf);
         }
 
@@ -1562,11 +1647,8 @@ export const Dashboard: React.FC = () => {
           const budgets = budgetRecords.filter(d => groupProjectNos.includes(d.projectNo));
           return { name: val, records, budgets };
         });
-        const totalBuf = await buildTotalWorkbook(totalGroups, sourceData, budgetRecords, isWanYuan);
+        const totalBuf = await buildTotalWorkbook(totalGroups, sourceData, budgetRecords, isWanYuan, dimKey === 'management');
         zip.file(`总合计表.xlsx`, totalBuf);
-
-        const blob = await zip.generateAsync({ type: 'blob' });
-        saveAs(blob, `${dimLabel}_报表包_${selectedMonth}${fileSuffix}.zip`);
       };
 
       // --- 1. 管理口径 (元版 & 万元版) ---
@@ -1585,6 +1667,14 @@ export const Dashboard: React.FC = () => {
       await exportDimension('propertyType', '业态', 70, false);
       await new Promise(r => setTimeout(r, 800));
       await exportDimension('propertyType', '业态', 85, true);
+
+      // --- 4. 生成最终打包压缩包并触发下载 ---
+      setExportProgress({ active: true, status: '正在生成最终压缩包...', percent: 95 });
+      await new Promise(r => setTimeout(r, 500));
+      
+      const selectedMonthClean = selectedMonth.replace('-', '');
+      const blob = await mainZip.generateAsync({ type: 'blob' });
+      saveAs(blob, `${selectedMonthClean}.zip`);
 
       setExportProgress({ active: true, status: '所有报表包已成功生成，开始下载！', percent: 100 });
       setTimeout(() => setExportProgress(null), 1500);
