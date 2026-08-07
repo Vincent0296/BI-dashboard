@@ -1310,6 +1310,16 @@ export const Dashboard: React.FC = () => {
             const formattedMonth = String(month).padStart(2, '0');
             newSheet.getCell('A1').value = `${sheetName}预算执行分析（${year}年${formattedMonth}月）`;
 
+            newSheet.views = [
+              {
+                state: 'frozen',
+                xSplit: 1,
+                ySplit: 2,
+                topLeftCell: 'B3',
+                activeCell: 'B3'
+              }
+            ];
+
             return newSheet;
           };
 
@@ -1506,6 +1516,16 @@ export const Dashboard: React.FC = () => {
 
             const formattedMonth = String(month).padStart(2, '0');
             newSheet.getCell('A1').value = `${sheetName}预算执行分析（${year}年${formattedMonth}月）`;
+
+            newSheet.views = [
+              {
+                state: 'frozen',
+                xSplit: 1,
+                ySplit: 2,
+                topLeftCell: 'B3',
+                activeCell: 'B3'
+              }
+            ];
 
             return newSheet;
           };
