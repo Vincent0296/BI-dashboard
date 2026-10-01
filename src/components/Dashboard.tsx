@@ -1323,7 +1323,12 @@ export const Dashboard: React.FC = () => {
             return newSheet;
           };
 
-          const fillSheetData = (sheet: ExcelJS.Worksheet, records: EnrichedRecord[], budgets: BudgetRecord[]) => {
+          const fillSheetData = (
+            sheet: ExcelJS.Worksheet,
+            records: EnrichedRecord[],
+            budgets: BudgetRecord[],
+            candidateNames?: string[]
+          ) => {
             for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
               const r = idx + 3;
               const cleanLabel = METRIC_KEYS[idx];
@@ -1366,8 +1371,18 @@ export const Dashboard: React.FC = () => {
 
             // Copy Columns G and I from reasonWorkbook if available
             if (reasonWorkbook) {
-              const reasonSheet = reasonWorkbook.getWorksheet(sheet.name) ||
+              let reasonSheet = reasonWorkbook.getWorksheet(sheet.name) ||
                 reasonWorkbook.worksheets.find(ws => ws.name.toLowerCase().trim() === sheet.name.toLowerCase().trim());
+              
+              if (!reasonSheet && candidateNames && candidateNames.length > 0) {
+                for (const cName of candidateNames) {
+                  if (!cName) continue;
+                  reasonSheet = reasonWorkbook.getWorksheet(cName) ||
+                    reasonWorkbook.worksheets.find(ws => ws.name.toLowerCase().trim() === cName.toLowerCase().trim());
+                  if (reasonSheet) break;
+                }
+              }
+
               if (reasonSheet) {
                 for (let idx = 0; idx < METRIC_KEYS.length; idx++) {
                   const r = idx + 3;
@@ -1391,41 +1406,64 @@ export const Dashboard: React.FC = () => {
           const sheetTotal = createAndCopySheet('合计');
           fillSheetData(sheetTotal, groupRecords, groupBudgets);
 
-          // Group projects by name to find those with multiple project numbers
-          const nameToProjects: Record<string, ProjectInfo[]> = {};
-          groupProjects.forEach(p => {
-            const name = (p.projectName || p.projectNo).trim();
-            if (!nameToProjects[name]) {
-              nameToProjects[name] = [];
+          const getProjectShortName = (p: ProjectInfo): string => {
+            const short = (p.projectShortName || '').trim();
+            if (short && short !== '未分类') {
+              return short;
             }
-            nameToProjects[name].push(p);
+            return (p.projectName || p.projectNo || '未命名项目').trim();
+          };
+
+          // Group projects by short name to find those with multiple project numbers
+          const shortNameToProjects: Record<string, ProjectInfo[]> = {};
+          groupProjects.forEach(p => {
+            const shortName = getProjectShortName(p);
+            if (!shortNameToProjects[shortName]) {
+              shortNameToProjects[shortName] = [];
+            }
+            shortNameToProjects[shortName].push(p);
           });
 
           // Generate sheets for projects
-          for (const [projName, projs] of Object.entries(nameToProjects)) {
+          for (const [shortName, projs] of Object.entries(shortNameToProjects)) {
             if (projs.length > 1) {
               // 1. Combined sheet
-              const combinedSheet = createAndCopySheet(`${projName}_合并`);
+              const combinedSheet = createAndCopySheet(`${shortName}_合并`);
               const groupProjectNosForName = projs.map(p => p.projectNo);
               const combinedRecords = sourceData.filter(d => groupProjectNosForName.includes(d.projectNo));
               const combinedBudgets = groupBudgets.filter(d => groupProjectNosForName.includes(d.projectNo));
-              fillSheetData(combinedSheet, combinedRecords, combinedBudgets);
+              const combinedCandidates = [
+                `${shortName}_合并`,
+                ...projs.map(p => `${(p.projectName || '').trim()}_合并`)
+              ];
+              fillSheetData(combinedSheet, combinedRecords, combinedBudgets, combinedCandidates);
 
               // 2. Individual sheets
               for (const project of projs) {
-                let suffixName = `${project.projectName}_${project.projectNo}`;
+                const projShort = getProjectShortName(project);
+                let suffixName = `${projShort}_${project.projectNo}`;
                 const indivSheet = createAndCopySheet(suffixName);
                 const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
                 const projectBudgets = groupBudgets.filter(d => d.projectNo === project.projectNo);
-                fillSheetData(indivSheet, projectRecords, projectBudgets);
+                const indivCandidates = [
+                  suffixName,
+                  `${(project.projectName || '').trim()}_${project.projectNo}`,
+                  projShort,
+                  (project.projectName || '').trim()
+                ];
+                fillSheetData(indivSheet, projectRecords, projectBudgets, indivCandidates);
               }
             } else {
               // Single project
               const project = projs[0];
-              const indivSheet = createAndCopySheet(project.projectName || project.projectNo);
+              const indivSheet = createAndCopySheet(shortName);
               const projectRecords = sourceData.filter(d => d.projectNo === project.projectNo);
               const projectBudgets = groupBudgets.filter(d => d.projectNo === project.projectNo);
-              fillSheetData(indivSheet, projectRecords, projectBudgets);
+              const indivCandidates = [
+                shortName,
+                (project.projectName || '').trim()
+              ];
+              fillSheetData(indivSheet, projectRecords, projectBudgets, indivCandidates);
             }
           }
 
